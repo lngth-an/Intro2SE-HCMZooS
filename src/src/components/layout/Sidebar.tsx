@@ -9,25 +9,27 @@ import {
   LogOut,
   User,
   CalendarCheck,
+  ChevronRight,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { NavLink } from "react-router-dom";
+
+interface MenuItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+}
 
 interface SidebarProps {
   isOpen: boolean;
+  menuItems: MenuItem[];
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, menuItems }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const navItems = [
-    { icon: Home, label: "Trang chủ", path: "/" },
-    { icon: Activity, label: "Hoạt động", path: "/activities" },
-    { icon: Trophy, label: "Điểm rèn luyện", path: "/training-points" },
-    { icon: Bell, label: "Thông báo", path: "/notifications" },
-    { icon: Settings, label: "Cài đặt tài khoản", path: "/account-settings" },
-  ];
+  if (!isOpen) return null;
 
   return (
     <aside
@@ -49,87 +51,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
         <nav className="flex-1 px-2 py-4 space-y-1">
           <div className="space-y-1">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                }`
-              }
-            >
-              <Home className="h-5 w-5 mr-3" />
-              Trang chủ
-            </NavLink>
-            <NavLink
-              to="/training-points"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                }`
-              }
-            >
-              <Trophy className="h-5 w-5 mr-3" />
-              Điểm rèn luyện
-            </NavLink>
-            <NavLink
-              to="/register-activity"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                }`
-              }
-            >
-              <CalendarCheck className="h-5 w-5 mr-3" />
-              Đăng ký hoạt động
-            </NavLink>
-            <NavLink
-              to="/activities"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                }`
-              }
-            >
-              <Activity className="h-5 w-5 mr-3" />
-              Quản lý hoạt động
-            </NavLink>
-
-            {/* Move Thông báo (Bell) above Hồ sơ (Profile) */}
-            <NavLink
-              to="/notifications"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                }`
-              }
-            >
-              <Bell className="h-5 w-5 mr-3" />
-              Thông báo
-            </NavLink>
-
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                }`
-              }
-            >
-              <User className="h-5 w-5 mr-3" />
-              Hồ sơ
-            </NavLink>
+            {menuItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="group flex items-center px-4 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <item.icon className="h-5 w-5 mr-3" />
+                {item.label}
+                <ChevronRight className="ml-auto h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            ))}
           </div>
         </nav>
 

@@ -6,13 +6,27 @@ import {
   LogOut,
   ChevronRight,
   GraduationCap,
+  Home,
+  Calendar,
+  Award,
+  Bell,
+  User,
+  PlusCircle,
+  List,
+  BarChart,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
+import { Routes, Route } from "react-router-dom";
 import Sidebar from "./components/layout/Sidebar";
+import Header from "./components/layout/Header";
 import DashboardStats from "./components/common/DashboardStats";
 import OngoingActivities from "./components/common/OngoingActivities";
 import Footer from "./components/layout/Footer";
+import CreateActivity from "./pages/organizer/CreateActivity";
 
-function App() {
+// Layout component that can be reused for both student and organizer
+function Layout({ children, menuItems, userInfo }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -23,49 +37,11 @@ function App() {
       }`}
     >
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm z-50">
-        <div className="flex items-center justify-between px-4 h-16">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold tracking-tighter sm:text-3xl bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent flex items-center">
-              <GraduationCap className="h-8 w-8 text-blue-600 mr-2" />
-              ActiHub
-            </h1>
-            <div className="relative ml-8 translate-x-6">
-              <input
-                type="text"
-                placeholder="Tìm kiếm hoạt động..."
-                className="w-65 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Search
-                className="absolute right-5 top-2.5 text-gray-400"
-                size={20}
-              />
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              {isDarkMode ? (
-                <Sun size={24} className="text-yellow-500" />
-              ) : (
-                <Moon size={24} />
-              )}
-            </button>
-            <div className="flex items-center space-x-2">
-              <img
-                src="https://via.placeholder.com/40"
-                alt="Avatar"
-                className="w-10 h-10 rounded-full"
-              />
-              <span className="text-gray-700 dark:text-gray-300">
-                Nguyễn Văn A
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header 
+        isDarkMode={isDarkMode}
+        onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+        userInfo={userInfo}
+      />
 
       {/* Main Content and Footer Container */}
       <div className="flex-1 flex">
@@ -75,7 +51,7 @@ function App() {
             isSidebarOpen ? "w-64" : "w-0"
           }`}
         >
-          <Sidebar isOpen={isSidebarOpen} />
+          <Sidebar isOpen={isSidebarOpen} menuItems={menuItems} />
         </div>
 
         {/* Main Content and Footer */}
@@ -85,10 +61,7 @@ function App() {
           {/* Main Content Area */}
           <main className="flex-1 p-8 pt-24">
             <div className="max-w-7xl mx-auto">
-              <DashboardStats />
-              <div className="mt-8">
-                <OngoingActivities />
-              </div>
+              {children}
             </div>
           </main>
 
@@ -97,6 +70,94 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Student Home component
+function StudentHome() {
+  const menuItems = [
+    { icon: Home, label: 'Trang chủ', path: '/student' },
+    { icon: Calendar, label: 'Hoạt động', path: '/student/activities' },
+    { icon: Award, label: 'Điểm rèn luyện', path: '/student/points' },
+    { icon: Bell, label: 'Thông báo', path: '/student/notifications' },
+    { icon: User, label: 'Hồ sơ', path: '/student/profile' },
+  ];
+
+  const userInfo = {
+    name: "Nguyễn Văn A",
+    role: "student" as const,
+  };
+
+  return (
+    <Layout menuItems={menuItems} userInfo={userInfo}>
+      <DashboardStats />
+      <div className="mt-8">
+        <OngoingActivities />
+      </div>
+    </Layout>
+  );
+}
+
+// Organizer Home component
+function OrganizerHome() {
+  const menuItems = [
+    { icon: Home, label: 'Trang chủ', path: '/organizer' },
+    { icon: List, label: 'Quản lý hoạt động', path: '/organizer/activities/manage' },
+    { icon: CheckCircle, label: 'Phê duyệt đăng ký', path: '/organizer/approvals' },
+    { icon: Bell, label: 'Thông báo', path: '/organizer/notifications' },
+    { icon: AlertCircle, label: 'Khiếu nại', path: '/organizer/complaints' },
+    { icon: User, label: 'Hồ sơ', path: '/organizer/profile' },
+  ];
+
+  const userInfo = {
+    name: "Đội Sinh viên Tình nguyện",
+    role: "organizer" as const,
+  };
+
+  return (
+    <Layout menuItems={menuItems} userInfo={userInfo}>
+      <DashboardStats />
+      <div className="mt-8">
+        <OngoingActivities />
+      </div>
+    </Layout>
+  );
+}
+
+// Create Activity component
+function CreateActivityPage() {
+  const menuItems = [
+    { icon: Home, label: 'Trang chủ', path: '/organizer' },
+    { icon: List, label: 'Quản lý hoạt động', path: '/organizer/activities/manage' },
+    { icon: CheckCircle, label: 'Phê duyệt đăng ký', path: '/organizer/approvals' },
+    { icon: Bell, label: 'Thông báo', path: '/organizer/notifications' },
+    { icon: AlertCircle, label: 'Khiếu nại', path: '/organizer/complaints' },
+    { icon: User, label: 'Hồ sơ', path: '/organizer/profile' },
+  ];
+
+  const userInfo = {
+    name: "Đội Sinh viên Tình nguyện",
+    role: "organizer" as const,
+  };
+
+  return (
+    <Layout menuItems={menuItems} userInfo={userInfo}>
+      <CreateActivity />
+    </Layout>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      {/* Student routes */}
+      <Route path="/" element={<StudentHome />} />
+      <Route path="/student" element={<StudentHome />} />
+
+      {/* Organizer routes */}
+      <Route path="/organizer" element={<OrganizerHome />} />
+      <Route path="/organizer/activities/create" element={<CreateActivityPage />} />
+    </Routes>
   );
 }
 
