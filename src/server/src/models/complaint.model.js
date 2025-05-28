@@ -1,21 +1,21 @@
 module.exports = (sequelize, DataTypes) => {
     const Complaint = sequelize.define('Complaint', {
-        complaint_id: {
+        complaintID: {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true,
         },
-        participation_id: {
+        participationID: {
             type: DataTypes.INTEGER,
             references: {
                 model: 'participations',
-                key: 'participation_id',
+                key: 'participationID',
             },
         },
         description: {
             type: DataTypes.TEXT,
         },
-        complaint_status: {
+        complaintStatus: {
             type: DataTypes.STRING,
         },
         response: {

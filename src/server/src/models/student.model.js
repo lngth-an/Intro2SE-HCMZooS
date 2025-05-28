@@ -1,28 +1,31 @@
 module.exports = (sequelize, DataTypes) => {
     const Student = sequelize.define('Student', {
-        student_id: {
+        studentID: {
             type: DataTypes.STRING,
             primaryKey: true,
             unique: true,
         },
-        user_id: {
+        userID: {
             type: DataTypes.INTEGER,
             references: {
                 model: 'users',
-                key: 'user_id',
+                key: 'userID',
               },
         },
         sex: {
             type: DataTypes.STRING,
         },
-        date_of_birth: {
+        dateOfBirth: {
             type: DataTypes.DATE,
         },
-        academic_year: {
+        academicYear: {
             type: DataTypes.STRING,
         },
         falculty: {
             type: DataTypes.STRING,
+        },
+        point: {
+            type: DataTypes.INTEGER,
         },
     },{
         tableName: 'students',

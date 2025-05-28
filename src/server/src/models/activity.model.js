@@ -1,22 +1,22 @@
 module.exports = (sequelize, DataTypes) => {
     const Activity = sequelize.define('Activity', {
-        activity_id: {
+        activityID: {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true,
         },
-        semester_id: {
+        semesterID: {
             type: DataTypes.INTEGER,
             references: {
                 model: 'semesters',
-                key: 'semester_id',
+                key: 'semesterID',
             },
         },
-        organizer_id: {
+        organizerID: {
             type: DataTypes.STRING,
             references: {
                 model: 'organizers',
-                key: 'organizer_id'
+                key: 'organizerID'
             }
         },
         name: {
@@ -28,19 +28,19 @@ module.exports = (sequelize, DataTypes) => {
         type: {
             type: DataTypes.STRING,
         },
-        activity_status: {
+        activityStatus: {
             type: DataTypes.STRING,
         },
-        registration_start_date: {
+        registrationStart: {
             type: DataTypes.DATE,
         },
-        registration_end_date: {
+        registrationEnd: {
             type: DataTypes.DATE,
         },
-        event_start_date: {
+        eventStart: {
             type: DataTypes.DATE,
         },
-        event_end_date: {
+        eventEnd: {
             type: DataTypes.DATE,
         },
         location: {

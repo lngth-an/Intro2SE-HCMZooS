@@ -1,31 +1,31 @@
 module.exports = (sequelize, DataTypes) => {
     const Notification = sequelize.define('Notification', {
-        notification_id: {
+        notificationID: {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true,
         },
-        from_user_id: {
+        fromUserID: {
             type: DataTypes.INTEGER,
             references: {
                 model: 'users',
-                key: 'user_id',
+                key: 'userID',
             }
         },
-        to_user_id: {
+        toUserID: {
             type: DataTypes.INTEGER,
             references: {
                 model: 'users',
-                key: 'user_id',
+                key: 'userID',
             }
         },
-        notification_title: {
+        notificationTitle: {
             type: DataTypes.STRING,
         },
-        notification_message: {
+        notificationMessage: {
             type: DataTypes.TEXT,
         },
-        notification_status: {
+        notificationStatus: {
             type: DataTypes.STRING,
         },
     },{

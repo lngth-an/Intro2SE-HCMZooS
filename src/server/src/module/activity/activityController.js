@@ -1,14 +1,167 @@
 const ActivityModel = require('./activityModel');
+const db = require('../../models');
 
 class ActivityController {
+    // Helper: Get organizerID from req.user.id
+    static async getOrganizerID(userID) {
+        const organizer = await db.Organizer.findOne({ where: { userID } });
+        return organizer ? organizer.organizerID : null;
+    }
 
-    static async getFilterActivity(req, res) {
+    // UC501: Create new activity (status = draft)
+    static async createActivity(req, res) {
+        console.log('User info:', req.user);
         try {
-            const popularActivities = await ActivityModel.getFilterActivity();
-            res.status(200).json(popularActivities); // Trả về attractions sau khi lọc
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can create activities.' });
+            }
+            const { name, eventStart, location } = req.body;
+            if (!name || !eventStart || !location) {
+                return res.status(400).json({ message: 'Missing required fields: name, eventStart, location.' });
+            }
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            if (!organizerID) {
+                return res.status(403).json({ message: 'Organizer profile not found.' });
+            }
+            const activity = await ActivityModel.createActivity({
+                ...req.body,
+                organizerID,
+                activityStatus: 'draft',
+            });
+
+            console.log('✅ Activity vừa tạo:', activity);
+
+            res.status(201).json(activity);
         } catch (error) {
-            console.error("Error in getFilterActivity:", error);
-            res.status(500).json({ message: 'Error retrieving filtered activities' });
+            console.error('Error creating activity:', error);
+            res.status(500).json({ message: 'Error creating activity.' });
+        }
+    }
+
+    // UC501: Edit activity if draft and owned by user
+    static async updateActivity(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can edit activities.' });
+            }
+            const { id } = req.params;
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            const activity = await ActivityModel.getActivityById(id, organizerID);
+            if (!activity) {
+                return res.status(404).json({ message: 'Activity not found or not owned by user.' });
+            }
+            if (activity.activityStatus !== 'draft') {
+                return res.status(400).json({ message: 'Only draft activities can be edited.' });
+            }
+            const { name, eventStart, location } = req.body;
+            if (!name || !eventStart || !location) {
+                return res.status(400).json({ message: 'Missing required fields: name, eventStart, location.' });
+            }
+            await ActivityModel.updateActivity(id, organizerID, req.body);
+            const updated = await ActivityModel.getActivityById(id, organizerID);
+            res.status(200).json(updated);
+        } catch (error) {
+            console.error('Error updating activity:', error);
+            res.status(500).json({ message: 'Error updating activity.' });
+        }
+    }
+
+    // UC501: Delete activity if draft and owned by user
+    static async deleteActivity(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can delete activities.' });
+            }
+            const { id } = req.params;
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            const activity = await ActivityModel.getActivityById(id, organizerID);
+            if (!activity) {
+                return res.status(404).json({ message: 'Activity not found or not owned by user.' });
+            }
+            if (activity.activityStatus !== 'draft') {
+                return res.status(400).json({ message: 'Only draft activities can be deleted.' });
+            }
+            await ActivityModel.deleteActivity(id, organizerID);
+            res.status(200).json({ message: 'Activity deleted successfully.' });
+        } catch (error) {
+            console.error('Error deleting activity:', error);
+            res.status(500).json({ message: 'Error deleting activity.' });
+        }
+    }
+
+    // UC501: Publish activity (change status from draft to published)
+    static async publishActivity(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can publish activities.' });
+            }
+            const { id } = req.params;
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            const activity = await ActivityModel.getActivityById(id, organizerID);
+            if (!activity) {
+                return res.status(404).json({ message: 'Activity not found or not owned by user.' });
+            }
+            if (activity.activityStatus !== 'draft') {
+                return res.status(400).json({ message: 'Only draft activities can be published.' });
+            }
+            await ActivityModel.publishActivity(id, organizerID);
+            const published = await ActivityModel.getActivityById(id, organizerID);
+            res.status(200).json(published);
+        } catch (error) {
+            console.error('Error publishing activity:', error);
+            res.status(500).json({ message: 'Error publishing activity.' });
+        }
+    }
+
+    // UC502: List activities with filters, pagination, and summary
+    static async listActivities(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can view their activities.' });
+            }
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            console.log('organizerID:', organizerID);
+            if (!organizerID) {
+                return res.status(403).json({ message: 'Organizer profile not found.' });
+            }
+            const { status, keyword, dateFrom, dateTo, page = 1, limit = 10 } = req.query;
+            const filters = { status, keyword, dateFrom, dateTo };
+            const pagination = { page, limit };
+            const { rows, count } = await ActivityModel.listActivities(organizerID, filters, pagination);
+            // Summary metrics
+            const draftCount = await ActivityModel.countByStatus(organizerID, 'draft');
+            const publishedCount = await ActivityModel.countByStatus(organizerID, 'published');
+            if (rows.length === 0) {
+                return res.status(200).json({ message: 'Không có hoạt động nào', total: 0, draftCount, publishedCount, activities: [] });
+            }
+            res.status(200).json({
+                total: count,
+                draftCount,
+                publishedCount,
+                activities: rows,
+            });
+        } catch (error) {
+            console.error('Error listing activities:', error);
+            res.status(500).json({ message: 'Error listing activities.' });
+        }
+    }
+
+    // UC502: Get activity details if owned by user
+    static async getActivityDetail(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can view activity details.' });
+            }
+            const { id } = req.params;
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            const activity = await ActivityModel.getActivityById(id, organizerID);
+            if (!activity) {
+                return res.status(404).json({ message: 'Activity not found or not owned by user.' });
+            }
+            res.status(200).json(activity);
+        } catch (error) {
+            console.error('Error getting activity detail:', error);
+            res.status(500).json({ message: 'Error getting activity detail.' });
         }
     }
 }

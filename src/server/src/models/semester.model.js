@@ -1,17 +1,17 @@
 module.exports = (sequelize, DataTypes) => {
     const Semester = sequelize.define('Semester', {
-        semester_id: {
+        semesterID: {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true,
         },
-        semester_name: {
+        semesterName: {
             type: DataTypes.STRING,
         },
-        semester_start_date: {
+        semesterStart: {
             type: DataTypes.DATE,
         },
-        semester_end_date: {
+        semesterEnd: {
             type: DataTypes.DATE,
         },
     },{

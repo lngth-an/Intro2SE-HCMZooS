@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
-    user_id: {
+    userID: {
       type: DataTypes.INTEGER,       // đổi thành INTEGER nếu muốn autoIncrement
       primaryKey: true,
       autoIncrement: true,

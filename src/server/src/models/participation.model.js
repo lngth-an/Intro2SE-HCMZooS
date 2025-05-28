@@ -1,28 +1,28 @@
 module.exports = (sequelize, DataTypes) => {
     const Participation = sequelize.define('Participation', {
-        participation_id:{
+        participationID:{
             type: DataTypes.INTEGER,
             primaryKey: true,
             allowNull: false,
         },
-        activity_id: {
+        activityID: {
             type: DataTypes.INTEGER,
             references: {   
                 model: 'activities',
-                key: 'activity_id',
+                key: 'activityID',
             },
         },
-        student_id: {   
+        studentID: {   
             type: DataTypes.STRING,
             references: {
-                model: 'Students',
-                key: 'student_id',
+                model: 'students',
+                key: 'studentID',
             },
         },
-        participation_status: {
+        participationStatus: {
             type: DataTypes.STRING,
         },
-        training_point: {
+        trainingPoint: {
             type: DataTypes.INTEGER,
         },
         type: {

@@ -1,18 +1,17 @@
 module.exports = (sequelize, DataTypes) => {
     const Organizer = sequelize.define('Organizer', {
-        organizer_id: {
+        organizerID: {
             type: DataTypes.STRING,
             primaryKey: true,
             unique: true,
         },
-        user_id: {
+        userID: {
             type: DataTypes.INTEGER,
             references: {
                 model: 'users',
-                key: 'user_id',
+                key: 'userID',
             },
         },
-
         department: {
             type: DataTypes.STRING,
         },
