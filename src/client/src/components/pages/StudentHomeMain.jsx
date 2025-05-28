@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function StudentHomeMain({ onViewScore, onViewRegistered }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [point, setPoint] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Lấy các hoạt động đang mở đăng ký hoặc đang diễn ra
@@ -48,7 +50,7 @@ export default function StudentHomeMain({ onViewScore, onViewRegistered }) {
             <div style={{ fontWeight: 600, fontSize: 18 }}>Đăng ký hoạt động</div>
             <div style={{ fontSize: 16, color: '#1976d2' }}>Xem các hoạt động đã đăng ký</div>
           </div>
-          <button onClick={onViewRegistered} style={{
+          <button onClick={() => navigate('/student/register')} style={{
             background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 500, cursor: 'pointer'
           }}>Xem thêm &rarr;</button>
         </div>

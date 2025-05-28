@@ -1,15 +1,17 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const menu = [
-  { label: 'Trang chủ', icon: '🏠' },
-  { label: 'Điểm rèn luyện', icon: '⭐' },
-  { label: 'Đăng ký hoạt động', icon: '📝' },
-  { label: 'Quản lý hoạt động', icon: '📋' },
+  { label: 'Trang chủ', icon: '🏠', path: '/student' },
+  { label: 'Điểm rèn luyện', icon: '⭐', path: '/student' },
+  { label: 'Đăng ký hoạt động', icon: '📝', path: '/student/register' },
+  { label: 'Quản lý hoạt động', icon: '📋', path: '/organizer/activities' },
   { label: 'Thông báo', icon: '🔔' },
   { label: 'Hồ sơ', icon: '👤' },
 ];
 
 export default function Sidebar({ onLogout }) {
+  const navigate = useNavigate();
   return (
     <aside style={{
       width: 220, background: '#f5f5f5', height: '100vh', display: 'flex',
@@ -20,7 +22,9 @@ export default function Sidebar({ onLogout }) {
           <div key={item.label} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '16px 24px',
             cursor: 'pointer', fontWeight: 500, fontSize: 16
-          }}>
+          }}
+            onClick={() => item.path && navigate(item.path)}
+          >
             <span>{item.icon}</span> <span>{item.label}</span>
           </div>
         ))}
