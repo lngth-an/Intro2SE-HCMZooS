@@ -26,4 +26,11 @@ router.get('/:activityId/registrations', ParticipationController.getRegistration
 router.patch('/:activityId/registrations/approve', ParticipationController.approveRegistrations);
 router.patch('/:activityId/attendance/confirm', ParticipationController.confirmAttendance);
 
+// Participation routes
+router.get('/participation/open', ParticipationController.getOpenActivities);
+router.get('/participation/check-eligibility/:activityID', ParticipationController.checkEligibility);
+router.post('/participation/register', ParticipationController.registerActivity);
+router.post('/participation/submit', ParticipationController.submitRegistration);
+router.get('/participation/suggest', ParticipationController.suggestActivities);
+
 module.exports = router;

@@ -110,6 +110,118 @@ class ParticipationController {
       res.status(500).json({ message: 'Error confirming attendance' });
     }
   }
+
+  // GET /participation/open?domain=xxx
+  static async getOpenActivities(req, res) {
+    try {
+      const { domain } = req.query;
+      const now = new Date();
+      const where = {
+        activityStatus: 'published',
+        registrationEnd: { [Op.gt]: now },
+      };
+      if (domain) {
+        // Giả sử trường type hoặc domains là string hoặc array
+        where.type = domain;
+      }
+      // Lấy số lượng đã đăng ký
+      const activities = await db.Activity.findAll({
+        where,
+        include: [{
+          model: db.Participation,
+          as: 'participations',
+          required: false,
+        }],
+      });
+      // Lọc capacity
+      const filtered = activities.filter(a => {
+        const count = a.participations?.filter(p => p.participationStatus !== 'rejected' && p.participationStatus !== 'canceled').length || 0;
+        return !a.capacity || count < a.capacity;
+      });
+      res.json({ activities: filtered });
+    } catch (err) {
+      res.status(500).json({ message: 'Error fetching open activities' });
+    }
+  }
+
+  // GET /participation/check-eligibility/:activityID
+  static async checkEligibility(req, res) {
+    try {
+      const { activityID } = req.params;
+      const studentID = req.user.studentID;
+      const activity = await db.Activity.findByPk(activityID);
+      if (!activity || activity.activityStatus !== 'published' || new Date(activity.registrationEnd) < new Date()) {
+        return res.json({ eligible: false, reason: 'Hoạt động không hợp lệ hoặc đã hết hạn đăng ký.' });
+      }
+      // Kiểm tra đã đăng ký chưa
+      const existed = await db.Participation.findOne({ where: { studentID, activityID, participationStatus: { [Op.ne]: 'canceled' } } });
+      if (existed) return res.json({ eligible: false, reason: 'Bạn đã đăng ký hoạt động này.' });
+      // Có thể kiểm tra thêm điều kiện khác (vd: năm học, khoa...)
+      res.json({ eligible: true });
+    } catch (err) {
+      res.status(500).json({ eligible: false, reason: 'Lỗi hệ thống' });
+    }
+  }
+
+  // POST /participation/register
+  static async registerActivity(req, res) {
+    try {
+      const studentID = req.user.studentID;
+      const { activityID, note } = req.body;
+      // Validate
+      if (!activityID) return res.status(400).json({ error: 'Thiếu activityID' });
+      const activity = await db.Activity.findByPk(activityID);
+      if (!activity || activity.activityStatus !== 'published' || new Date(activity.registrationEnd) < new Date()) {
+        return res.status(400).json({ error: 'Hoạt động không hợp lệ hoặc đã hết hạn đăng ký.' });
+      }
+      // Kiểm tra đã đăng ký chưa
+      const existed = await db.Participation.findOne({ where: { studentID, activityID, participationStatus: { [Op.ne]: 'canceled' } } });
+      if (existed) return res.status(400).json({ error: 'Bạn đã đăng ký hoạt động này.' });
+      // Tạo participation trạng thái draft
+      console.log('studentID:', studentID, 'activityID:', activityID, 'note:', note);
+      const participation = await db.Participation.create({
+        studentID, activityID, participationStatus: 'draft', note
+      });
+      res.json({ participation });
+    } catch (err) {
+      console.error('Lỗi đăng ký:', err);
+      res.status(500).json({ error: 'Lỗi đăng ký hoạt động' });
+    }
+  }
+
+  // POST /participation/submit
+  static async submitRegistration(req, res) {
+    try {
+      const studentID = req.user.studentID;
+      const { participationID } = req.body;
+      const participation = await db.Participation.findOne({ where: { participationID, studentID } });
+      if (!participation || participation.participationStatus !== 'draft') {
+        return res.status(400).json({ error: 'Đăng ký không hợp lệ.' });
+      }
+      participation.participationStatus = 'submitted';
+      await participation.save();
+      res.json({ message: 'Đăng ký đã được gửi xét duyệt.' });
+    } catch (err) {
+      res.status(500).json({ error: 'Lỗi xác nhận đăng ký' });
+    }
+  }
+
+  // GET /participation/suggest?domain=xxx
+  static async suggestActivities(req, res) {
+    try {
+      const { domain } = req.query;
+      const now = new Date();
+      const where = {
+        activityStatus: 'published',
+        registrationEnd: { [Op.gt]: now },
+        type: domain,
+      };
+      const activities = await db.Activity.findAll({ where });
+      res.json({ activities });
+    } catch (err) {
+      res.status(500).json({ message: 'Error suggesting activities' });
+    }
+  }
 }
 
 module.exports = ParticipationController; 

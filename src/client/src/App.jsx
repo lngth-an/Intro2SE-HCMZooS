@@ -5,6 +5,7 @@ import ActivityManager from './components/pages/ActivityManager';
 import ActivityDetail from './components/pages/ActivityDetail';
 import './App.css';
 import StudentHome from './pages/StudentHome';
+import { ActivityRegister } from './components/pages';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <Route path="/organizer" element={<OrganizerHome />} />
       <Route path="/organizer/activities" element={<ActivityManager />} />
       <Route path="/organizer/activities/:activityId" element={<ActivityDetail />} />
+      <Route path="/student/register" element={<ActivityRegister />} />
     </Routes>
   );
 }
