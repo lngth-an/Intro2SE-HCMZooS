@@ -1,19 +1,34 @@
-import React, { useState } from 'react';
-import Header from '../components/common/Header';
-import SidebarOrganizer from '../components/common/SidebarOrganizer';
-import Footer from '../components/common/Footer';
-import OrganizerHomeMain from '../components/pages/OrganizerHomeMain';
+import React from "react";
+import Header from "../components/common/Header";
+import SidebarOrganizer from "../components/common/SidebarOrganizer";
+import Footer from "../components/common/Footer";
+import OrganizerHomeMain from "../components/pages/OrganizerHomeMain";
 
 export default function OrganizerHome() {
-  const [theme, setTheme] = useState('light');
-  const user = { name: 'Nguyễn Văn B', avatar: '/avatar.png' };
+  const user = {
+    name: "Đội Sinh viên Tình nguyện khoa CNTT",
+    avatar: "/avatar.png",
+    role: "organizer",
+  };
 
   return (
-    <div style={{ background: theme === 'dark' ? '#222' : '#fafbfc', minHeight: '100vh' }}>
-      <Header onToggleTheme={() => setTheme(t => t === 'light' ? 'dark' : 'light')} user={user} />
-      <SidebarOrganizer onLogout={() => alert('Đăng xuất!')} />
-      <OrganizerHomeMain />
-      <Footer />
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Header */}
+      <Header user={user} />
+
+      {/* Main content with sidebar */}
+      <div className="flex flex-1 pt-16">
+        {/* Sidebar */}
+        <SidebarOrganizer onLogout={() => alert("Đăng xuất!")} />
+
+        {/* Main content area + Footer */}
+        <div className="flex-1 flex flex-col ml-64">
+          <main className="flex-1 p-6">
+            <OrganizerHomeMain />
+          </main>
+          <Footer />
+        </div>
+      </div>
     </div>
   );
-} 
+}

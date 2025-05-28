@@ -1,48 +1,124 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { ClipboardList, FileWarning } from "lucide-react";
 
-export default function OrganizerHomeMain() {
-  const [activities, setActivities] = useState([]);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetch('/activity?status=published')
-      .then(res => res.json())
-      .then(data => setActivities(data.activities || []));
-  }, []);
+export default function OrganizerHomeMain({
+  onManageActivities,
+  onReviewComplaints,
+}) {
+  const activities = [
+    {
+      id: 1,
+      name: "Hiến máu nhân đạo",
+      unit: "Đoàn trường",
+      time: "10/06/2024",
+      location: "Hội trường A",
+      volunteers: 50,
+      image: "/activity1.jpg",
+    },
+    {
+      id: 2,
+      name: "Chạy vì môi trường",
+      unit: "CLB Xanh",
+      time: "15/06/2024",
+      location: "Công viên Lê Văn Tám",
+      volunteers: 30,
+      image: "/activity2.jpg",
+    },
+    {
+      id: 3,
+      name: "Tư vấn hướng nghiệp",
+      unit: "Phòng CTSV",
+      time: "20/06/2024",
+      location: "Phòng A101",
+      volunteers: 20,
+      image: "/activity3.jpg",
+    },
+  ];
 
   return (
-    <main style={{ marginLeft: 220, padding: '32px 24px 0 24px', minHeight: '80vh', background: '#fafbfc' }}>
-      <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
-        <div style={{
-          flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #e0e0e0', padding: 24,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 18 }}>Xem các hoạt động</div>
+    <main className="min-h-screen bg-gray-50 p-6">
+      {/* Quản lý và khiếu nại Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Quản lý hoạt động */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Quản lý các hoạt động
+              </h3>
+              <p className="text-gray-600">
+                Xem, chỉnh sửa hoặc kết thúc hoạt động
+              </p>
+            </div>
+            <button
+              onClick={onManageActivities}
+              className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <ClipboardList className="w-5 h-5" />
+            </button>
           </div>
-          <button onClick={() => navigate('/organizer/activities')} style={{
-            background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 500, cursor: 'pointer'
-          }}>Xem thêm &rarr;</button>
+        </div>
+
+        {/* Đơn khiếu nại */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Đơn khiếu nại chờ duyệt
+              </h3>
+              <p className="text-gray-600">
+                Xử lý các đơn khiếu nại đang chờ duyệt
+              </p>
+            </div>
+            <button
+              onClick={onReviewComplaints}
+              className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <FileWarning className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Các hoạt động đang diễn ra */}
       <div>
-        <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 16 }}>Các hoạt động đang diễn ra</div>
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          {activities.map(act => (
-            <div key={act.activityID} style={{
-              background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #e0e0e0', padding: 16, width: 300
-            }}>
-              <img src={act.image || '/activity1.jpg'} alt={act.name} style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8 }} />
-              <div style={{ fontWeight: 600, fontSize: 17, margin: '12px 0 4px 0' }}>{act.name}</div>
-              <div style={{ color: '#1976d2', fontSize: 15 }}>{act.unit || act.organizerID}</div>
-              <div style={{ fontSize: 14, margin: '4px 0' }}><b>Thời gian:</b> {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}</div>
-              <div style={{ fontSize: 14 }}><b>Địa điểm:</b> {act.location}</div>
-              <div style={{ fontSize: 14 }}><b>Tình nguyện viên:</b> {act.capacity}</div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">
+          Các hoạt động đang diễn ra
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activities.map((act) => (
+            <div
+              key={act.id}
+              className="bg-white rounded-lg shadow-sm overflow-hidden"
+            >
+              <img
+                src={act.image}
+                alt={act.name}
+                className="w-full h-48 object-cover"
+              />
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  {act.name}
+                </h3>
+                <p className="text-blue-600 font-medium mb-3">{act.unit}</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p>
+                    <span className="font-medium">Thời gian:</span> {act.time}
+                  </p>
+                  <p>
+                    <span className="font-medium">Địa điểm:</span>{" "}
+                    {act.location}
+                  </p>
+                  <p>
+                    <span className="font-medium">Tình nguyện viên:</span>{" "}
+                    {act.volunteers}
+                  </p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </div>
     </main>
   );
-} 
+}
