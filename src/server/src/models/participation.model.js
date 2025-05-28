@@ -1,0 +1,53 @@
+module.exports = (sequelize, DataTypes) => {
+    const Participation = sequelize.define('Participation', {
+        participationID:{
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            allowNull: false,
+        },
+        activityID: {
+            type: DataTypes.INTEGER,
+            references: {   
+                model: 'activities',
+                key: 'activityID',
+            },
+        },
+        studentID: {   
+            type: DataTypes.STRING,
+            references: {
+                model: 'students',
+                key: 'studentID',
+            },
+        },
+        participationStatus: {
+            type: DataTypes.STRING,
+        },
+        trainingPoint: {
+            type: DataTypes.INTEGER,
+        },
+        type: {
+            type: DataTypes.STRING,
+        },
+    },{
+        tableName: 'participations',
+        timestamps: false, // createdAt, updatedAt
+    });
+
+    Participation.associate = (models) => {
+        Participation.belongsTo(models.Activity, {
+            foreignKey: 'activity_id',
+            as: 'activity',
+        });
+        Participation.belongsTo(models.Student, {
+            foreignKey: 'student_id',
+            as: 'student',
+        });
+        Participation.hasMany(models.Complaint, {
+            foreignKey: 'participation_id',
+            as: 'complaints',
+        });
+    };
+    
+    return Participation;
+};
+    
