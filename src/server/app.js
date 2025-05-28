@@ -14,6 +14,7 @@ app.use(cors({
 
 const activityRoutes = require('./src/routes/activityRoutes'); 
 const semesterRoutes = require('./src/routes/semesterRoutes'); 
+const participationRoutes = require('./src/routes/participationRoutes');
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -23,6 +24,7 @@ app.use(mockAuth);
 
 app.use('/activity', activityRoutes);
 app.use('/semester', semesterRoutes);
+app.use('/participation', participationRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

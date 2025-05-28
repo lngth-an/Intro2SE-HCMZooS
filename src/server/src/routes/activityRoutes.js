@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const ActivityController = require('../module/activity/activityController');
-const ParticipationController = require('../module/activity/participationController');
 
 // UC502: List activities (with filters, pagination, summary)
 router.get('/', ActivityController.listActivities);
@@ -21,16 +20,9 @@ router.patch('/:id/complete', ActivityController.completeActivity);
 // UC501: Uncomplete activity
 router.patch('/:id/uncomplete', ActivityController.uncompleteActivity);
 
-// Registration & Attendance management
-router.get('/:activityId/registrations', ParticipationController.getRegistrations);
-router.patch('/:activityId/registrations/approve', ParticipationController.approveRegistrations);
-router.patch('/:activityId/attendance/confirm', ParticipationController.confirmAttendance);
-
-// Participation routes
-router.get('/participation/open', ParticipationController.getOpenActivities);
-router.get('/participation/check-eligibility/:activityID', ParticipationController.checkEligibility);
-router.post('/participation/register', ParticipationController.registerActivity);
-router.post('/participation/submit', ParticipationController.submitRegistration);
-router.get('/participation/suggest', ParticipationController.suggestActivities);
+// Các route quản lý đăng ký/điểm danh nếu còn dùng cho organizer
+// router.get('/:activityId/registrations', ...);
+// router.patch('/:activityId/registrations/approve', ...);
+// router.patch('/:activityId/attendance/confirm', ...);
 
 module.exports = router;

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = '/activity';
+const SEMESTER_API = '/semester/current';
 const DOMAINS = [
   { id: 'academic', label: 'Học thuật' },
   { id: 'volunteer', label: 'Tình nguyện' },
@@ -20,9 +21,10 @@ const statusColors = {
 function ActivityManager() {
   const [activities, setActivities] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
   const [selectedDomains, setSelectedDomains] = useState([]);
   const [message, setMessage] = useState('');
+  const [semesterID, setSemesterID] = useState(null);
+  const [loadingSemester, setLoadingSemester] = useState(true);
   const navigate = useNavigate();
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm();
 
@@ -34,13 +36,15 @@ function ActivityManager() {
 
   useEffect(() => {
     fetchActivities();
+    // Fetch current semesterID
+    fetch(SEMESTER_API)
+      .then(res => res.json())
+      .then(data => {
+        setSemesterID(data.semesterID || null);
+        setLoadingSemester(false);
+      })
+      .catch(() => setLoadingSemester(false));
   }, []);
-
-  const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
-    }
-  };
 
   const handleDomainToggle = (domainId) => {
     setSelectedDomains(prev =>
@@ -51,25 +55,40 @@ function ActivityManager() {
   };
 
   const onSubmit = async (data) => {
-    let formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
-    if (selectedImage) formData.append('image', selectedImage);
-    formData.append('domains', JSON.stringify(selectedDomains));
+    if (!semesterID) {
+      setMessage('Không tìm thấy học kỳ hiện tại. Không thể tạo hoạt động.');
+      return;
+    }
+    const payload = {
+      ...data,
+      domains: selectedDomains,
+      type: selectedDomains[0] || '',
+      semesterID,
+    };
     let res;
     if (editingId) {
       res = await fetch(`${API_URL}/${editingId}`, {
         method: 'PUT',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      setMessage('Activity updated!');
+      if (res.ok) setMessage('Activity updated!');
+      else {
+        const err = await res.json();
+        setMessage(err.message || 'Error updating activity');
+      }
     } else {
       res = await fetch(API_URL, {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      setMessage('Activity created!');
+      if (res.ok) setMessage('Activity created!');
+      else {
+        const err = await res.json();
+        setMessage(err.message || 'Error creating activity');
+      }
     }
-    setSelectedImage(null);
     setSelectedDomains([]);
     reset();
     setEditingId(null);
@@ -82,11 +101,12 @@ function ActivityManager() {
     setValue('description', activity.description);
     setValue('eventStart', activity.eventStart?.slice(0, 16));
     setValue('eventEnd', activity.eventEnd?.slice(0, 16));
+    setValue('registrationStart', activity.registrationStart?.slice(0, 16));
+    setValue('registrationEnd', activity.registrationEnd?.slice(0, 16));
     setValue('location', activity.location);
     setValue('capacity', activity.capacity);
     setValue('targetAudience', activity.targetAudience || '');
     setSelectedDomains(activity.domains || []);
-    setSelectedImage(null);
   };
 
   const handleDelete = async id => {
@@ -103,49 +123,14 @@ function ActivityManager() {
     fetchActivities();
   };
 
+  if (loadingSemester) {
+    return <div style={{ textAlign: 'center', marginTop: 40 }}>Đang tải học kỳ hiện tại...</div>;
+  }
+
   return (
     <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Segoe UI, Arial, sans-serif' }}>
       <h1 className="text-2xl font-bold mb-8" style={{ color: '#1976d2', textAlign: 'center' }}>Quản lý hoạt động</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" style={{ background: '#f5f5f5', padding: 24, borderRadius: 12, marginBottom: 32, boxShadow: '0 2px 8px #e0e0e0' }}>
-        {/* Upload Image */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tải hình ảnh <span className="text-red-500">*</span>
-          </label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-            <div className="space-y-1 text-center">
-              {selectedImage ? (
-                <div className="relative">
-                  <img
-                    src={URL.createObjectURL(selectedImage)}
-                    alt="Preview"
-                    className="mx-auto h-32 w-auto"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setSelectedImage(null)}
-                    style={{ position: 'absolute', top: 0, right: 0, background: '#d32f2f', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer' }}
-                  >X</button>
-                </div>
-              ) : (
-                <>
-                  <div style={{ fontSize: 32, color: '#bdbdbd' }}>📤</div>
-                  <div className="flex text-sm text-gray-600">
-                    <label style={{ cursor: 'pointer', color: '#1976d2', fontWeight: 500 }}>
-                      <span>Tải ảnh lên</span>
-                      <input
-                        type="file"
-                        className="sr-only"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                      />
-                    </label>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
         {/* Activity Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -200,6 +185,35 @@ function ActivityManager() {
             />
             {errors.eventEnd && (
               <p className="mt-1 text-sm text-red-600">{errors.eventEnd.message}</p>
+            )}
+          </div>
+        </div>
+        {/* Registration Time Range */}
+        <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Thời gian bắt đầu đăng ký <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              {...register('registrationStart', { required: 'Vui lòng chọn thời gian bắt đầu đăng ký' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.registrationStart && (
+              <p className="mt-1 text-sm text-red-600">{errors.registrationStart.message}</p>
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Thời gian kết thúc đăng ký <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              {...register('registrationEnd', { required: 'Vui lòng chọn thời gian kết thúc đăng ký' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.registrationEnd && (
+              <p className="mt-1 text-sm text-red-600">{errors.registrationEnd.message}</p>
             )}
           </div>
         </div>
@@ -272,8 +286,8 @@ function ActivityManager() {
           {selectedDomains.length === 0 && <p className="mt-1 text-sm text-red-600">Vui lòng chọn ít nhất 1 lĩnh vực</p>}
         </div>
         <div>
-          <button type="submit" style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}>{editingId ? 'Cập nhật' : 'Tạo mới'}</button>
-          {editingId && <button type="button" style={{ background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer', marginLeft: 12 }} onClick={() => { setEditingId(null); reset(); setSelectedImage(null); setSelectedDomains([]); }}>Hủy</button>}
+          <button type="submit" style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }} disabled={!semesterID}>{editingId ? 'Cập nhật' : 'Tạo mới'}</button>
+          {editingId && <button type="button" style={{ background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer', marginLeft: 12 }} onClick={() => { setEditingId(null); reset(); setSelectedDomains([]); }}>Hủy</button>}
         </div>
         {message && <div style={{ color: '#388e3c', marginTop: 12 }}>{message}</div>}
       </form>

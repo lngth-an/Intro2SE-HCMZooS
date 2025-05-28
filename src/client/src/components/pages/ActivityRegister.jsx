@@ -25,7 +25,7 @@ function ActivityRegister() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/activity/participation/open${domain ? '?domain=' + domain : ''}`)
+    fetch(`/participation/open${domain ? '?domain=' + domain : ''}`)
       .then(res => res.json())
       .then(data => { setActivities(data.activities || []); setLoading(false); });
   }, [domain]);
@@ -51,7 +51,7 @@ function ActivityRegister() {
   };
 
   const handleRegister = (activity) => {
-    fetch(`/activity/participation/check-eligibility/${activity.activityID}`)
+    fetch(`/participation/check-eligibility/${activity.activityID}`)
       .then(res => res.json())
       .then(data => {
         if (data.eligible) {
@@ -60,7 +60,7 @@ function ActivityRegister() {
         } else {
           setError(data.reason || 'Bạn không đủ điều kiện đăng ký hoạt động này');
           // Gợi ý hoạt động cùng lĩnh vực
-          fetch(`/activity/participation/suggest?domain=${activity.type}`)
+          fetch(`/participation/suggest?domain=${activity.type}`)
             .then(res => res.json())
             .then(data => setSuggested(data.activities || []));
         }
@@ -74,7 +74,7 @@ function ActivityRegister() {
   const handleFormSubmit = e => {
     e.preventDefault();
     setError('');
-    fetch('/activity/participation/register', {
+    fetch('/participation/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activityID: selected.activityID, note: form.note }),
@@ -90,7 +90,7 @@ function ActivityRegister() {
   };
 
   const handleConfirm = () => {
-    fetch('/activity/participation/submit', {
+    fetch('/participation/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ participationID }),
