@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = '/activity';
 
@@ -13,6 +14,7 @@ function ActivityManager() {
   const [form, setForm] = useState({ name: '', eventStart: '', location: '' });
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const fetchActivities = async () => {
     const res = await fetch(API_URL);
@@ -75,7 +77,7 @@ function ActivityManager() {
 
   return (
     <div style={{ maxWidth: 900, margin: '40px auto', fontFamily: 'Segoe UI, Arial, sans-serif' }}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 30 }}>Activity Manager</h2>
+      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 30 }}>Quản lý hoạt động</h2>
       <div style={{ background: '#f5f5f5', padding: 24, borderRadius: 12, marginBottom: 32, boxShadow: '0 2px 8px #e0e0e0' }}>
         <h3 style={{ marginTop: 0, color: '#333' }}>{editingId ? 'Edit Activity' : 'Create New Activity'}</h3>
         <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -102,7 +104,7 @@ function ActivityManager() {
                 <button onClick={() => handleDelete(a.activityID)} style={{ background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 500 }}>Delete</button>
                 <button onClick={() => handlePublish(a.activityID)} style={{ background: '#e3f2fd', color: '#388e3c', border: '1px solid #90caf9', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 500 }}>Publish</button>
               </>}
-              <a href={`/activity/${a.activityID}`} style={{ background: '#f5f5f5', color: '#1976d2', border: '1px solid #bdbdbd', borderRadius: 6, padding: '6px 12px', textDecoration: 'none', fontWeight: 500, marginLeft: 'auto' }}>View</a>
+              <button onClick={() => navigate(`/organizer/activities/${a.activityID}`)} style={{ background: '#f5f5f5', color: '#1976d2', border: '1px solid #bdbdbd', borderRadius: 6, padding: '6px 12px', fontWeight: 500, marginLeft: 'auto', cursor: 'pointer' }}>View</button>
             </div>
           </div>
         ))}
