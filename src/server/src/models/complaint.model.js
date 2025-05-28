@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
 
     Complaint.associate = (models) => {
         Complaint.belongsTo(models.Participation, {
-            foreignKey: 'participation_id',
+            foreignKey: 'participationID',
             as: 'participation',
         });
     }

@@ -34,12 +34,12 @@ module.exports = (sequelize, DataTypes) => {
 
     Student.associate = (models) => {
         Student.belongsTo(models.User, {
-            foreignKey: 'user_id',
+            foreignKey: 'userID',
             as: 'user',
         });
 
         Student.hasMany(models.Participation, {
-            foreignKey: 'student_id',
+            foreignKey: 'studentID',
             as: 'participations',
         });
     };

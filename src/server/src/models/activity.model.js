@@ -59,15 +59,15 @@ module.exports = (sequelize, DataTypes) => {
 
     Activity.associate = (models) => {
         Activity.belongsTo(models.Semester, {
-            foreignKey: 'semester_id',
+            foreignKey: 'semesterID',
             as: 'semester',
         });
         Activity.belongsTo(models.Organizer, {
-            foreignKey: 'organizer_id',
+            foreignKey: 'organizerID',
             as: 'organizer',
         });
         Activity.hasMany(models.Participation, {
-            foreignKey: 'activity_id',
+            foreignKey: 'activityID',
             as: 'participations',
         });
     }

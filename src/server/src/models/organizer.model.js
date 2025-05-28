@@ -23,12 +23,12 @@ module.exports = (sequelize, DataTypes) => {
 
     Organizer.associate = (models) => {
         Organizer.belongsTo(models.User, {
-            foreignKey: 'user_id',
+            foreignKey: 'userID',
             as: 'user',
         });
 
         Organizer.hasMany(models.Activity, {
-            foreignKey: 'organizer_id',
+            foreignKey: 'organizerID',
             as: 'activities',
         });
     }
