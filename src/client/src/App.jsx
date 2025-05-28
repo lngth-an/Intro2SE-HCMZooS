@@ -1,15 +1,18 @@
 import React from 'react';
-import ActivityManager from './components/ActivityManager';
-import ActivityDetail from './components/ActivityDetail';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import OrganizerHome from './pages/OrganizerHome';
+import ActivityManager from './components/pages/ActivityManager';
+import ActivityDetail from './components/pages/ActivityDetail';
 import './App.css';
-import { Routes, Route } from 'react-router-dom';
 import HomePlace from './components/Home';
+import StudentHome from './pages/StudentHome';
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<ActivityManager />} />
-      <Route path="/activity/:activityId" element={<ActivityDetail />} />
+      <Route path="/organizer" element={<OrganizerHome />} />
+      <Route path="/organizer/activities" element={<ActivityManager />} />
+      <Route path="/organizer/activities/:activityId" element={<ActivityDetail />} />
     </Routes>
   );
 }

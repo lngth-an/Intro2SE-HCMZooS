@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
 
     Semester.associate = (models) => {
         Semester.hasMany(models.Activity, {
-            foreignKey: 'semester_id',
+            foreignKey: 'semesterID',
             as: 'activities',
         });
     }

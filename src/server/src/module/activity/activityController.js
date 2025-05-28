@@ -164,6 +164,54 @@ class ActivityController {
             res.status(500).json({ message: 'Error getting activity detail.' });
         }
     }
+
+    // PATCH /activity/:id/complete
+    static async completeActivity(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can complete activities.' });
+            }
+            const { id } = req.params;
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            const activity = await db.Activity.findOne({ where: { activityID: id, organizerID } });
+            if (!activity) {
+                return res.status(404).json({ message: 'Activity not found or not owned by user.' });
+            }
+            if (activity.activityStatus !== 'published') {
+                return res.status(400).json({ message: 'Only published activities can be completed.' });
+            }
+            activity.activityStatus = 'completed';
+            await activity.save();
+            res.status(200).json(activity);
+        } catch (error) {
+            console.error('Error completing activity:', error);
+            res.status(500).json({ message: 'Error completing activity.' });
+        }
+    }
+
+    // PATCH /activity/:id/uncomplete
+    static async uncompleteActivity(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can uncomplete activities.' });
+            }
+            const { id } = req.params;
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            const activity = await db.Activity.findOne({ where: { activityID: id, organizerID } });
+            if (!activity) {
+                return res.status(404).json({ message: 'Activity not found or not owned by user.' });
+            }
+            if (activity.activityStatus !== 'completed') {
+                return res.status(400).json({ message: 'Only completed activities can be uncompleted.' });
+            }
+            activity.activityStatus = 'published';
+            await activity.save();
+            res.status(200).json(activity);
+        } catch (error) {
+            console.error('Error uncompleting activity:', error);
+            res.status(500).json({ message: 'Error uncompleting activity.' });
+        }
+    }
 }
 
 module.exports = ActivityController;

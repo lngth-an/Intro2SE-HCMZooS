@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             primaryKey: true,
             allowNull: false,
+            autoIncrement: true,
         },
         activityID: {
             type: DataTypes.INTEGER,
@@ -35,15 +36,15 @@ module.exports = (sequelize, DataTypes) => {
 
     Participation.associate = (models) => {
         Participation.belongsTo(models.Activity, {
-            foreignKey: 'activity_id',
+            foreignKey: 'activityID',
             as: 'activity',
         });
         Participation.belongsTo(models.Student, {
-            foreignKey: 'student_id',
+            foreignKey: 'studentID',
             as: 'student',
         });
         Participation.hasMany(models.Complaint, {
-            foreignKey: 'participation_id',
+            foreignKey: 'participationID',
             as: 'complaints',
         });
     };
