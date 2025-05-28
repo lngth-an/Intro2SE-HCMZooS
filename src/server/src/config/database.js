@@ -1,6 +1,4 @@
 // config/database.js
-const fs = require('fs');
-const path = require('path');
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
@@ -14,9 +12,8 @@ const sequelize = new Sequelize(
     dialect: 'postgres',
     dialectOptions: {
       ssl: {
-        ca: fs.readFileSync(path.resolve(__dirname, '..', process.env.DB_SSL_CA)).toString(),
-        rejectUnauthorized: true,
-      },
+        rejectUnauthorized: false
+      }
     },
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
   }

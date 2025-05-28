@@ -12,7 +12,7 @@ const menu = [
 export default function Sidebar({ onLogout }) {
   return (
     <aside style={{
-      width: 220, background: '#f5f5f5', height: '100vh', display: 'flex',
+      width: 250, background: '#f5f5f5', height: '100vh', display: 'flex',
       flexDirection: 'column', justifyContent: 'space-between', position: 'fixed', left: 0, top: 0
     }}>
       <div>
