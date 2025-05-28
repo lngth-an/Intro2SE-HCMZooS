@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function StudentHomeMain({ onViewScore, onViewRegistered }) {
+export default function StudentHomeMain({ onViewScore }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [point, setPoint] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Lấy các hoạt động đang mở đăng ký hoặc đang diễn ra
     fetch('/activity')
       .then(res => res.json())
       .then(data => {
-        // Nếu API trả về { activities: [...] }
         setActivities(data.activities || []);
         setLoading(false);
       })
@@ -20,7 +18,6 @@ export default function StudentHomeMain({ onViewScore, onViewRegistered }) {
   }, []);
 
   useEffect(() => {
-    // Lấy điểm rèn luyện thật
     fetch('/student/me')
       .then(res => res.json())
       .then(data => setPoint(data.point))
@@ -28,52 +25,84 @@ export default function StudentHomeMain({ onViewScore, onViewRegistered }) {
   }, []);
 
   return (
-    <main style={{ marginLeft: 240, padding: '32px 24px 0 24px', minHeight: '80vh', background: '#fafbfc' }}>
-      <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
-        <div style={{
-          flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #e0e0e0', padding: 24,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 18 }}>Điểm rèn luyện</div>
-            <div style={{ fontSize: 32, color: '#1976d2', fontWeight: 700 }}>{point !== null ? point : '...'}</div>
+    <main className="min-h-screen bg-gray-50 p-6" style={{ marginLeft: 240 }}>
+      {/* Score and Registration Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Score Card */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Điểm rèn luyện</h3>
+              <div className="text-3xl font-bold text-blue-600">{point !== null ? point : '...'}</div>
+            </div>
+            <button
+              onClick={onViewScore}
+              className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
-          <button onClick={onViewScore} style={{
-            background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 500, cursor: 'pointer'
-          }}>Xem thêm &rarr;</button>
         </div>
-        <div style={{
-          flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #e0e0e0', padding: 24,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 18 }}>Đăng ký hoạt động</div>
-            <div style={{ fontSize: 16, color: '#1976d2' }}>Xem các hoạt động đã đăng ký</div>
+        {/* Registration Card */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Đăng ký hoạt động</h3>
+              <p className="text-gray-600">Xem các hoạt động đang mở đăng ký</p>
+            </div>
+            <button
+              onClick={() => navigate('/student/register')}
+              className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
-          <button onClick={() => navigate('/student/register')} style={{
-            background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 500, cursor: 'pointer'
-          }}>Xem thêm &rarr;</button>
         </div>
       </div>
+      {/* Activities Section */}
       <div>
-        <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 16 }}>Các hoạt động đang diễn ra</div>
-        {loading ? <div>Đang tải hoạt động...</div> : (
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          {activities.map(act => (
-            <div key={act.activityID} style={{
-              background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #e0e0e0', padding: 16, width: 300
-            }}>
-              {act.image && <img src={act.image} alt={act.name} style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8 }} />}
-              <div style={{ fontWeight: 600, fontSize: 17, margin: '12px 0 4px 0' }}>{act.name}</div>
-              <div style={{ color: '#1976d2', fontSize: 15 }}>{act.organizerName || act.unit || ''}</div>
-              <div style={{ fontSize: 14, margin: '4px 0' }}><b>Thời gian:</b> {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}</div>
-              <div style={{ fontSize: 14 }}><b>Địa điểm:</b> {act.location}</div>
-              <div style={{ fontSize: 14 }}><b>Số lượng:</b> {act.capacity || ''}</div>
-            </div>
-          ))}
-        </div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">Các hoạt động đang diễn ra</h2>
+        {loading ? (
+          <div>Đang tải hoạt động...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activities.map((act) => (
+              <div
+                key={act.activityID}
+                className="bg-white rounded-lg shadow-sm overflow-hidden"
+              >
+                {act.image && (
+                  <img
+                    src={act.image}
+                    alt={act.name}
+                    className="w-full h-48 object-cover"
+                  />
+                )}
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{act.name}</h3>
+                  <p className="text-blue-600 font-medium mb-3">{act.organizerName || act.unit || ''}</p>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p>
+                      <span className="font-medium">Thời gian:</span>{' '}
+                      {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}
+                    </p>
+                    <p>
+                      <span className="font-medium">Địa điểm:</span> {act.location}
+                    </p>
+                    <p>
+                      <span className="font-medium">Số lượng:</span> {act.capacity || ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </main>
   );
-} 
+}

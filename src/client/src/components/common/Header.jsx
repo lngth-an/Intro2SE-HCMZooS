@@ -1,33 +1,52 @@
-import React from 'react';
+import React from "react";
+import { Search, GraduationCap } from "lucide-react";
 
-export default function Header({ onToggleTheme, user }) {
+const Header = ({
+  user = {
+    name: "Guest",
+    avatar: "https://via.placeholder.com/40",
+  },
+}) => {
   return (
-    <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '12px 32px', background: '#1976d2', color: '#fff'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <img src="/logo192.png" alt="logo" style={{ width: 36, height: 36 }} />
-        <span style={{ fontWeight: 700, fontSize: 22, letterSpacing: 1 }}>ActiHub</span>
-      </div>
-      <input
-        placeholder="Tìm kiếm hoạt động..."
-        style={{
-          flex: 1, margin: '0 32px', padding: 8, borderRadius: 8, border: 'none', minWidth: 300
-        }}
-      />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button onClick={onToggleTheme} style={{
-          background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer'
-        }}>🌓</button>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, background: '#1565c0',
-          borderRadius: 20, padding: '4px 12px'
-        }}>
-          <img src={user.avatar || '/avatar.png'} alt="avatar" style={{ width: 28, height: 28, borderRadius: '50%' }} />
-          <span>{user.name}</span>
+    <header className="fixed top-0 left-0 right-0 bg-gray-50 shadow-sm z-50 transition-colors duration-200">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-start items-center h-16">
+          <div className="flex items-center">
+            <GraduationCap className="h-12 w-12 text-blue-600" />
+            <span className="ml-4 text-3xl font-extrabold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+              ActiHub
+            </span>
+          </div>
+
+          <div className="flex-1 max-w-2xl mx-10">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Tìm kiếm hoạt động..."
+                className="w-full px-4 py-2 rounded-lg border bg-white border-gray-400 text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-600" />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4 ml-auto">
+            <div className="flex items-center space-x-3">
+              <img
+                src={user.avatar || "https://via.placeholder.com/40"}
+                alt="Avatar"
+                className="w-10 h-10 rounded-full border-2 border-blue-500"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-600">
+                  {user.name}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
   );
-} 
+};
+
+export default Header;

@@ -1,34 +1,115 @@
-import React from 'react';
+import React from "react";
+import { GraduationCap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-export default function Footer() {
+const Footer = ({ isDarkMode }) => {
+  const navigate = useNavigate();
+
   return (
-    <footer style={{
-      background: '#1976d2', color: '#fff', display: 'flex', justifyContent: 'space-between',
-      padding: '32px 48px', marginTop: 40
-    }}>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/logo192.png" alt="logo" style={{ width: 32, height: 32 }} />
-          <span style={{ fontWeight: 700, fontSize: 20 }}>ActiHub</span>
+    <footer
+      className={`w-full ${
+        isDarkMode ? "bg-gray-800" : "bg-gray-50"
+      } border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
+    >
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Cột 1 - Logo và mô tả */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              <GraduationCap
+                className={`h-8 w-8 ${
+                  isDarkMode ? "text-gray-300" : "text-gray-600"
+                }`}
+              />
+              <span
+                className={`text-xl font-bold ${
+                  isDarkMode ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                ActiHub
+              </span>
+            </div>
+            <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>
+              Hệ thống quản lý điểm rèn luyện
+            </p>
+            <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>
+              Trường Đại học Khoa học Tự nhiên, ĐHQG - HCM
+            </p>
+          </div>
+
+          {/* Cột 2 - Liên kết nhanh */}
+          <div className="space-y-3">
+            <h3
+              className={`text-lg font-semibold ${
+                isDarkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Thông tin
+            </h3>
+            <div className="space-y-2">
+              <button
+                onClick={() =>
+                  window.open(
+                    "https://new-portal1.hcmus.edu.vn//Login.aspx?ReturnUrl=%2f",
+                    "_blank"
+                  )
+                }
+                className={`block ${
+                  isDarkMode
+                    ? "text-gray-300 hover:text-blue-400"
+                    : "text-gray-600 hover:text-blue-600"
+                }`}
+              >
+                Portal sinh viên
+              </button>
+              <button
+                onClick={() => window.open("https://hcmus.edu.vn/", "_blank")}
+                className={`block ${
+                  isDarkMode
+                    ? "text-gray-300 hover:text-blue-400"
+                    : "text-gray-600 hover:text-blue-600"
+                }`}
+              >
+                Website trường
+              </button>
+            </div>
+          </div>
+
+          {/* Cột 3 - Thông tin liên hệ */}
+          <div className="space-y-3">
+            <h3
+              className={`text-lg font-semibold ${
+                isDarkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Địa chỉ
+            </h3>
+            <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>
+              Cơ sở 1: 227 Nguyễn Văn Cừ, Quận 5, TP.HCM
+            </p>
+            <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>
+              Cơ sở 2: Khu phố 6, Phường Linh Trung, TP. Thủ Đức
+            </p>
+          </div>
         </div>
-        <div style={{ marginTop: 8, fontSize: 14, color: '#e3f2fd' }}>
-          Nền tảng quản lý và đăng ký hoạt động sinh viên hiện đại, tiện lợi.
-        </div>
-      </div>
-      <div>
-        <div style={{ fontWeight: 600, fontSize: 16 }}>Thông tin</div>
-        <div style={{ marginTop: 8 }}>
-          <a href="https://hcmus.edu.vn" style={{ color: '#fff', textDecoration: 'underline', display: 'block' }}>Website trường</a>
-          <a href="https://portal.hcmus.edu.vn" style={{ color: '#fff', textDecoration: 'underline', display: 'block' }}>Portal</a>
-        </div>
-      </div>
-      <div>
-        <div style={{ fontWeight: 600, fontSize: 16 }}>Địa chỉ</div>
-        <div style={{ marginTop: 8, fontSize: 14 }}>
-          Cơ sở 1: 227 Nguyễn Văn Cừ, Q.5, TP.HCM<br />
-          Cơ sở 2: Khu phố 6, Linh Trung, Thủ Đức, TP.HCM
+
+        {/* Dòng dưới cùng */}
+        <div
+          className={`mt-8 pt-8 border-t ${
+            isDarkMode ? "border-gray-700" : "border-gray-200"
+          }`}
+        >
+          <p
+            className={`text-center ${
+              isDarkMode ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
+            © 2025 ActiHub. Tất cả các quyền được bảo lưu.
+          </p>
         </div>
       </div>
     </footer>
   );
-} 
+};
+
+export default Footer;

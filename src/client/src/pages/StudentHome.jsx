@@ -1,22 +1,31 @@
-import React, { useState } from 'react';
-import Header from '../components/common/Header';
-import Sidebar from '../components/common/Sidebar';
-import Footer from '../components/common/Footer';
-import StudentHomeMain from '../components/pages/StudentHomeMain';
+import React from "react";
+import Header from "../components/common/Header";
+import SidebarStudent from "../components/common/SidebarStudent";
+import Footer from "../components/common/Footer";
+import StudentHomeMain from "../components/pages/StudentHomeMain";
 
 export default function StudentHome() {
-  const [theme, setTheme] = useState('light');
-  const user = { name: 'Nguyễn Văn A', avatar: '/avatar.png' };
+  const user = { name: "Nguyễn Văn A", avatar: "/avatar.png", role: "student" };
 
   return (
-    <div style={{ background: theme === 'dark' ? '#222' : '#fafbfc', minHeight: '100vh' }}>
-      <Header onToggleTheme={() => setTheme(t => t === 'light' ? 'dark' : 'light')} user={user} />
-      <Sidebar onLogout={() => alert('Đăng xuất!')} />
-      <StudentHomeMain
-        onViewScore={() => alert('Điểm rèn luyện chi tiết')}
-        onViewRegistered={() => alert('Xem hoạt động đã đăng ký')}
-      />
-      <Footer />
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Header */}
+      <Header user={user} />
+
+      {/* Main content with sidebar */}
+      <div className="flex flex-1 pt-16">
+        {/* Sidebar */}
+        <SidebarStudent onLogout={() => alert("Đăng xuất!")} />
+
+        {/* Main content area + Footer */}
+        <div className="flex-1 flex flex-col ml-64">
+          <main className="flex-1 p-6">
+            <StudentHomeMain
+            />
+          </main>
+          <Footer />
+        </div>
+      </div>
     </div>
   );
-} 
+}

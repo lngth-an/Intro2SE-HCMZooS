@@ -1,43 +1,45 @@
 import React from "react";
 import {
   Home,
+  Award,
+  Calendar,
   ClipboardList,
   Bell,
-  FileWarning,
   User,
   LogOut,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const SidebarOrganizer = ({ onLogout }) => {
+const SidebarStudent = ({ onLogout }) => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { icon: <Home size={20} />, label: "Trang chủ", path: "/organizer/home" },
+    { icon: <Home size={20} />, label: "Trang chủ", path: "/student/home" },
+    {
+      icon: <Award size={20} />,
+      label: "Điểm rèn luyện",
+      path: "/student/score",
+    },
+    {
+      icon: <Calendar size={20} />,
+      label: "Đăng ký hoạt động",
+      path: "/student/register",
+    },
     {
       icon: <ClipboardList size={20} />,
       label: "Quản lý hoạt động",
-      path: "/organizer/activities",
+      path: "/student/activities",
     },
     {
       icon: <Bell size={20} />,
       label: "Thông báo",
-      path: "/organizer/notifications",
+      path: "/student/notifications",
     },
-    {
-      icon: <FileWarning size={20} />,
-      label: "Khiếu nại",
-      path: "/organizer/complaints",
-    },
-    {
-      icon: <User size={20} />,
-      label: "Hồ sơ",
-      path: "/organizer/profile",
-    },
+    { icon: <User size={20} />, label: "Hồ sơ", path: "/student/profile" },
   ];
 
   return (
-    <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gray shadow-lg">
+    <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gray-50 shadow-lg">
       <div className="flex flex-col h-full">
         {/* Menu items */}
         <nav className="flex-1 py-4">
@@ -68,4 +70,4 @@ const SidebarOrganizer = ({ onLogout }) => {
   );
 };
 
-export default SidebarOrganizer;
+export default SidebarStudent;
