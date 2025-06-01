@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ActivityForm from './ActivityForm';
+import ActivityDetail from './ActivityDetail';
 
 const API_URL = '/activity';
 const DOMAINS = [
@@ -23,6 +24,8 @@ function ActivityManager() {
   const [editingActivity, setEditingActivity] = useState(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
+  const [selected, setSelected] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
   const navigate = useNavigate();
 
   const fetchActivities = async () => {
@@ -95,6 +98,16 @@ function ActivityManager() {
       setMessage('Có lỗi xảy ra khi lưu hoạt động');
       setMessageType('error');
     }
+  };
+
+  const handleShowDetail = (activity) => {
+    setSelected(activity);
+    setShowDetail(true);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelected(null);
   };
 
   return (
@@ -179,7 +192,7 @@ function ActivityManager() {
                     </>
                   )}
                   <button 
-                    onClick={() => navigate(`/organizer/activities/${activity.activityID}`)}
+                    onClick={() => handleShowDetail(activity)}
                     className="px-3 py-1 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors ml-auto"
                   >
                     Xem chi tiết
@@ -190,6 +203,22 @@ function ActivityManager() {
           ))}
         </div>
       </div>
+
+      {/* Chi tiết hoạt động */}
+      {showDetail && selected && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px #bdbdbd', padding: 24, width: '95%', maxWidth: '95%', position: 'relative', maxHeight: '95vh', overflowY: 'auto' }}>
+            <button onClick={handleCloseDetail} style={{ position: 'absolute', top: 12, right: 12, background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer', zIndex: 1 }}>×</button>
+            <ActivityDetail
+              activity={selected}
+              isOrganizer={true}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onPublish={handlePublish}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

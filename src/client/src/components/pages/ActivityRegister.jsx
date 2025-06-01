@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ActivityDetail from './ActivityDetail';
 
 const DOMAINS = [
   { id: 'academic', label: 'Học thuật' },
@@ -10,6 +12,7 @@ const DOMAINS = [
 ];
 
 function ActivityRegister() {
+  const navigate = useNavigate();
   const [activities, setActivities] = useState([]);
   const [domain, setDomain] = useState('');
   const [selected, setSelected] = useState(null);
@@ -135,55 +138,24 @@ function ActivityRegister() {
       {/* Chi tiết hoạt động */}
       {showDetail && selected && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px #bdbdbd', padding: 32, minWidth: 350, maxWidth: 500, position: 'relative' }}>
-            <button onClick={handleCloseDetail} style={{ position: 'absolute', top: 12, right: 12, background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>×</button>
-            <h2 style={{ color: '#1976d2', fontWeight: 700, fontSize: 22 }}>{selected.name}</h2>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Mô tả:</b> {selected.description}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Thời gian:</b> {selected.eventStart ? new Date(selected.eventStart).toLocaleString() : ''} - {selected.eventEnd ? new Date(selected.eventEnd).toLocaleString() : ''}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Địa điểm:</b> {selected.location}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Lĩnh vực:</b> {selected.type}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Số lượng tối đa:</b> {selected.capacity || 'Không giới hạn'}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Trạng thái:</b> {selected.activityStatus}</div>
-            {/* Nút đăng ký */}
-            {!showForm && !success && (
-              <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 28px', fontWeight: 600, fontSize: 16, marginTop: 18, cursor: 'pointer' }} onClick={() => handleRegister(selected)}>Đăng ký</button>
-            )}
-            {/* Form đăng ký */}
-            {showForm && (
-              <form onSubmit={handleFormSubmit} style={{ background: '#f5f5f5', borderRadius: 8, padding: 18, marginTop: 18 }}>
-                <div>
-                  <label>Ghi chú</label>
-                  <textarea name="note" value={form.note} onChange={handleFormChange} style={{ width: '100%', marginBottom: 8, padding: 8, borderRadius: 6, border: '1px solid #bdbdbd' }} />
-                </div>
-                <button type="submit" style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, marginTop: 8, cursor: 'pointer' }}>Gửi đăng ký</button>
-                <button type="button" style={{ background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, marginTop: 8, marginLeft: 8, cursor: 'pointer' }} onClick={() => setShowForm(false)}>Hủy</button>
-              </form>
-            )}
-            {/* Xác nhận đăng ký */}
-            {confirm && (
-              <div style={{ background: '#fffde7', border: '1px solid #ffe082', borderRadius: 8, padding: 18, marginTop: 18, textAlign: 'center' }}>
-                <div>Bạn xác nhận gửi đăng ký tham gia hoạt động này?</div>
-                <button style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, margin: 8, cursor: 'pointer' }} onClick={handleConfirm}>Xác nhận</button>
-                <button style={{ background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, margin: 8, cursor: 'pointer' }} onClick={() => setConfirm(false)}>Hủy</button>
-              </div>
-            )}
-            {/* Thông báo lỗi/thành công */}
-            {error && <div style={{ color: '#d32f2f', marginTop: 12 }}>{error}</div>}
-            {success && <div style={{ color: '#388e3c', marginTop: 18, textAlign: 'center', fontWeight: 600 }}>{success}</div>}
-            {/* Gợi ý hoạt động tương tự */}
-            {suggested.length > 0 && (
-              <div style={{ marginTop: 18 }}>
-                <b>Hoạt động cùng lĩnh vực:</b>
-                <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-                  {suggested.map(a => (
-                    <div key={a.activityID} style={{ background: '#f5f5f5', borderRadius: 8, padding: 12 }}>
-                      <div style={{ fontWeight: 500 }}>{a.name}</div>
-                      <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontWeight: 500, marginTop: 4, cursor: 'pointer' }} onClick={() => { handleCloseDetail(); handleShowDetail(a); }}>Xem chi tiết</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px #bdbdbd', padding: 32, minWidth: 350, maxWidth: 800, position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button onClick={handleCloseDetail} style={{ position: 'absolute', top: 12, right: 12, background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer', zIndex: 1 }}>×</button>
+            <ActivityDetail
+              activity={selected}
+              isStudent={true}
+              onRegister={handleRegister}
+              showRegisterForm={showForm}
+              registerNote={form.note}
+              onRegisterNoteChange={handleFormChange}
+              onRegisterSubmit={handleFormSubmit}
+              onRegisterCancel={() => setShowForm(false)}
+              registerError={error}
+              registerSuccess={success}
+              confirm={confirm}
+              onConfirm={handleConfirm}
+              onCancelConfirm={() => setConfirm(false)}
+              suggested={suggested}
+            />
           </div>
         </div>
       )}
