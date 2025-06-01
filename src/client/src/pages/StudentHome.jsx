@@ -3,9 +3,11 @@ import Header from "../components/common/Header";
 import SidebarStudent from "../components/common/SidebarStudent";
 import Footer from "../components/common/Footer";
 import StudentHomeMain from "../components/pages/StudentHomeMain";
+import { useNavigate } from "react-router-dom";
 
 export default function StudentHome() {
   const user = { name: "Nguyễn Văn A", avatar: "/avatar.png", role: "student" };
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -21,6 +23,7 @@ export default function StudentHome() {
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
             <StudentHomeMain
+              onViewScore={() => navigate('/student/score')}
             />
           </main>
           <Footer />

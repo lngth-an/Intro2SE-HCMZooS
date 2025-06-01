@@ -8,6 +8,7 @@ function ActivityDetail() {
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [semesters, setSemesters] = useState([]);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -24,6 +25,12 @@ function ActivityDetail() {
     };
     fetchDetail();
   }, [activityId]);
+
+  useEffect(() => {
+    fetch('/semester')
+      .then(res => res.json())
+      .then(data => setSemesters(data.semesters || []));
+  }, []);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;

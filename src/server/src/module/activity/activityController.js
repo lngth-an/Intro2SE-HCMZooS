@@ -212,6 +212,27 @@ class ActivityController {
             res.status(500).json({ message: 'Error uncompleting activity.' });
         }
     }
+
+    // GET /activity/organizer - Lấy tất cả hoạt động của organizer hiện tại
+    static async getActivitiesByOrganizer(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can view their activities.' });
+            }
+            const organizerID = await ActivityController.getOrganizerID(req.user.id);
+            if (!organizerID) {
+                return res.status(403).json({ message: 'Organizer profile not found.' });
+            }
+            const activities = await db.Activity.findAll({
+                where: { organizerID },
+                order: [['eventStart', 'DESC']],
+            });
+            res.status(200).json({ activities });
+        } catch (error) {
+            console.error('Error fetching organizer activities:', error);
+            res.status(500).json({ message: 'Error fetching organizer activities.' });
+        }
+    }
 }
 
 module.exports = ActivityController;

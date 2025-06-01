@@ -1,39 +1,78 @@
-import React from "react";
-import { ClipboardList, FileWarning } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ClipboardList, FileWarning, Eye, Edit, Trash2, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+const DOMAINS = [
+  { id: 'academic', label: 'Học thuật' },
+  { id: 'volunteer', label: 'Tình nguyện' },
+  { id: 'sports', label: 'Thể thao' },
+  { id: 'skills', label: 'Kỹ năng' },
+  { id: 'arts', label: 'Nghệ thuật' },
+  { id: 'other', label: 'Khác' },
+];
+const statusColors = {
+  draft: 'bg-gray-300 text-gray-800',
+  published: 'bg-blue-600 text-white',
+  completed: 'bg-green-600 text-white',
+};
 
 export default function OrganizerHomeMain({
   onManageActivities,
   onReviewComplaints,
 }) {
-  const activities = [
-    {
-      id: 1,
-      name: "Hiến máu nhân đạo",
-      unit: "Đoàn trường",
-      time: "10/06/2024",
-      location: "Hội trường A",
-      volunteers: 50,
-      image: "/activity1.jpg",
-    },
-    {
-      id: 2,
-      name: "Chạy vì môi trường",
-      unit: "CLB Xanh",
-      time: "15/06/2024",
-      location: "Công viên Lê Văn Tám",
-      volunteers: 30,
-      image: "/activity2.jpg",
-    },
-    {
-      id: 3,
-      name: "Tư vấn hướng nghiệp",
-      unit: "Phòng CTSV",
-      time: "20/06/2024",
-      location: "Phòng A101",
-      volunteers: 20,
-      image: "/activity3.jpg",
-    },
-  ];
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("success");
+  const navigate = useNavigate();
+
+  const fetchActivities = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/activity/organizer");
+      if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu hoạt động");
+      const data = await res.json();
+      setActivities(data.activities || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  // Handler cho các nút thao tác
+  const handleEdit = (activity) => {
+    navigate(`/organizer/activity/edit/${activity.activityID}`);
+  };
+  const handleDelete = async (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa hoạt động này?')) {
+      try {
+        await fetch(`/activity/${id}`, { method: 'DELETE' });
+        setMessage('Đã xóa hoạt động thành công!');
+        setMessageType('success');
+        fetchActivities();
+      } catch (error) {
+        setMessage('Không thể xóa hoạt động');
+        setMessageType('error');
+      }
+    }
+  };
+  const handlePublish = async (id) => {
+    try {
+      await fetch(`/activity/${id}/publish`, { method: 'PATCH' });
+      setMessage('Đã xuất bản hoạt động thành công!');
+      setMessageType('success');
+      fetchActivities();
+    } catch (error) {
+      setMessage('Không thể xuất bản hoạt động');
+      setMessageType('error');
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -80,44 +119,97 @@ export default function OrganizerHomeMain({
         </div>
       </div>
 
+      {/* Thông báo */}
+      {message && (
+        <div className={`mb-4 p-3 rounded-md text-center ${
+          messageType === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`}>
+          {message}
+        </div>
+      )}
+
       {/* Các hoạt động đang diễn ra */}
       <div>
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           Các hoạt động đang diễn ra
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activities.map((act) => (
-            <div
-              key={act.id}
-              className="bg-white rounded-lg shadow-sm overflow-hidden"
-            >
-              <img
-                src={act.image}
-                alt={act.name}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {act.name}
-                </h3>
-                <p className="text-blue-600 font-medium mb-3">{act.unit}</p>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p>
-                    <span className="font-medium">Thời gian:</span> {act.time}
-                  </p>
-                  <p>
-                    <span className="font-medium">Địa điểm:</span>{" "}
-                    {act.location}
-                  </p>
-                  <p>
-                    <span className="font-medium">Tình nguyện viên:</span>{" "}
-                    {act.volunteers}
-                  </p>
+        {loading ? (
+          <div>Đang tải hoạt động...</div>
+        ) : error ? (
+          <div className="text-red-500">{error}</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activities.map((act) => (
+              <div
+                key={act.activityID || act.id}
+                className="bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                {act.image && (
+                  <img
+                    src={act.image}
+                    alt={act.name}
+                    className="w-full h-48 object-cover"
+                  />
+                )}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-blue-600">{act.name}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[act.activityStatus] || 'bg-gray-300 text-gray-800'}`}>
+                      {act.activityStatus}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p><span className="font-medium">Thời gian:</span> {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}</p>
+                    <p><span className="font-medium">Địa điểm:</span> {act.location}</p>
+                    <p><span className="font-medium">Lĩnh vực:</span> {
+                      Array.isArray(act.domains)
+                        ? act.domains.map(d => DOMAINS.find(dm => dm.id === d)?.label).join(', ')
+                        : ''
+                    }</p>
+                    <p><span className="font-medium">Đối tượng:</span> {act.targetAudience || ''}</p>
+                    <p><span className="font-medium">Điểm rèn luyện:</span> {act.trainingScore || ''} điểm</p>
+                  </div>
+                  <div className="mt-4 flex flex-row flex-wrap gap-2 justify-end items-center">
+                    {act.activityStatus === 'draft' && (
+                      <button
+                        onClick={() => handleEdit(act)}
+                        className="flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                        <span>Chỉnh sửa</span>
+                      </button>
+                    )}
+                    {act.activityStatus === 'draft' && (
+                      <button
+                        onClick={() => handleDelete(act.activityID)}
+                        className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Xóa</span>
+                      </button>
+                    )}
+                    {act.activityStatus === 'draft' && (
+                      <button
+                        onClick={() => handlePublish(act.activityID)}
+                        className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Xuất bản</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => navigate(`/organizer/activities/${act.activityID}`)}
+                      className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Xem chi tiết</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

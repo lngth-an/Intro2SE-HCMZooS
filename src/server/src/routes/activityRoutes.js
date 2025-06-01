@@ -5,6 +5,8 @@ const ActivityController = require('../module/activity/activityController');
 
 // UC502: List activities (with filters, pagination, summary)
 router.get('/', ActivityController.listActivities);
+// Lấy tất cả hoạt động của organizer hiện tại
+router.get('/organizer', ActivityController.getActivitiesByOrganizer);
 // UC502: Get activity detail
 router.get('/:id', ActivityController.getActivityDetail);
 // UC501: Create activity
