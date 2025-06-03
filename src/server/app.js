@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const socketIo = require('socket.io');
 const app = express();
+const server = http.createServer(app);
 const cookieParser = require('cookie-parser');
 const mockAuth = require('./src/mockAuth');
 const { authenticateToken, requireRole } = require('./src/module/auth/authMiddleware');
@@ -14,6 +17,18 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+
+// Cấu hình Socket.IO
+const io = socketIo(server, {
+    cors: {
+        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
+
+// Lưu io instance để sử dụng trong các module khác
+app.set('io', io);
 
 // Import routes
 const activityRoutes = require('./src/routes/activityRoutes'); 
@@ -75,7 +90,7 @@ app.use((err, req, res, next) => {
 });
 
 // Khởi động server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 

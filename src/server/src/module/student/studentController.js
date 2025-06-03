@@ -4,6 +4,7 @@ const Student = db.Student;
 const Activity = db.Activity;
 const Participation = db.Participation;
 const { Op } = require('sequelize');
+const { User } = require('../../models');
 
 class StudentController {
   // GET /student/me
@@ -37,12 +38,10 @@ class StudentController {
       const studentID = req.user.studentID;
       const semesterID = req.query.semesterID;
       if (!studentID || !semesterID) return res.status(400).json({ message: 'Missing studentID or semesterID' });
-      // Lấy tất cả participation của student trong các activity thuộc semesterID
       const participations = await db.Participation.findAll({
         where: { studentID, participationStatus: 'present' },
         include: [{ model: db.Activity, as: 'activity', where: { semesterID } }]
       });
-      // Tổng hợp điểm rèn luyện từ participation.trainingPoint
       const score = participations.reduce((sum, p) => sum + (p.trainingPoint || 0), 0);
       res.json({ score });
     } catch (err) {
@@ -51,19 +50,17 @@ class StudentController {
     }
   }
 
-  // GET /student/activities?semesterID=...&allStatus=true  Lấy lịch sử hoạt động đã tham gia hoặc tất cả trạng thái
+  // GET /student/activities?semesterID=...&allStatus=true
   static async getActivities(req, res) {
     try {
       const studentID = req.user.studentID;
       const semesterID = req.query.semesterID;
       const allStatus = req.query.allStatus === 'true';
       if (!studentID) return res.status(400).json({ message: 'Missing studentID' });
-      // Build where clause
       const where = { studentID };
       if (!allStatus) {
         where.participationStatus = 'present';
       }
-      // Nếu có semesterID, filter qua activity
       const include = [{ model: db.Activity, as: 'activity' }];
       if (semesterID) {
         include[0].where = { semesterID };
@@ -72,7 +69,6 @@ class StudentController {
         where,
         include
       });
-      // Trả về thông tin từng participation và activity liên quan
       const activities = participations.map(p => ({
         participationID: p.participationID,
         activityID: p.activityID,
@@ -91,70 +87,57 @@ class StudentController {
     }
   }
 
-  // Get student statistics
-  // Get student statistics
-static async getStats(req, res) {
-  try {
-    const userID = req.user.userID;
+  // GET /student/stats
+  static async getStats(req, res) {
+    try {
+      const userID = req.user.userID;
 
-    // Lấy studentID từ userID
-    const student = await Student.findOne({
-      where: { userID }
-    });
-
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    const studentID = student.studentID;
-
-    // 1. Tổng số hoạt động đã tham gia
-    const totalParticipations = await Participation.count({
-      where: { studentID }
-    });
-
-    // 2. Số hoạt động đang tham gia
-    const ongoingParticipations = await Participation.count({
-      include: [{
-        model: Activity,
-        as: 'activity',
-        where: {
-          eventStart: { [Op.lte]: new Date() },
-          eventEnd: { [Op.gte]: new Date() }
-        }
-      }],
-      where: { studentID }
-    });
-
-    // 3. Tổng điểm rèn luyện (sửa lại trường sum)
-    const totalScore = await Participation.sum('trainingPoint', {
-      where: { studentID }
-    });
-
-    // 4. Số hoạt động đã đăng ký trong tháng này
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const monthlyParticipations = await Participation.count({
-      where: {
-        studentID,
-        //createdAt: { [Op.gte]: startOfMonth }
+      const student = await Student.findOne({ where: { userID } });
+      if (!student) {
+        return res.status(404).json({ message: 'Student not found' });
       }
-    });
 
-    return res.json({
-      totalParticipations,
-      ongoingParticipations,
-      totalScore: totalScore || 0,
-      monthlyParticipations
-    });
+      const studentID = student.studentID;
 
-  } catch (error) {
-    console.error('Error getting student stats:', error);
-    res.status(500).json({ message: 'Lỗi server khi thống kê' });
+      const totalParticipations = await Participation.count({ where: { studentID } });
+
+      const ongoingParticipations = await Participation.count({
+        include: [{
+          model: Activity,
+          as: 'activity',
+          where: {
+            eventStart: { [Op.lte]: new Date() },
+            eventEnd: { [Op.gte]: new Date() }
+          }
+        }],
+        where: { studentID }
+      });
+
+      const totalScore = await Participation.sum('trainingPoint', { where: { studentID } });
+
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const monthlyParticipations = await Participation.count({
+        where: {
+          studentID,
+          //createdAt: { [Op.gte]: startOfMonth }
+        }
+      });
+
+      return res.json({
+        totalParticipations,
+        ongoingParticipations,
+        totalScore: totalScore || 0,
+        monthlyParticipations
+      });
+
+    } catch (error) {
+      console.error('Error getting student stats:', error);
+      res.status(500).json({ message: 'Lỗi server khi thống kê' });
+    }
   }
 }
-}
 
-module.exports = StudentController; 
+module.exports = StudentController;

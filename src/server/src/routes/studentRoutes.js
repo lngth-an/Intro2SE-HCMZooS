@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const StudentController = require('../module/student/studentController');
-const { authenticateToken } = require('../module/auth/authMiddleware');
+const { authenticateToken, requireRole } = require('../module/auth/authMiddleware');
+const { Student, User } = require('../models');
+const { Op } = require('sequelize');
 
 // Lấy thông tin sinh viên hiện tại
 router.get('/me', StudentController.getMe);
