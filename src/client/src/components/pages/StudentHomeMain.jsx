@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png';
+
 export default function StudentHomeMain({ onViewScore }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,13 +78,15 @@ export default function StudentHomeMain({ onViewScore }) {
                 key={act.participationID || act.activityID}
                 className="bg-white rounded-lg shadow-sm overflow-hidden border"
               >
-                {act.image && (
-                  <img
-                    src={act.image}
-                    alt={act.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
+                <img
+                  src={act.image || 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png'}
+                  alt={act.name}
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png';
+                  }}
+                />
                 <div className="p-4">
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">{act.name}</h3>
                   <div className="mb-2">

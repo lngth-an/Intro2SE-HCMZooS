@@ -12,21 +12,23 @@ app.use(cors({
     allowedHeaders: ['Content-Type'],
 }));
 
-const activityRoutes = require('./src/routes/activityRoutes'); 
-const semesterRoutes = require('./src/routes/semesterRoutes'); 
-const participationRoutes = require('./src/routes/participationRoutes');
-const studentRoutes = require('./src/routes/studentRoutes');
-
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(cookieParser());
 app.use(mockAuth);
 
+const activityRoutes = require('./src/routes/activityRoutes'); 
+const semesterRoutes = require('./src/routes/semesterRoutes'); 
+const participationRoutes = require('./src/routes/participationRoutes');
+const studentRoutes = require('./src/routes/studentRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+
 app.use('/activity', activityRoutes);
 app.use('/semester', semesterRoutes);
 app.use('/participation', participationRoutes);
 app.use('/student', studentRoutes);
+app.use('/user', userRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import TrainingPointComplaints from './TrainingPointComplaints';
 
 export default function StudentScore() {
   const [semesters, setSemesters] = useState([]);
@@ -6,6 +7,7 @@ export default function StudentScore() {
   const [score, setScore] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showComplaint, setShowComplaint] = useState(null); // participationID đang gửi khiếu nại
 
   // Lấy danh sách học kỳ theo student hiện tại
   useEffect(() => {
@@ -64,19 +66,51 @@ export default function StudentScore() {
                   <th className="px-4 py-2 border">Tên hoạt động</th>
                   <th className="px-4 py-2 border">Loại hoạt động</th>
                   <th className="px-4 py-2 border">Điểm rèn luyện</th>
+                  <th className="px-4 py-2 border">Khiếu nại</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={3} className="text-center py-4">Đang tải...</td></tr>
+                  <tr><td colSpan={4} className="text-center py-4">Đang tải...</td></tr>
                 ) : history.length === 0 ? (
-                  <tr><td colSpan={3} className="text-center py-4">Chưa có hoạt động nào</td></tr>
+                  <tr><td colSpan={4} className="text-center py-4">Chưa có hoạt động nào</td></tr>
                 ) : history.map(act => (
-                  <tr key={act.participationID || act.activityID}>
-                    <td className="px-4 py-2 border">{act.name}</td>
-                    <td className="px-4 py-2 border">{act.type}</td>
-                    <td className="px-4 py-2 border text-center">{act.trainingPoint}</td>
-                  </tr>
+                  <React.Fragment key={act.participationID || act.activityID}>
+                    <tr>
+                      <td className="px-4 py-2 border">{act.name}</td>
+                      <td className="px-4 py-2 border">{act.type}</td>
+                      <td className="px-4 py-2 border text-center">{act.trainingPoint}</td>
+                      <td className="px-4 py-2 border text-center">
+                        <button
+                          className="text-blue-600 underline"
+                          onClick={() => setShowComplaint(act.participationID)}
+                        >
+                          Gửi khiếu nại
+                        </button>
+                      </td>
+                    </tr>
+                    {showComplaint === act.participationID && (
+                      <tr>
+                        <td colSpan={4} className="bg-gray-50">
+                          <TrainingPointComplaints
+                            participations={[{
+                              participationID: act.participationID,
+                              activityName: act.name,
+                            }]}
+                            onClose={() => setShowComplaint(null)}
+                          />
+                          <div className="text-right mt-2">
+                            <button
+                              className="text-sm text-gray-500 underline"
+                              onClick={() => setShowComplaint(null)}
+                            >
+                              Đóng
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

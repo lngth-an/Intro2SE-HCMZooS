@@ -1,20 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
 import OrganizerHomeMain from "../components/pages/OrganizerHomeMain";
 
 export default function OrganizerHome() {
-  const user = {
-    name: "Đội Sinh viên Tình nguyện khoa CNTT",
-    avatar: "/avatar.png",
-    role: "organizer",
-  };
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    fetch("/user/me")
+      .then((res) => res.json())
+      .then((data) => setUser(data))
+      .catch(() => setUser(null));
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <Header user={user} />
+      <Header user={user || { name: "Đang tải...", avatar: "/avatar.png", role: "organizer" }} />
 
       {/* Main content with sidebar */}
       <div className="flex flex-1 pt-16">

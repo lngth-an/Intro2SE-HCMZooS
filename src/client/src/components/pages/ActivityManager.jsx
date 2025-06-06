@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ActivityForm from './ActivityForm';
+import { createClient } from '@supabase/supabase-js';
 
 const API_URL = '/activity';
 const DOMAINS = [
@@ -16,6 +17,13 @@ const statusColors = {
   published: '#1976d2',
   completed: '#388e3c',
 };
+
+export const supabase = createClient(
+  'https://ncbseidgbxvwwkbicssf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jYnNlaWRnYnh2d3drYmljc3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3ODIyMTUsImV4cCI6MjA2NDM1ODIxNX0.Pjzb6J3fSynCiYViFa1FLyb9v3lYPHmV8txxnwyqetU'
+);
+
+const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png';
 
 function ActivityManager() {
   const [activities, setActivities] = useState([]);
@@ -73,26 +81,41 @@ function ActivityManager() {
 
   const handleFormSubmit = async (formData) => {
     try {
+      console.log('Submitting form data:', formData); // Debug log
       let res;
       if (editingId) {
         res = await fetch(`${API_URL}/${editingId}`, {
           method: 'PUT',
-          body: formData,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
         });
         setMessage('Đã cập nhật hoạt động thành công!');
       } else {
         res = await fetch(API_URL, {
           method: 'POST',
-          body: formData,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
         });
         setMessage('Đã tạo hoạt động thành công!');
       }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Network response was not ok');
+      }
+
+      const data = await res.json();
       setMessageType('success');
       setEditingId(null);
       setEditingActivity(null);
       fetchActivities();
     } catch (error) {
-      setMessage('Có lỗi xảy ra khi lưu hoạt động');
+      console.error('Error submitting form:', error);
+      setMessage(error.message || 'Có lỗi xảy ra khi lưu hoạt động');
       setMessageType('error');
     }
   };
@@ -127,13 +150,11 @@ function ActivityManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activities.map(activity => (
             <div key={activity.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
-              {activity.image && (
-                <img 
-                  src={activity.image} 
-                  alt={activity.name} 
-                  className="w-full h-48 object-cover"
-                />
-              )}
+              <img 
+                src={activity.image || DEFAULT_IMAGE} 
+                alt={activity.name} 
+                className="w-full h-48 object-cover"
+              />
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold text-blue-600">{activity.name}</h3>
