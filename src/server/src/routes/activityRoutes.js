@@ -2,19 +2,20 @@
 const express = require('express');
 const router = express.Router();
 const ActivityController = require('../module/activity/activityController');
+const { authenticateToken, requireRole } = require('../module/auth/authMiddleware');
 
 // UC502: List activities (with filters, pagination, summary)
-router.get('/', ActivityController.listActivities);
+router.get('/', authenticateToken, ActivityController.listActivities);
 // Lấy tất cả hoạt động của organizer hiện tại
 router.get('/organizer', ActivityController.getActivitiesByOrganizer);
 // UC502: Get activity detail
 router.get('/:id', ActivityController.getActivityDetail);
 // UC501: Create activity
-router.post('/', ActivityController.createActivity);
+router.post('/', authenticateToken, requireRole(['organizer']), ActivityController.createActivity);
 // UC501: Edit activity
-router.put('/:id', ActivityController.updateActivity);
+router.put('/:id', authenticateToken, requireRole(['organizer']), ActivityController.updateActivity);
 // UC501: Delete activity
-router.delete('/:id', ActivityController.deleteActivity);
+router.delete('/:id', authenticateToken, requireRole(['organizer']), ActivityController.deleteActivity);
 // UC501: Publish activity
 router.patch('/:id/publish', ActivityController.publishActivity);
 // UC501: Complete activity
