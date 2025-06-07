@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
+const API_BASE_URL = 'http://localhost:3001';
 const DOMAINS = [
   { id: 'academic', label: 'Học thuật' },
   { id: 'volunteer', label: 'Tình nguyện' },
@@ -25,7 +26,12 @@ function ActivityRegister() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/participation/open${domain ? '?domain=' + domain : ''}`)
+    const token = localStorage.getItem('accessToken');
+    fetch(`${API_BASE_URL}/participation/open${domain ? '?domain=' + domain : ''}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(res => res.json())
       .then(data => { setActivities(data.activities || []); setLoading(false); });
   }, [domain]);
@@ -51,7 +57,12 @@ function ActivityRegister() {
   };
 
   const handleRegister = (activity) => {
-    fetch(`/participation/check-eligibility/${activity.activityID}`)
+    const token = localStorage.getItem('accessToken');
+    fetch(`${API_BASE_URL}/participation/check-eligibility/${activity.activityID}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.eligible) {
@@ -60,7 +71,11 @@ function ActivityRegister() {
         } else {
           setError(data.reason || 'Bạn không đủ điều kiện đăng ký hoạt động này');
           // Gợi ý hoạt động cùng lĩnh vực
-          fetch(`/participation/suggest?domain=${activity.type}`)
+          fetch(`${API_BASE_URL}/participation/suggest?domain=${activity.type}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
             .then(res => res.json())
             .then(data => setSuggested(data.activities || []));
         }
@@ -74,9 +89,13 @@ function ActivityRegister() {
   const handleFormSubmit = e => {
     e.preventDefault();
     setError('');
-    fetch('/participation/register', {
+    const token = localStorage.getItem('accessToken');
+    fetch(`${API_BASE_URL}/participation/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ activityID: selected.activityID, note: form.note }),
     })
       .then(res => res.json())
@@ -90,9 +109,13 @@ function ActivityRegister() {
   };
 
   const handleConfirm = () => {
-    fetch('/participation/submit', {
+    const token = localStorage.getItem('accessToken');
+    fetch(`${API_BASE_URL}/participation/submit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ participationID }),
     })
       .then(res => res.json())
