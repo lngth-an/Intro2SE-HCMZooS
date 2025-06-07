@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ActivityForm from './ActivityForm';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const API_URL = '/activity';
 const DOMAINS = [
@@ -17,6 +19,8 @@ const statusColors = {
   completed: '#388e3c',
 };
 
+const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg';
+
 function ActivityManager() {
   const [activities, setActivities] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -27,12 +31,10 @@ function ActivityManager() {
 
   const fetchActivities = async () => {
     try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      setActivities(data.activities || []);
+      const res = await axios.get(API_URL);
+      setActivities(res.data.activities || []);
     } catch (error) {
-      setMessage('Không thể tải danh sách hoạt động');
-      setMessageType('error');
+      toast.error('Không thể tải danh sách hoạt động');
     }
   };
 
@@ -48,52 +50,39 @@ function ActivityManager() {
   const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa hoạt động này?')) {
       try {
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-        setMessage('Đã xóa hoạt động thành công!');
-        setMessageType('success');
+        await axios.delete(`${API_URL}/${id}`);
+        toast.success('Xóa hoạt động thành công');
         fetchActivities();
       } catch (error) {
-        setMessage('Không thể xóa hoạt động');
-        setMessageType('error');
+        toast.error('Không thể xóa hoạt động');
       }
     }
   };
 
   const handlePublish = async (id) => {
     try {
-      await fetch(`${API_URL}/${id}/publish`, { method: 'PATCH' });
-      setMessage('Đã xuất bản hoạt động thành công!');
-      setMessageType('success');
+      await axios.patch(`${API_URL}/${id}/publish`);
+      toast.success('Đã xuất bản hoạt động thành công!');
       fetchActivities();
     } catch (error) {
-      setMessage('Không thể xuất bản hoạt động');
-      setMessageType('error');
+      toast.error('Không thể xuất bản hoạt động');
     }
   };
 
   const handleFormSubmit = async (formData) => {
     try {
-      let res;
       if (editingId) {
-        res = await fetch(`${API_URL}/${editingId}`, {
-          method: 'PUT',
-          body: formData,
-        });
-        setMessage('Đã cập nhật hoạt động thành công!');
+        await axios.put(`${API_URL}/${editingId}`, formData);
+        toast.success('Đã cập nhật hoạt động thành công!');
       } else {
-        res = await fetch(API_URL, {
-          method: 'POST',
-          body: formData,
-        });
-        setMessage('Đã tạo hoạt động thành công!');
+        await axios.post(API_URL, formData);
+        toast.success('Đã tạo hoạt động thành công!');
       }
-      setMessageType('success');
       setEditingId(null);
       setEditingActivity(null);
       fetchActivities();
     } catch (error) {
-      setMessage('Có lỗi xảy ra khi lưu hoạt động');
-      setMessageType('error');
+      toast.error('Có lỗi xảy ra khi lưu hoạt động');
     }
   };
 
@@ -127,13 +116,11 @@ function ActivityManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activities.map(activity => (
             <div key={activity.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
-              {activity.image && (
-                <img 
-                  src={activity.image} 
-                  alt={activity.name} 
-                  className="w-full h-48 object-cover"
-                />
-              )}
+              <img 
+                src={activity.image || DEFAULT_IMAGE} 
+                alt={activity.name} 
+                className="w-full h-48 object-cover"
+              />
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold text-blue-600">{activity.name}</h3>

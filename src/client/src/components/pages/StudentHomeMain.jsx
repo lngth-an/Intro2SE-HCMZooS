@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg';
+
 export default function StudentHomeMain({ onViewScore }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [point, setPoint] = useState(null);
+  const [studentInfo, setStudentInfo] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/activity')
+    // Lấy tất cả hoạt động mà sinh viên đã đăng ký/tham gia với mọi trạng thái
+    fetch('/student/activities?allStatus=true')
       .then(res => res.json())
       .then(data => {
         setActivities(data.activities || []);
@@ -20,8 +24,14 @@ export default function StudentHomeMain({ onViewScore }) {
   useEffect(() => {
     fetch('/student/me')
       .then(res => res.json())
-      .then(data => setPoint(data.point))
-      .catch(() => setPoint(null));
+      .then(data => {
+        setPoint(data.point);
+        setStudentInfo(data);
+      })
+      .catch(() => {
+        setPoint(null);
+        setStudentInfo(null);
+      });
   }, []);
 
   return (
@@ -63,38 +73,79 @@ export default function StudentHomeMain({ onViewScore }) {
           </div>
         </div>
       </div>
+
+      {/* Personal Information Section */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Thông tin cá nhân</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-gray-600">Mã số sinh viên</p>
+            <p className="font-semibold">{studentInfo?.studentID}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Email</p>
+            <p className="font-semibold">{studentInfo?.email}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Số điện thoại</p>
+            <p className="font-semibold">{studentInfo?.phone || 'Chưa cập nhật'}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Activities Section */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">Các hoạt động đang diễn ra</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">Quản lý hoạt động của bạn</h2>
         {loading ? (
           <div>Đang tải hoạt động...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activities.map((act) => (
               <div
-                key={act.activityID}
-                className="bg-white rounded-lg shadow-sm overflow-hidden"
+                key={act.participationID || act.activityID}
+                className="bg-white rounded-lg shadow-sm overflow-hidden border"
               >
-                {act.image && (
-                  <img
-                    src={act.image}
-                    alt={act.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
+                <img
+                  src={act.image || DEFAULT_IMAGE}
+                  alt={act.name}
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = DEFAULT_IMAGE;
+                  }}
+                />
                 <div className="p-4">
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">{act.name}</h3>
-                  <p className="text-blue-600 font-medium mb-3">{act.organizerName || act.unit || ''}</p>
+                  <div className="mb-2">
+                    <span className="inline-block px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 font-medium">
+                      {act.type}
+                    </span>
+                  </div>
+                  <div className="mb-2">
+                    <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
+                      act.participationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      act.participationStatus === 'approved' ? 'bg-blue-100 text-blue-800' :
+                      act.participationStatus === 'present' ? 'bg-green-100 text-green-800' :
+                      act.participationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {act.participationStatus === 'pending' ? 'Chờ duyệt' :
+                       act.participationStatus === 'approved' ? 'Đã duyệt' :
+                       act.participationStatus === 'present' ? 'Đã tham gia' :
+                       act.participationStatus === 'rejected' ? 'Bị từ chối' :
+                       act.participationStatus}
+                    </span>
+                  </div>
                   <div className="space-y-2 text-sm text-gray-600">
+                    <p>
+                      <span className="font-medium">Điểm rèn luyện:</span> {act.trainingPoint || 0}
+                    </p>
                     <p>
                       <span className="font-medium">Thời gian:</span>{' '}
                       {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}
                     </p>
                     <p>
                       <span className="font-medium">Địa điểm:</span> {act.location}
-                    </p>
-                    <p>
-                      <span className="font-medium">Số lượng:</span> {act.capacity || ''}
                     </p>
                   </div>
                 </div>

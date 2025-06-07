@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Upload, X } from 'lucide-react';
+import { supabase } from '../../supabaseClient';
 
 const SEMESTER_API = '/semester/current';
 
 function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState(initialData?.image || '');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [selectedDomains, setSelectedDomains] = useState([]);
   const [semesterID, setSemesterID] = useState(null);
   const [loadingSemester, setLoadingSemester] = useState(true);
@@ -36,12 +40,36 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
       setValue('registrationEnd', initialData.registrationEnd?.slice(0, 16));
       setValue('contactInfo', initialData.contactInfo || '');
       setSelectedDomains(initialData.domains || []);
+      setImageUrl(initialData.image || '');
     }
   }, [initialData, setValue]);
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      setUploadError('');
+      setUploading(true);
+      // Upload lên Supabase
+      const fileExt = file.name.split('.').pop();
+      const fileName = `activity_${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('activities')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) {
+        setUploadError('Lỗi upload ảnh');
+        setUploading(false);
+        setImageUrl('');
+        return;
+      }
+      // Lấy public URL
+      const { data } = supabase.storage.from('activities').getPublicUrl(fileName);
+      const publicUrl = data.publicUrl;
+      const { error: insertError } = await supabase
+      .from('activities')
+      .insert([{ image_url: publicUrl }]);
+      setImageUrl(publicUrl);
+      setUploading(false);
     }
   };
 
@@ -54,17 +82,19 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
   };
 
   const handleFormSubmit = async (data) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
-    if (selectedImage) formData.append('image', selectedImage);
-    formData.append('domains', JSON.stringify(selectedDomains));
-    formData.append('semesterID', semesterID);
-    
-    await onSubmit(formData);
+    const submitData = {
+      ...data,
+      image: imageUrl || 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg', // Set default image if no image uploaded
+      domains: selectedDomains,
+      semesterID,
+    };
+    console.log('Submitting data:', submitData); // Debug log
+    await onSubmit(submitData);
     if (!editingId) {
       reset();
       setSelectedImage(null);
       setSelectedDomains([]);
+      setImageUrl('');
     }
   };
 
@@ -74,13 +104,13 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
     <form onSubmit={handleSubmit(handleFormSubmit)} className="bg-white p-8 rounded-lg shadow-md space-y-6">
       {/* Tải hình ảnh */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Tải hình ảnh <span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Tải hình ảnh</label>
         <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
           <div className="space-y-1 text-center">
-            {selectedImage ? (
+            {imageUrl ? (
               <div className="relative">
-                <img src={URL.createObjectURL(selectedImage)} alt="Preview" className="mx-auto h-32 w-auto" />
-                <button type="button" onClick={() => setSelectedImage(null)} className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full">
+                <img src={imageUrl} alt="Preview" className="mx-auto h-32 w-auto" />
+                <button type="button" onClick={() => { setImageUrl(''); setSelectedImage(null); }} className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -95,6 +125,8 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
                 </div>
               </>
             )}
+            {uploading && <div className="text-blue-600 mt-2">Đang upload...</div>}
+            {uploadError && <div className="text-red-600 mt-2">{uploadError}</div>}
           </div>
         </div>
       </div>
