@@ -8,8 +8,29 @@ class ActivityController {
         return organizer ? organizer.organizerID : null;
     }
 
+    // Get activities for current organizer
+    static async getOrganizerActivities(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can access this endpoint.' });
+            }
+
+            const organizerID = await ActivityController.getOrganizerID(req.user.userID);
+            if (!organizerID) {
+                return res.status(404).json({ message: 'Organizer not found' });
+            }
+
+            const activities = await ActivityModel.getActivitiesByOrganizer(organizerID);
+            res.json({ activities });
+        } catch (error) {
+            console.error('Error fetching organizer activities:', error);
+            res.status(500).json({ message: 'Error fetching organizer activities.' });
+        }
+    }
+
     // UC501: Create new activity (status = draft)
     static async createActivity(req, res) {
+        console.log('User info:', req.user);
         try {
             if (!req.user || req.user.role !== 'organizer') {
                 return res.status(403).json({ message: 'Forbidden: Only organizers can create activities.' });

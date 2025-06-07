@@ -1,12 +1,12 @@
 const db = require('../../models');
-const Student = db.Student;
+const Organizer = db.Organizer;
 const User = db.User;
 
-async function getStudentByUserID(userID) {
-  return Student.findOne({
+async function getOrganizerByUserID(userID) {
+  return Organizer.findOne({
     where: { userID },
     include: [{ model: User, as: 'user', attributes: ['name', 'email', 'username', 'phone'] }]
   });
 }
 
-module.exports = { getStudentByUserID };
+module.exports = { getOrganizerByUserID }; 

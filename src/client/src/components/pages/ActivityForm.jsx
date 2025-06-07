@@ -84,7 +84,7 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
   const handleFormSubmit = async (data) => {
     const submitData = {
       ...data,
-      image: imageUrl || 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png', // Set default image if no image uploaded
+      image: imageUrl || 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg', // Set default image if no image uploaded
       domains: selectedDomains,
       semesterID,
     };

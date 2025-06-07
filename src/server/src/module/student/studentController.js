@@ -1,5 +1,10 @@
 const { getStudentByUserID } = require('./studentModel');
 const db = require('../../models');
+const Student = db.Student;
+const Activity = db.Activity;
+const Participation = db.Participation;
+const { Op } = require('sequelize');
+const { User } = require('../../models');
 
 class StudentController {
   // GET /student/me
@@ -14,6 +19,7 @@ class StudentController {
         name: student.user?.name,
         email: student.user?.email,
         username: student.user?.username,
+        phone: student.user?.phone,
         point: student.point,
         sex: student.sex,
         dateOfBirth: student.dateOfBirth,
@@ -32,12 +38,10 @@ class StudentController {
       const studentID = req.user.studentID;
       const semesterID = req.query.semesterID;
       if (!studentID || !semesterID) return res.status(400).json({ message: 'Missing studentID or semesterID' });
-      // Lấy tất cả participation của student trong các activity thuộc semesterID
       const participations = await db.Participation.findAll({
         where: { studentID, participationStatus: 'present' },
         include: [{ model: db.Activity, as: 'activity', where: { semesterID } }]
       });
-      // Tổng hợp điểm rèn luyện từ participation.trainingPoint
       const score = participations.reduce((sum, p) => sum + (p.trainingPoint || 0), 0);
       res.json({ score });
     } catch (err) {
@@ -53,12 +57,10 @@ class StudentController {
       const semesterID = req.query.semesterID;
       const allStatus = req.query.allStatus === 'true';
       if (!studentID) return res.status(400).json({ message: 'Missing studentID' });
-      // Build where clause
       const where = { studentID };
       if (!allStatus) {
         where.participationStatus = 'present';
       }
-      // Nếu có semesterID, filter qua activity
       const include = [{ model: db.Activity, as: 'activity' }];
       if (semesterID) {
         include[0].where = { semesterID };
@@ -67,7 +69,6 @@ class StudentController {
         where,
         include
       });
-      // Trả về thông tin từng participation và activity liên quan
       const activities = participations.map(p => ({
         participationID: p.participationID,
         activityID: p.activityID,
@@ -85,6 +86,58 @@ class StudentController {
       res.status(500).json({ message: 'Error fetching activities' });
     }
   }
+
+  // GET /student/stats
+  static async getStats(req, res) {
+    try {
+      const userID = req.user.userID;
+
+      const student = await Student.findOne({ where: { userID } });
+      if (!student) {
+        return res.status(404).json({ message: 'Student not found' });
+      }
+
+      const studentID = student.studentID;
+
+      const totalParticipations = await Participation.count({ where: { studentID } });
+
+      const ongoingParticipations = await Participation.count({
+        include: [{
+          model: Activity,
+          as: 'activity',
+          where: {
+            eventStart: { [Op.lte]: new Date() },
+            eventEnd: { [Op.gte]: new Date() }
+          }
+        }],
+        where: { studentID }
+      });
+
+      const totalScore = await Participation.sum('trainingPoint', { where: { studentID } });
+
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const monthlyParticipations = await Participation.count({
+        where: {
+          studentID,
+          //createdAt: { [Op.gte]: startOfMonth }
+        }
+      });
+
+      return res.json({
+        totalParticipations,
+        ongoingParticipations,
+        totalScore: totalScore || 0,
+        monthlyParticipations
+      });
+
+    } catch (error) {
+      console.error('Error getting student stats:', error);
+      res.status(500).json({ message: 'Lỗi server khi thống kê' });
+    }
+  }
 }
 
-module.exports = StudentController; 
+module.exports = StudentController;

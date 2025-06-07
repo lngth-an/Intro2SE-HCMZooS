@@ -24,18 +24,21 @@ router.patch('/:id/complete', ActivityController.completeActivity);
 // UC501: Uncomplete activity
 router.patch('/:id/uncomplete', ActivityController.uncompleteActivity);
 
-// Các route quản lý đăng ký/điểm danh nếu còn dùng cho organizer
+// Các route quản lý đăng ký/điểm danh
 router.get('/:activityID/registrations', ActivityController.getRegistrations);
 router.patch('/:activityID/registrations/approve', ActivityController.approveRegistrations);
 router.patch('/:activityID/attendance/confirm', ActivityController.confirmAttendance);
 
+// Route lấy thông tin organizer
 router.get('/organizer/me', OrganizerController.getMe);
 
+// Các route quản lý khiếu nại
 router.post('/complaint', ComplaintController.submitComplaint);
 router.get('/complaint/organizer', ComplaintController.getComplaintsByOrganizer);
 router.get('/complaint/:id', ComplaintController.getComplaintDetail);
 router.patch('/complaint/:id', ComplaintController.updateComplaintStatus);
 
+// Route cập nhật điểm rèn luyện
 router.patch('/:activityID/training-point', ActivityController.updateTrainingPoint);
 
 module.exports = router;

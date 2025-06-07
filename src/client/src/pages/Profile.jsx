@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 export default function Profile() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '' });
   const [formError, setFormError] = useState('');
@@ -15,20 +18,40 @@ export default function Profile() {
   const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
-    fetch('/user/profile')
-      .then(res => res.json())
-      .then(data => {
-        setProfile(data);
-        setForm({ name: data.name, email: data.email, phone: data.phone });
-      });
-  }, []);
+    const fetchProfile = async () => {
+      try {
+        // Xác định endpoint dựa vào role
+        const endpoint = user?.role === 'student' ? '/student/me' : '/organizer/me';
+        console.log('Fetching from endpoint:', endpoint);
+        
+        const response = await axios.get(endpoint);
+        console.log('Profile data:', response.data);
+        
+        setProfile(response.data);
+        setForm({ 
+          name: response.data.name || response.data.user?.name, 
+          email: response.data.email || response.data.user?.email, 
+          phone: response.data.phone || response.data.user?.phone 
+        });
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setFormError(err.response?.data?.message || 'Không thể tải thông tin hồ sơ');
+      }
+    };
+
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
 
   const handleFormChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
   const handleSave = async e => {
     e.preventDefault();
     setFormError(''); setFormSuccess(''); setLoading(true);
+    
     // Validation
     if (!form.email || !form.phone) {
       setFormError('Vui lòng nhập đầy đủ thông tin'); setLoading(false); return;
@@ -39,18 +62,18 @@ export default function Profile() {
     if (!/^\d{9,11}$/.test(form.phone)) {
       setFormError('Số điện thoại không hợp lệ'); setLoading(false); return;
     }
+
     try {
-      const res = await fetch('/user/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email, phone: form.phone })
+      const endpoint = user?.role === 'student' ? '/student/me' : '/organizer/me';
+      const response = await axios.patch(endpoint, { 
+        email: form.email, 
+        phone: form.phone 
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Lỗi cập nhật');
+      
       setFormSuccess('Cập nhật thành công!');
       setProfile({ ...profile, email: form.email, phone: form.phone });
     } catch (err) {
-      setFormError(err.message);
+      setFormError(err.response?.data?.message || 'Lỗi cập nhật');
     } finally {
       setLoading(false);
     }
@@ -58,7 +81,11 @@ export default function Profile() {
 
   // Nút Hủy: hoàn tác lại thay đổi
   const handleCancel = () => {
-    setForm({ name: profile.name, email: profile.email, phone: profile.phone });
+    setForm({ 
+      name: profile.name || profile.user?.name, 
+      email: profile.email || profile.user?.email, 
+      phone: profile.phone || profile.user?.phone 
+    });
     setFormError('');
     setFormSuccess('');
   };
@@ -67,9 +94,11 @@ export default function Profile() {
   const handlePwChange = e => {
     setPwForm({ ...pwForm, [e.target.name]: e.target.value });
   };
+
   const handlePwSubmit = async e => {
     e.preventDefault();
     setPwError(''); setPwSuccess(''); setPwLoading(true);
+    
     if (!pwForm.currentPassword || !pwForm.newPassword || !pwForm.confirmPassword) {
       setPwError('Vui lòng nhập đầy đủ thông tin'); setPwLoading(false); return;
     }
@@ -79,24 +108,20 @@ export default function Profile() {
     if (pwForm.newPassword !== pwForm.confirmPassword) {
       setPwError('Mật khẩu xác nhận không khớp'); setPwLoading(false); return;
     }
+
     try {
-      const res = await fetch('/user/change-password', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pwForm)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Lỗi đổi mật khẩu');
+      const response = await axios.patch('/auth/change-password', pwForm);
       setPwSuccess('Đổi mật khẩu thành công!');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPwMode(false);
     } catch (err) {
-      setPwError(err.message);
+      setPwError(err.response?.data?.message || 'Lỗi đổi mật khẩu');
     } finally {
       setPwLoading(false);
     }
   };
 
+  if (!user) return <div className="p-8">Vui lòng đăng nhập để xem hồ sơ</div>;
   if (!profile) return <div className="p-8">Đang tải hồ sơ...</div>;
 
   return (

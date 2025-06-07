@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png';
+const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg';
 
 export default function StudentHomeMain({ onViewScore }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [point, setPoint] = useState(null);
+  const [studentInfo, setStudentInfo] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,8 +24,14 @@ export default function StudentHomeMain({ onViewScore }) {
   useEffect(() => {
     fetch('/student/me')
       .then(res => res.json())
-      .then(data => setPoint(data.point))
-      .catch(() => setPoint(null));
+      .then(data => {
+        setPoint(data.point);
+        setStudentInfo(data);
+      })
+      .catch(() => {
+        setPoint(null);
+        setStudentInfo(null);
+      });
   }, []);
 
   return (
@@ -66,6 +73,26 @@ export default function StudentHomeMain({ onViewScore }) {
           </div>
         </div>
       </div>
+
+      {/* Personal Information Section */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Thông tin cá nhân</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-gray-600">Mã số sinh viên</p>
+            <p className="font-semibold">{studentInfo?.studentID}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Email</p>
+            <p className="font-semibold">{studentInfo?.email}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Số điện thoại</p>
+            <p className="font-semibold">{studentInfo?.phone || 'Chưa cập nhật'}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Activities Section */}
       <div>
         <h2 className="text-xl font-semibold text-gray-800 mb-6">Quản lý hoạt động của bạn</h2>
@@ -79,12 +106,12 @@ export default function StudentHomeMain({ onViewScore }) {
                 className="bg-white rounded-lg shadow-sm overflow-hidden border"
               >
                 <img
-                  src={act.image || 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png'}
+                  src={act.image || DEFAULT_IMAGE}
                   alt={act.name}
                   className="w-full h-48 object-cover"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png';
+                    e.target.src = DEFAULT_IMAGE;
                   }}
                 />
                 <div className="p-4">

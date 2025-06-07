@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ActivityForm from './ActivityForm';
-import { createClient } from '@supabase/supabase-js';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const API_URL = '/activity';
 const DOMAINS = [
@@ -18,12 +19,7 @@ const statusColors = {
   completed: '#388e3c',
 };
 
-export const supabase = createClient(
-  'https://ncbseidgbxvwwkbicssf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jYnNlaWRnYnh2d3drYmljc3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3ODIyMTUsImV4cCI6MjA2NDM1ODIxNX0.Pjzb6J3fSynCiYViFa1FLyb9v3lYPHmV8txxnwyqetU'
-);
-
-const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//images.png';
+const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg';
 
 function ActivityManager() {
   const [activities, setActivities] = useState([]);
@@ -35,12 +31,10 @@ function ActivityManager() {
 
   const fetchActivities = async () => {
     try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      setActivities(data.activities || []);
+      const res = await axios.get(API_URL);
+      setActivities(res.data.activities || []);
     } catch (error) {
-      setMessage('Không thể tải danh sách hoạt động');
-      setMessageType('error');
+      toast.error('Không thể tải danh sách hoạt động');
     }
   };
 
@@ -56,67 +50,39 @@ function ActivityManager() {
   const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa hoạt động này?')) {
       try {
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-        setMessage('Đã xóa hoạt động thành công!');
-        setMessageType('success');
+        await axios.delete(`${API_URL}/${id}`);
+        toast.success('Xóa hoạt động thành công');
         fetchActivities();
       } catch (error) {
-        setMessage('Không thể xóa hoạt động');
-        setMessageType('error');
+        toast.error('Không thể xóa hoạt động');
       }
     }
   };
 
   const handlePublish = async (id) => {
     try {
-      await fetch(`${API_URL}/${id}/publish`, { method: 'PATCH' });
-      setMessage('Đã xuất bản hoạt động thành công!');
-      setMessageType('success');
+      await axios.patch(`${API_URL}/${id}/publish`);
+      toast.success('Đã xuất bản hoạt động thành công!');
       fetchActivities();
     } catch (error) {
-      setMessage('Không thể xuất bản hoạt động');
-      setMessageType('error');
+      toast.error('Không thể xuất bản hoạt động');
     }
   };
 
   const handleFormSubmit = async (formData) => {
     try {
-      console.log('Submitting form data:', formData); // Debug log
-      let res;
       if (editingId) {
-        res = await fetch(`${API_URL}/${editingId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
-        });
-        setMessage('Đã cập nhật hoạt động thành công!');
+        await axios.put(`${API_URL}/${editingId}`, formData);
+        toast.success('Đã cập nhật hoạt động thành công!');
       } else {
-        res = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
-        });
-        setMessage('Đã tạo hoạt động thành công!');
+        await axios.post(API_URL, formData);
+        toast.success('Đã tạo hoạt động thành công!');
       }
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Network response was not ok');
-      }
-
-      const data = await res.json();
-      setMessageType('success');
       setEditingId(null);
       setEditingActivity(null);
       fetchActivities();
     } catch (error) {
-      console.error('Error submitting form:', error);
-      setMessage(error.message || 'Có lỗi xảy ra khi lưu hoạt động');
-      setMessageType('error');
+      toast.error('Có lỗi xảy ra khi lưu hoạt động');
     }
   };
 

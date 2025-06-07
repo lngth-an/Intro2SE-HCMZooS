@@ -1,5 +1,10 @@
 const db = require('../../models');
 const { Op } = require('sequelize');
+const Activity = db.Activity;
+const User = db.User;
+const Participation = db.Participation;
+const Semester = db.Semester;
+const Organizer = db.Organizer;
 
 class ActivityModel {
     static async createActivity(data) {
@@ -50,6 +55,32 @@ class ActivityModel {
 
     static async countByStatus(organizerID, status) {
         return db.Activity.count({ where: { organizerID, activityStatus: status } });
+    }
+
+    // Get activities by organizer ID with associations
+    static async getActivitiesByOrganizer(organizerID) {
+        try {
+            const activities = await Activity.findAll({
+                where: { organizerID },
+                include: [{
+                    model: Organizer,
+                    as: 'organizer',
+                    include: [{
+                        model: User,
+                        as: 'user',
+                        attributes: ['userID', 'name', 'email']
+                    }]
+                }, {
+                    model: Semester,
+                    as: 'semester',
+                    attributes: ['semesterID', 'semesterName']
+                }],
+            });
+            return activities;
+        } catch (error) {
+            console.error('Error in getActivitiesByOrganizer:', error);
+            throw error;
+        }
     }
 }
 
