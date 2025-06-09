@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { Email, Visibility, Delete } from '@mui/icons-material';
 import Header from "../components/common/Header";
-import SidebarOrganizer from "../components/common/SidebarOrganizer";
+import SidebarStudent from "../components/common/SidebarStudent";
 import Footer from "../components/common/Footer";
 import { Box, CircularProgress } from '@mui/material';
 import { toast } from 'react-toastify';
@@ -80,7 +80,7 @@ const StudentNotifications = () => {
 
       <div className="flex flex-1 pt-16">
         {/* Sidebar */}
-        <SidebarOrganizer />
+        <SidebarStudent />
 
         {/* Main content */}
         <main className="flex-1 flex flex-col ml-64 px-6 py-8 max-w-3xl mx-auto w-full">
@@ -149,8 +149,9 @@ const StudentNotifications = () => {
         </main>
       </div>
 
-      {/* Footer */}
-      <Footer />
+      <div className="ml-64">
+        <Footer />
+      </div>
     </div>
   );
 };

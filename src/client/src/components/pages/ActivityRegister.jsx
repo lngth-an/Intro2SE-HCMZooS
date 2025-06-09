@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import Header from '../common/Header';
+import SidebarStudent from '../common/SidebarStudent';
+import Footer from '../common/Footer';
 
 const DOMAINS = [
   { id: 'academic', label: 'Học thuật' },
@@ -27,7 +30,10 @@ function ActivityRegister() {
     setLoading(true);
     fetch(`/participation/open${domain ? '?domain=' + domain : ''}`)
       .then(res => res.json())
-      .then(data => { setActivities(data.activities || []); setLoading(false); });
+      .then(data => {
+        setActivities(data.activities || []);
+        setLoading(false);
+      });
   }, [domain]);
 
   const handleShowDetail = (activity) => {
@@ -107,81 +113,181 @@ function ActivityRegister() {
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: '40px auto', fontFamily: 'Segoe UI, Arial, sans-serif' }}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 30 }}>Đăng ký hoạt động</h2>
-      <div style={{ marginBottom: 24 }}>
-        <span>Lọc theo lĩnh vực: </span>
-        {DOMAINS.map(d => (
-          <button key={d.id} style={{
-            margin: 4, padding: '6px 14px', borderRadius: 16, border: '1px solid #1976d2',
-            background: domain === d.id ? '#1976d2' : '#fff', color: domain === d.id ? '#fff' : '#1976d2', fontWeight: 500, cursor: 'pointer'
-          }} onClick={() => setDomain(d.id)}>{d.label}</button>
-        ))}
-        <button style={{ margin: 4, padding: '6px 14px', borderRadius: 16, border: '1px solid #bdbdbd', background: !domain ? '#1976d2' : '#fff', color: !domain ? '#fff' : '#1976d2', fontWeight: 500, cursor: 'pointer' }} onClick={() => setDomain('')}>Tất cả</button>
-      </div>
-      {loading ? <div>Đang tải hoạt động...</div> : (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-        {activities.map(a => (
-          <div key={a.activityID} style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #e0e0e0', padding: 24, minWidth: 320, maxWidth: 350, flex: '1 1 320px', marginBottom: 16 }}>
-            <div style={{ fontWeight: 600, fontSize: 18, color: '#1976d2' }}>{a.name}</div>
-            <div style={{ color: '#555', fontSize: 15, marginBottom: 4 }}><b>Date:</b> {a.eventStart ? new Date(a.eventStart).toLocaleString() : ''}</div>
-            <div style={{ color: '#555', fontSize: 15, marginBottom: 4 }}><b>Location:</b> {a.location}</div>
-            <div style={{ color: '#555', fontSize: 15, marginBottom: 4 }}><b>Lĩnh vực:</b> {a.type}</div>
-            <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, marginTop: 8, cursor: 'pointer' }} onClick={() => handleShowDetail(a)}>Xem chi tiết</button>
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <Header />
+
+      <div className="flex flex-1">
+        {/* SidebarStudent */}
+        <aside className="fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-md overflow-auto">
+          <SidebarStudent />
+        </aside>
+
+        {/* Main Content */}
+        <main className="ml-64 flex-1 p-8 max-w-5xl mx-auto w-full">
+          <h2 className="text-center text-3xl font-bold text-blue-700 mb-8">Đăng ký hoạt động</h2>
+
+          {/* Lọc lĩnh vực */}
+          <div className="mb-6 flex flex-wrap justify-center gap-3">
+            {DOMAINS.map(d => (
+              <button
+                key={d.id}
+                onClick={() => setDomain(d.id)}
+                className={`px-5 py-2 rounded-full border font-semibold transition ${
+                  domain === d.id
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-blue-600 border-blue-600 hover:bg-blue-100'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+            <button
+              onClick={() => setDomain('')}
+              className={`px-5 py-2 rounded-full border font-semibold transition ${
+                !domain
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-blue-600 border-gray-400 hover:bg-blue-100'
+              }`}
+            >
+              Tất cả
+            </button>
           </div>
-        ))}
-      </div>
-      )}
-      {/* Chi tiết hoạt động */}
-      {showDetail && selected && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px #bdbdbd', padding: 32, minWidth: 350, maxWidth: 500, position: 'relative' }}>
-            <button onClick={handleCloseDetail} style={{ position: 'absolute', top: 12, right: 12, background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>×</button>
-            <h2 style={{ color: '#1976d2', fontWeight: 700, fontSize: 22 }}>{selected.name}</h2>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Mô tả:</b> {selected.description}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Thời gian:</b> {selected.eventStart ? new Date(selected.eventStart).toLocaleString() : ''} - {selected.eventEnd ? new Date(selected.eventEnd).toLocaleString() : ''}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Địa điểm:</b> {selected.location}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Lĩnh vực:</b> {selected.type}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Số lượng tối đa:</b> {selected.capacity || 'Không giới hạn'}</div>
-            <div style={{ color: '#555', margin: '8px 0' }}><b>Trạng thái:</b> {selected.activityStatus}</div>
-            {/* Nút đăng ký */}
-            {!showForm && !success && (
-              <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 28px', fontWeight: 600, fontSize: 16, marginTop: 18, cursor: 'pointer' }} onClick={() => handleRegister(selected)}>Đăng ký</button>
-            )}
-            {/* Form đăng ký */}
-            {showForm && (
-              <form onSubmit={handleFormSubmit} style={{ background: '#f5f5f5', borderRadius: 8, padding: 18, marginTop: 18 }}>
-                <div>
-                  <label>Ghi chú</label>
-                  <textarea name="note" value={form.note} onChange={handleFormChange} style={{ width: '100%', marginBottom: 8, padding: 8, borderRadius: 6, border: '1px solid #bdbdbd' }} />
+
+          {loading ? (
+            <div className="text-center text-gray-600">Đang tải hoạt động...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {activities.length === 0 && (
+                <div className="col-span-full text-center text-gray-500">Không có hoạt động phù hợp</div>
+              )}
+              {activities.map(a => (
+                <div
+                  key={a.activityID}
+                  className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between"
+                >
+                  <div>
+                    <h3 className="text-blue-700 font-semibold text-xl mb-2">{a.name}</h3>
+                    <p className="text-gray-600 text-sm mb-1"><b>Thời gian:</b> {a.eventStart ? new Date(a.eventStart).toLocaleString() : ''}</p>
+                    <p className="text-gray-600 text-sm mb-1"><b>Địa điểm:</b> {a.location}</p>
+                    <p className="text-gray-600 text-sm mb-1"><b>Lĩnh vực:</b> {a.type}</p>
+                  </div>
+                  <button
+                    onClick={() => handleShowDetail(a)}
+                    className="mt-4 bg-blue-600 text-white rounded-lg py-2 font-semibold hover:bg-blue-700 transition"
+                  >
+                    Xem chi tiết
+                  </button>
                 </div>
-                <button type="submit" style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, marginTop: 8, cursor: 'pointer' }}>Gửi đăng ký</button>
-                <button type="button" style={{ background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, marginTop: 8, marginLeft: 8, cursor: 'pointer' }} onClick={() => setShowForm(false)}>Hủy</button>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-auto bg-gray-100 py-6">
+        <div className="max-w-5xl mx-auto px-4">
+          <Footer />
+        </div>
+      </footer>
+
+      {/* Modal chi tiết hoạt động */}
+      {showDetail && selected && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full relative overflow-auto max-h-[90vh]">
+            <button
+              onClick={handleCloseDetail}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold leading-none"
+              aria-label="Đóng"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold text-blue-700 mb-4">{selected.name}</h2>
+            <p className="mb-3 text-gray-700"><b>Mô tả:</b> {selected.description}</p>
+            <p className="mb-2 text-gray-700">
+              <b>Thời gian:</b> {selected.eventStart ? new Date(selected.eventStart).toLocaleString() : ''} - {selected.eventEnd ? new Date(selected.eventEnd).toLocaleString() : ''}
+            </p>
+            <p className="mb-2 text-gray-700"><b>Địa điểm:</b> {selected.location}</p>
+            <p className="mb-2 text-gray-700"><b>Lĩnh vực:</b> {selected.type}</p>
+            <p className="mb-2 text-gray-700"><b>Số lượng tối đa:</b> {selected.capacity || 'Không giới hạn'}</p>
+            <p className="mb-2 text-gray-700"><b>Trạng thái:</b> {selected.activityStatus}</p>
+
+            {!showForm && !success && (
+              <button
+                onClick={() => handleRegister(selected)}
+                className="mt-6 bg-blue-600 text-white rounded-lg py-2 font-semibold w-full hover:bg-blue-700 transition"
+              >
+                Đăng ký
+              </button>
+            )}
+
+            {showForm && (
+              <form onSubmit={handleFormSubmit} className="mt-6 bg-gray-50 p-4 rounded-md">
+                <label htmlFor="note" className="block font-semibold mb-2">Ghi chú (nếu có):</label>
+                <textarea
+                  id="note"
+                  name="note"
+                  rows={3}
+                  value={form.note}
+                  onChange={handleFormChange}
+                  className="w-full rounded-md border border-gray-300 p-2 mb-4"
+                />
+
+                {error && <p className="text-red-600 mb-3">{error}</p>}
+
+                {!confirm && (
+                  <button
+                    type="submit"
+                    className="bg-green-600 text-white rounded-lg py-2 font-semibold w-full hover:bg-green-700 transition"
+                  >
+                    Gửi đăng ký
+                  </button>
+                )}
+                {confirm && (
+                  <>
+                    <p className="mb-3 text-green-700 font-semibold">Bạn có chắc chắn muốn xác nhận đăng ký này không?</p>
+                    <button
+                      type="button"
+                      onClick={handleConfirm}
+                      className="bg-blue-600 text-white rounded-lg py-2 font-semibold w-full hover:bg-blue-700 transition"
+                    >
+                      Xác nhận đăng ký
+                    </button>
+                  </>
+                )}
               </form>
             )}
-            {/* Xác nhận đăng ký */}
-            {confirm && (
-              <div style={{ background: '#fffde7', border: '1px solid #ffe082', borderRadius: 8, padding: 18, marginTop: 18, textAlign: 'center' }}>
-                <div>Bạn xác nhận gửi đăng ký tham gia hoạt động này?</div>
-                <button style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, margin: 8, cursor: 'pointer' }} onClick={handleConfirm}>Xác nhận</button>
-                <button style={{ background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, margin: 8, cursor: 'pointer' }} onClick={() => setConfirm(false)}>Hủy</button>
-              </div>
+
+            {success && (
+              <p className="mt-6 text-green-700 font-semibold text-center">{success}</p>
             )}
-            {/* Thông báo lỗi/thành công */}
-            {error && <div style={{ color: '#d32f2f', marginTop: 12 }}>{error}</div>}
-            {success && <div style={{ color: '#388e3c', marginTop: 18, textAlign: 'center', fontWeight: 600 }}>{success}</div>}
-            {/* Gợi ý hoạt động tương tự */}
+
+            {error && !showForm && <p className="mt-4 text-red-600 font-semibold">{error}</p>}
+
+            {/* Gợi ý hoạt động khác nếu có */}
             {suggested.length > 0 && (
-              <div style={{ marginTop: 18 }}>
-                <b>Hoạt động cùng lĩnh vực:</b>
-                <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-                  {suggested.map(a => (
-                    <div key={a.activityID} style={{ background: '#f5f5f5', borderRadius: 8, padding: 12 }}>
-                      <div style={{ fontWeight: 500 }}>{a.name}</div>
-                      <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontWeight: 500, marginTop: 4, cursor: 'pointer' }} onClick={() => { handleCloseDetail(); handleShowDetail(a); }}>Xem chi tiết</button>
-                    </div>
+              <div className="mt-6 border-t pt-4">
+                <h3 className="text-lg font-semibold mb-3 text-blue-700">Hoạt động đề xuất cùng lĩnh vực</h3>
+                <ul className="list-disc pl-5 space-y-2 max-h-40 overflow-auto">
+                  {suggested.map(act => (
+                    <li key={act.activityID}>
+                      <button
+                        className="text-blue-600 underline hover:text-blue-800"
+                        onClick={() => {
+                          setSelected(act);
+                          setShowForm(false);
+                          setError('');
+                          setSuccess('');
+                          setConfirm(false);
+                          setSuggested([]);
+                        }}
+                      >
+                        {act.name}
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
           </div>
@@ -191,4 +297,4 @@ function ActivityRegister() {
   );
 }
 
-export default ActivityRegister; 
+export default ActivityRegister;
