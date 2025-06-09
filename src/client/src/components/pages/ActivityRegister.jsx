@@ -12,18 +12,20 @@ const DOMAINS = [
   { id: 'other', label: 'Khác' },
 ];
 
+const SORT_OPTIONS = [
+  { id: 'eventStartAsc', label: 'Ngày diễn ra (tăng dần)' },
+  { id: 'eventStartDesc', label: 'Ngày diễn ra (giảm dần)' },
+  { id: 'registerStartAsc', label: 'Ngày mở đăng ký (tăng dần)' },
+  { id: 'registerStartDesc', label: 'Ngày mở đăng ký (giảm dần)' },
+];
+
 function ActivityRegister() {
   const [activities, setActivities] = useState([]);
   const [domain, setDomain] = useState('');
+  const [sortBy, setSortBy] = useState('');
   const [selected, setSelected] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ note: '' });
-  const [error, setError] = useState('');
-  const [confirm, setConfirm] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [suggested, setSuggested] = useState([]);
-  const [participationID, setParticipationID] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -39,129 +41,85 @@ function ActivityRegister() {
   const handleShowDetail = (activity) => {
     setSelected(activity);
     setShowDetail(true);
-    setShowForm(false);
-    setError('');
-    setSuccess('');
-    setConfirm(false);
-    setSuggested([]);
   };
 
   const handleCloseDetail = () => {
-    setShowDetail(false);
     setSelected(null);
-    setShowForm(false);
-    setError('');
-    setSuccess('');
-    setConfirm(false);
-    setSuggested([]);
+    setShowDetail(false);
   };
 
-  const handleRegister = (activity) => {
-    fetch(`/participation/check-eligibility/${activity.activityID}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.eligible) {
-          setShowForm(true);
-          setError('');
-        } else {
-          setError(data.reason || 'Bạn không đủ điều kiện đăng ký hoạt động này');
-          // Gợi ý hoạt động cùng lĩnh vực
-          fetch(`/participation/suggest?domain=${activity.type}`)
-            .then(res => res.json())
-            .then(data => setSuggested(data.activities || []));
-        }
-      });
-  };
-
-  const handleFormChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleFormSubmit = e => {
-    e.preventDefault();
-    setError('');
-    fetch('/participation/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ activityID: selected.activityID, note: form.note }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) setError(data.error);
-        else {
-          setParticipationID(data.participation.participationID);
-          setConfirm(true);
-        }
-      });
-  };
-
-  const handleConfirm = () => {
-    fetch('/participation/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ participationID }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) setError(data.error);
-        else {
-          setSuccess('Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức.');
-          setShowForm(false);
-          setParticipationID(null);
-        }
-      });
-  };
+  const filteredActivities = activities
+    .filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      const getTime = (val) => val ? new Date(val).getTime() : 0;
+      switch (sortBy) {
+        case 'eventStartAsc':
+          return getTime(a.eventStart) - getTime(b.eventStart);
+        case 'eventStartDesc':
+          return getTime(b.eventStart) - getTime(a.eventStart);
+        case 'registerStartAsc':
+          return getTime(a.registerStart) - getTime(b.registerStart);
+        case 'registerStartDesc':
+          return getTime(b.registerStart) - getTime(a.registerStart);
+        default:
+          return 0;
+      }
+    });
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
       <Header />
-
       <div className="flex flex-1">
-        {/* SidebarStudent */}
         <aside className="fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-md overflow-auto">
           <SidebarStudent />
         </aside>
 
-        {/* Main Content */}
         <main className="ml-64 flex-1 p-8 max-w-5xl mx-auto w-full">
           <h2 className="text-center text-3xl font-bold text-blue-700 mb-8">Đăng ký hoạt động</h2>
 
-          {/* Lọc lĩnh vực */}
-          <div className="mb-6 flex flex-wrap justify-center gap-3">
-            {DOMAINS.map(d => (
-              <button
-                key={d.id}
-                onClick={() => setDomain(d.id)}
-                className={`px-5 py-2 rounded-full border font-semibold transition ${
-                  domain === d.id
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-blue-600 border-blue-600 hover:bg-blue-100'
-                }`}
-              >
-                {d.label}
-              </button>
-            ))}
-            <button
-              onClick={() => setDomain('')}
-              className={`px-5 py-2 rounded-full border font-semibold transition ${
-                !domain
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-blue-600 border-gray-400 hover:bg-blue-100'
-              }`}
+          {/* Lọc và sắp xếp */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tên hoạt động..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="p-2 border border-gray-300 rounded-md w-full"
+            />
+            
+            <select
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              className="p-2 border border-gray-300 rounded-md w-full"
             >
-              Tất cả
-            </button>
+              <option value="">Tất cả lĩnh vực</option>
+              {DOMAINS.map(d => (
+                <option key={d.id} value={d.id}>{d.label}</option>
+              ))}
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="p-2 border border-gray-300 rounded-md w-full"
+            >
+              <option value="">Sắp xếp theo</option>
+              {SORT_OPTIONS.map(o => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+            </select>
+
+            
           </div>
 
           {loading ? (
             <div className="text-center text-gray-600">Đang tải hoạt động...</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {activities.length === 0 && (
+              {filteredActivities.length === 0 && (
                 <div className="col-span-full text-center text-gray-500">Không có hoạt động phù hợp</div>
               )}
-              {activities.map(a => (
+              {filteredActivities.map(a => (
                 <div
                   key={a.activityID}
                   className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between"
@@ -185,14 +143,12 @@ function ActivityRegister() {
         </main>
       </div>
 
-      {/* Footer */}
       <footer className="mt-auto bg-gray-100 py-6">
         <div className="max-w-5xl mx-auto px-4">
           <Footer />
         </div>
       </footer>
 
-      {/* Modal chi tiết hoạt động */}
       {showDetail && selected && (
         <div className="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full relative overflow-auto max-h-[90vh]">
@@ -212,84 +168,6 @@ function ActivityRegister() {
             <p className="mb-2 text-gray-700"><b>Lĩnh vực:</b> {selected.type}</p>
             <p className="mb-2 text-gray-700"><b>Số lượng tối đa:</b> {selected.capacity || 'Không giới hạn'}</p>
             <p className="mb-2 text-gray-700"><b>Trạng thái:</b> {selected.activityStatus}</p>
-
-            {!showForm && !success && (
-              <button
-                onClick={() => handleRegister(selected)}
-                className="mt-6 bg-blue-600 text-white rounded-lg py-2 font-semibold w-full hover:bg-blue-700 transition"
-              >
-                Đăng ký
-              </button>
-            )}
-
-            {showForm && (
-              <form onSubmit={handleFormSubmit} className="mt-6 bg-gray-50 p-4 rounded-md">
-                <label htmlFor="note" className="block font-semibold mb-2">Ghi chú (nếu có):</label>
-                <textarea
-                  id="note"
-                  name="note"
-                  rows={3}
-                  value={form.note}
-                  onChange={handleFormChange}
-                  className="w-full rounded-md border border-gray-300 p-2 mb-4"
-                />
-
-                {error && <p className="text-red-600 mb-3">{error}</p>}
-
-                {!confirm && (
-                  <button
-                    type="submit"
-                    className="bg-green-600 text-white rounded-lg py-2 font-semibold w-full hover:bg-green-700 transition"
-                  >
-                    Gửi đăng ký
-                  </button>
-                )}
-                {confirm && (
-                  <>
-                    <p className="mb-3 text-green-700 font-semibold">Bạn có chắc chắn muốn xác nhận đăng ký này không?</p>
-                    <button
-                      type="button"
-                      onClick={handleConfirm}
-                      className="bg-blue-600 text-white rounded-lg py-2 font-semibold w-full hover:bg-blue-700 transition"
-                    >
-                      Xác nhận đăng ký
-                    </button>
-                  </>
-                )}
-              </form>
-            )}
-
-            {success && (
-              <p className="mt-6 text-green-700 font-semibold text-center">{success}</p>
-            )}
-
-            {error && !showForm && <p className="mt-4 text-red-600 font-semibold">{error}</p>}
-
-            {/* Gợi ý hoạt động khác nếu có */}
-            {suggested.length > 0 && (
-              <div className="mt-6 border-t pt-4">
-                <h3 className="text-lg font-semibold mb-3 text-blue-700">Hoạt động đề xuất cùng lĩnh vực</h3>
-                <ul className="list-disc pl-5 space-y-2 max-h-40 overflow-auto">
-                  {suggested.map(act => (
-                    <li key={act.activityID}>
-                      <button
-                        className="text-blue-600 underline hover:text-blue-800"
-                        onClick={() => {
-                          setSelected(act);
-                          setShowForm(false);
-                          setError('');
-                          setSuccess('');
-                          setConfirm(false);
-                          setSuggested([]);
-                        }}
-                      >
-                        {act.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         </div>
       )}
