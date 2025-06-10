@@ -18,7 +18,7 @@ import Profile from "./pages/Profile";
 
 // Organizer pages
 import OrganizerHome from "./pages/OrganizerHome";
-import OrganizerManageActivity from "./pages/OganizerManageActivity";
+import OrganizerManageActivity from "./pages/OrganizerManageActivity";
 import ActivityDetail from "./components/pages/ActivityDetail";
 import OrganizerNotifications from "./pages/OrganizerNotifications";
 import OrganizerComplaints from "./pages/OrganizerComplaints";
