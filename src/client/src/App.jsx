@@ -14,12 +14,14 @@ import StudentActivities from './components/pages/StudentActivities';
 import StudentScore from './components/pages/StudentScore';
 import ActivityRegister from './components/pages/ActivityRegister';
 import StudentNotifications from './pages/StudentNotifications';
+import Profile from './pages/Profile';
 
 // Organizer pages
 import OrganizerHome from './pages/OrganizerHome';
 import OrganizerManageActivity from './pages/OganizerManageActivity';
 import ActivityDetail from './components/pages/ActivityDetail';
 import OrganizerNotifications from './pages/OrganizerNotifications';
+import OrganizerComplaints from './pages/OrganizerComplaints';
 
 // Protected Route component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -99,7 +101,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <ToastContainer />
-    <Routes>
+        <Routes>
           {/* Public routes */}
           <Route 
             path="/login" 
@@ -159,6 +161,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/student/profile"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Organizer routes */}
           <Route
@@ -193,13 +203,29 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/organizer/complaints"
+            element={
+              <ProtectedRoute allowedRoles={['organizer']}>
+                <OrganizerComplaints />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/organizer/profile"
+            element={
+              <ProtectedRoute allowedRoles={['organizer']}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Root route */}
-          <Route path="/" element={<RootRoute />} />
+          {/* Root route - Always redirect to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
       </BrowserRouter>
     </AuthProvider>
   );

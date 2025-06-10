@@ -1,4 +1,6 @@
 // config/database.js
+const fs = require('fs');
+const path = require('path');
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
@@ -10,6 +12,12 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        ca: fs.readFileSync(path.resolve(__dirname, '..', process.env.DB_SSL_CA)).toString(),
+        rejectUnauthorized: true,
+      },
+    },
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
   }
 );

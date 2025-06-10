@@ -1,8 +1,9 @@
 const ActivityModel = require('./activityModel');
 const db = require('../../models');
+const { Op, sequelize } = require('sequelize');
 
 class ActivityController {
-    // Helper: Get organizerID from req.user.id
+    // Helper: Get organizerID from req.user.userID
     static async getOrganizerID(userID) {
         const organizer = await db.Organizer.findOne({ where: { userID } });
         return organizer ? organizer.organizerID : null;
@@ -253,6 +254,281 @@ class ActivityController {
             res.status(500).json({ message: 'Error fetching organizer activities.' });
         }
     }
+
+    // Lấy danh sách đăng ký/tham gia cho organizer
+    static async getRegistrations(req, res) {
+        try {
+            const { activityID } = req.params;
+            let { status, search, sort = 'createdAt', order = 'asc' } = req.query;
+            // Kiểm tra quyền sở hữu
+            const activity = await db.Activity.findByPk(activityID);
+            if (!activity) return res.status(404).json({ message: 'Activity not found' });
+            if (req.user.role !== 'organizer' || activity.organizerID !== await ActivityController.getOrganizerID(req.user.userID)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+            // Build where clause
+            const where = { activityID };
+            if (status) where.participationStatus = status;
+            // Join student + user
+            const include = [{
+                model: db.Student,
+                as: 'student',
+                include: [{ model: db.User, as: 'user', attributes: ['name'] }]
+            }];
+            if (search) {
+                include[0].where = {
+                    [db.Sequelize.Op.or]: [
+                        { studentID: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+                        { '$student.user.name$': { [db.Sequelize.Op.iLike]: `%${search}%` } }
+                    ]
+                };
+            }
+            // Nếu sort là createdAt (không cột này), đổi thành participationID
+            if (sort === 'createdAt') sort = 'participationID';
+            const regs = await db.Participation.findAll({
+                where,
+                include,
+                order: [[sort, order]],
+            });
+            res.json({ registrations: regs.map(p => ({
+                participationID: p.participationID,
+                studentID: p.studentID,
+                studentName: p.student?.user?.name,
+                academicYear: p.student?.academicYear,
+                faculty: p.student?.falculty,
+                status: p.participationStatus,
+                registrationTime: p.createdAt,
+            })) });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: 'Error fetching registrations' });
+        }
+    }
+
+    // Duyệt hoặc từ chối đăng ký (bulk)
+    static async approveRegistrations(req, res) {
+        try {
+            const { activityID } = req.params;
+            const { participationIDs, action } = req.body; // action: 'approve' | 'reject' | 'pending'
+            // Kiểm tra quyền sở hữu
+            const activity = await db.Activity.findByPk(activityID);
+            if (!activity) return res.status(404).json({ message: 'Activity not found' });
+            if (req.user.role !== 'organizer' || activity.organizerID !== await ActivityController.getOrganizerID(req.user.userID)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+            // Lọc các participationID hợp lệ theo action
+            const participations = await db.Participation.findAll({
+                where: { activityID, participationID: participationIDs }
+            });
+            let idsToUpdate = [];
+            if (action === 'approve') {
+                idsToUpdate = participations.filter(p => p.participationStatus !== 'approved').map(p => p.participationID);
+            } else if (action === 'pending') {
+                idsToUpdate = participations.filter(p => p.participationStatus === 'approved').map(p => p.participationID);
+            } else if (action === 'reject') {
+                idsToUpdate = participationIDs;
+            }
+            if (idsToUpdate.length > 0) {
+                await db.Participation.update(
+                    { participationStatus: action === 'approve' ? 'approved' : action === 'pending' ? 'pending' : 'rejected' },
+                    { where: { activityID, participationID: idsToUpdate } }
+                );
+            }
+            // TODO: Gửi notification cho sinh viên
+            res.json({ success: true, updated: idsToUpdate.length });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: 'Error approving registrations' });
+        }
+    }
+
+    // Xác nhận tham gia (bulk)
+    static async confirmAttendance(req, res) {
+        try {
+            const { activityID } = req.params;
+            const { participationIDs, status } = req.body; // status: 'present' | 'absent'
+            // Kiểm tra quyền sở hữu
+            const activity = await db.Activity.findByPk(activityID);
+            if (!activity) return res.status(404).json({ message: 'Activity not found' });
+            if (req.user.role !== 'organizer' || activity.organizerID !== await ActivityController.getOrganizerID(req.user.userID)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+            await db.Participation.update(
+                { participationStatus: status },
+                { where: { activityID, participationID: participationIDs } }
+            );
+            // TODO: Cập nhật điểm rèn luyện nếu cần
+            res.json({ success: true });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: 'Error confirming attendance' });
+        }
+    }
+
+    // PATCH /activity/:activityID/training-point
+    static async updateTrainingPoint(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+            const { activityID } = req.params;
+            const { participationID, newPoint, reason } = req.body;
+            console.log('updateTrainingPoint req.body:', req.body);
+            if (!participationID || isNaN(newPoint) || !reason || !reason.trim()) {
+                return res.status(400).json({ message: 'Missing or invalid input.' });
+            }
+            if (newPoint < 0 || newPoint > 100) {
+                return res.status(400).json({ message: 'Training point must be between 0 and 100.' });
+            }
+            // Tìm participation chỉ theo participationID
+            const participation = await db.Participation.findOne({ where: { participationID } });
+            if (!participation) return res.status(404).json({ message: 'Participation not found.' });
+
+            const activity = await db.Activity.findOne({ where: { activityID: participation.activityID, organizerID: req.user.organizerID } });
+            if (!activity) return res.status(403).json({ message: 'You do not manage this activity.' });
+            
+            // Check deadline (eventEnd + 7 days)
+            const deadline = new Date(activity.eventEnd);
+            deadline.setDate(deadline.getDate() + 7);
+            if (new Date() > deadline) {
+                return res.status(400).json({ message: 'Cannot update after deadline.' });
+            }
+            // Cập nhật điểm
+            participation.trainingPoint = newPoint;
+            await participation.save();
+            res.json({ message: 'Training point updated successfully.' });
+        } catch (err) {
+            console.error('Error in updateTrainingPoint:', err);
+            res.status(500).json({ message: 'Error updating training point.' });
+        }
+    }
+
+
+/* ------------------------------------------------------------------
+   GET /api/activities/manage  - dành cho organizer
+-------------------------------------------------------------------*/
+static searchActivitiesForOrganizers = async (req, res) => {
+  try {
+    /* ----------- Đọc query params ---------------- */
+    const {
+      q = '',                   // từ khoá
+      status,                   // activityStatus
+      dateRange,                // registrationStart trong khoảng
+      isApproved,               // a.isApproved  (boolean/0/1)
+      sortBy  = 'registrationStart', // cột sắp xếp
+      sortOrder = 'desc',       // asc | desc
+      page = 1,
+      limit = 10
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    /* ----------- Xây WHERE động + mảng values[] -- */
+    const conditions = [];
+    const values = [];
+    let idx = 1;
+
+    /* Lọc theo organizer hiện tại
+          activities.organizerID -> organizers.organizerID -> organizers.userID */
+    conditions.push(`o.userID = $${idx}`);
+    values.push(req.user.userID);
+    idx++;
+
+    /* Từ khoá */
+    if (q) {
+      conditions.push(`a.name ILIKE $${idx}`);
+      values.push(`%${q}%`);
+      idx++;
+    }
+
+    /*  Trạng thái activity */
+    if (status) {
+      conditions.push(`a.activityStatus = $${idx}`);
+      values.push(status);
+      idx++;
+    }
+
+    /* Khoảng thời gian */
+    if (dateRange) {
+      const [startDate, endDate] = dateRange.split(',');
+      conditions.push(`a.registrationStart >= $${idx}`);
+      values.push(startDate);
+      idx++;
+      conditions.push(`a.registrationStart <= $${idx}`);
+      values.push(endDate);
+      idx++;
+    }
+
+    /* Trạng thái duyệt */
+    if (isApproved !== undefined) {
+      conditions.push(`a.isApproved = $${idx}`);
+      values.push(isApproved === 'true');
+      idx++;
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    /* ----------- Tham số sort, limit, offset ------ */
+    const sortByParam = idx;
+    values.push(sortBy);               // $idx = sortBy
+    idx++;
+
+    const limitParam  = idx;
+    const offsetParam = idx + 1;
+    values.push(limit);                // $limitParam
+    values.push(offset);               // $offsetParam
+
+    /* ----------------- Query chính ---------------- */
+    const query = `
+      SELECT
+        a.*,
+        COUNT(p.participationID) AS registrationCount,
+        COUNT(CASE WHEN p.participationStatus = 'approved' THEN 1 END) AS approvedCount
+      FROM activities a
+      JOIN organizers       o ON a."organizerID" = o."organizerID"
+      LEFT JOIN participations p ON a."activityID" = p."activityID"
+      ${whereClause}
+      GROUP BY a."activityID"
+      ORDER BY
+        CASE
+          WHEN $${sortByParam} = 'registrationStart' THEN a."registrationStart"
+          WHEN $${sortByParam} = 'registrations'     THEN COUNT(p.participationID)
+          ELSE a."registrationStart"
+        END ${sortOrder}
+      LIMIT  $${limitParam}
+      OFFSET $${offsetParam};
+    `;
+
+    const result = await pool.query(query, values);
+
+    /* -------------- Đếm tổng số activity ---------- */
+    const countQuery = `
+      SELECT COUNT(DISTINCT a.activityID) AS count
+      FROM activities a
+      JOIN organizers o ON a."organizerID" = o."organizerID"
+      LEFT JOIN participations p ON a."activityID" = p."activityID"
+      ${whereClause};
+    `;
+    const countValues = values.slice(0, idx - 3);      // bỏ sortBy/limit/offset
+    const countRes = await pool.query(countQuery, countValues);
+
+    /* ----------------- Response ------------------- */
+    res.json({
+      activities : result.rows,
+      total      : parseInt(countRes.rows[0].count, 10),
+      page       : parseInt(page, 10),
+      limit      : parseInt(limit, 10)
+    });
+  } catch (error) {
+    console.error('Error searching activities:', error);
+    res.status(500).json({
+      success : false,
+      message : 'Lỗi khi tìm kiếm hoạt động',
+      error   : error.message
+    });
+  }
+}
+
 }
 
 module.exports = ActivityController;

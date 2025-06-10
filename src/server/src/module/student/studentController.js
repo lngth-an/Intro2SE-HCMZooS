@@ -1,10 +1,13 @@
 const { getStudentByUserID } = require('./studentModel');
 const db = require('../../models');
-const Student = db.Student;
 const Activity = db.Activity;
+const Organizer = db.Organizer;
+const User = db.User;
+const Student = db.Student;
 const Participation = db.Participation;
-const { Op } = require('sequelize');
-const { User } = require('../../models');
+const Semester = db.Semester;
+const { Op, Sequelize } = require('sequelize');
+const pool = require('../../config/database');
 
 class StudentController {
   // GET /student/me
@@ -50,7 +53,7 @@ class StudentController {
     }
   }
 
-  // GET /student/activities?semesterID=...&allStatus=true
+  // GET /student/activities?semesterID=...&allStatus=true  Lấy lịch sử hoạt động đã tham gia hoặc tất cả trạng thái
   static async getActivities(req, res) {
     try {
       const studentID = req.user.studentID;
@@ -136,6 +139,114 @@ class StudentController {
     } catch (error) {
       console.error('Error getting student stats:', error);
       res.status(500).json({ message: 'Lỗi server khi thống kê' });
+    }
+  }
+
+  // --- Search Activities ---
+  static async searchActivities(req, res) {
+    try {
+      const {
+        search,
+        organizerName,
+        minRegistrations,
+        maxRegistrations,
+        startDate,
+        endDate,
+        domain,
+        sortBy = 'registrationStart',
+        sortOrder = 'DESC',
+        page = 1,
+        limit = 10
+      } = req.query;
+
+      const offset = (page - 1) * limit;
+
+      // Build where conditions
+      const whereConditions = {
+        activityStatus: 'published'
+      };
+
+      if (search) {
+        whereConditions.name = {
+          [Op.iLike]: `%${search}%`
+        };
+      }
+
+      if (domain) {
+        whereConditions.type = domain;
+      }
+
+      if (startDate) {
+        whereConditions.eventStart = {
+          [Op.gte]: startDate
+        };
+      }
+
+      if (endDate) {
+        whereConditions.eventEnd = {
+          [Op.lte]: endDate
+        };
+      }
+
+      // Build participation conditions
+      const participationWhere = {};
+      if (minRegistrations || maxRegistrations) {
+        participationWhere[Op.and] = [];
+        if (minRegistrations) {
+          participationWhere[Op.and].push(Sequelize.literal(`(SELECT COUNT(*) FROM "participations" WHERE "activityID" = "Activity"."activityID") >= ${minRegistrations}`));
+        }
+        if (maxRegistrations) {
+          participationWhere[Op.and].push(Sequelize.literal(`(SELECT COUNT(*) FROM "participations" WHERE "activityID" = "Activity"."activityID") <= ${maxRegistrations}`));
+        }
+      }
+
+      // Execute query
+      const { rows: activities, count } = await Activity.findAndCountAll({
+        where: {
+          ...whereConditions,
+          ...participationWhere
+        },
+        include: [
+          {
+            model: Organizer,
+            as: 'organizer',
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['userID', 'name', 'email', 'phone'],
+                where: organizerName ? {
+                  name: {
+                    [Op.iLike]: `%${organizerName}%`
+                  }
+                } : undefined
+              }
+            ]
+          },
+          {
+            model: Participation,
+            as: 'participations',
+            attributes: ['participationID']
+          }
+        ],
+        order: [[sortBy, sortOrder]],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        distinct: true
+      });
+
+      res.json({
+        activities,
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(count / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Error in searchActivities:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 }

@@ -359,14 +359,11 @@ class NotificationController {
         }
     }
 
-    // GET /notifications/unread-count?userID=xxx
+    // GET /notifications/unread-count
     static async getUnreadCount(req, res) {
         try {
-            const { userID } = req.query;
-            if (!userID) {
-                return res.status(400).json({ message: 'Thiếu userID' });
-            }
-
+            const userID = req.user.userID;
+            
             const count = await Notification.count({
                 where: {
                     toUserID: userID,
@@ -374,10 +371,13 @@ class NotificationController {
                 }
             });
 
-            res.json({ unreadCount: count });
+            res.json({ count });
         } catch (error) {
             console.error('Error getting unread count:', error);
-            res.status(500).json({ message: 'Lỗi server khi đếm thông báo chưa đọc' });
+            res.status(500).json({ 
+                message: 'Lỗi server khi lấy số lượng thông báo chưa đọc',
+                error: error.message 
+            });
         }
     }
 }

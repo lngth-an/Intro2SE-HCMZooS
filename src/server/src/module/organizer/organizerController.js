@@ -3,9 +3,11 @@ const Activity = db.Activity;
 const Organizer = db.Organizer;
 const Participation = db.Participation;
 const { Op } = require('sequelize');
+const { getOrganizerByUserID } = require('./organizerModel');
+const User = db.User;
 
 // Get organizer statistics
-exports.getStats = async (req, res) => {
+const getStats = async (req, res) => {
   try {
     const userID = req.user.userID;
 
@@ -74,4 +76,63 @@ exports.getStats = async (req, res) => {
     console.error('Error getting organizer stats:', error);
     res.status(500).json({ message: 'Lỗi server khi thống kê' });
   }
+};
+
+// GET /organizer/me
+const getMe = async (req, res) => {
+  try {
+    const userID = req.user.userID;
+    const organizer = await getOrganizerByUserID(userID);
+    if (!organizer) return res.status(404).json({ message: 'Organizer not found' });
+    
+    res.json({
+      organizerID: organizer.organizerID,
+      userID: organizer.userID,
+      name: organizer.user?.name,
+      email: organizer.user?.email,
+      username: organizer.user?.username,
+      phone: organizer.user?.phone,
+      department: organizer.department,
+      position: organizer.position
+    });
+  } catch (err) {
+    console.error('Lỗi /organizer/me:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// PATCH /organizer/me
+const updateMe = async (req, res) => {
+  try {
+    const userID = req.user.userID;
+    const { email, phone } = req.body;
+
+    // Validation
+    if (!email || !phone) {
+      return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ message: 'Email không hợp lệ' });
+    }
+    if (!/^\d{9,11}$/.test(phone)) {
+      return res.status(400).json({ message: 'Số điện thoại không hợp lệ' });
+    }
+
+    // Update user info
+    await User.update(
+      { email, phone },
+      { where: { userID } }
+    );
+
+    res.json({ message: 'Cập nhật thành công' });
+  } catch (err) {
+    console.error('Lỗi PATCH /organizer/me:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+module.exports = {
+  getStats,
+  getMe,
+  updateMe
 };

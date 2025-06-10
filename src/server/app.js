@@ -5,7 +5,6 @@ const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const cookieParser = require('cookie-parser');
-const mockAuth = require('./src/mockAuth');
 const { authenticateToken, requireRole } = require('./src/module/auth/authMiddleware');
 
 const PORT = process.env.PORT || 3001;
@@ -24,7 +23,23 @@ const io = socketIo(server, {
         origin: process.env.FRONTEND_URL || 'http://localhost:3000',
         methods: ['GET', 'POST'],
         credentials: true
-    }
+    },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000
+});
+
+// Xử lý Socket.IO connection
+io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+    });
+
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+    });
 });
 
 // Lưu io instance để sử dụng trong các module khác
@@ -52,30 +67,30 @@ app.use(cookieParser());
 // UC103: Logout
 app.use('/auth', authRoutes);
 
-// 2. Organizer Routes (Yêu cầu xác thực)
-app.use('/organizer', organizerRoutes);
+// 2. Organizer Routes (Yêu cầu xác thực và role organizer)
+app.use('/organizer', authenticateToken, requireRole(['organizer']), organizerRoutes);
 
 // 3. Notification Routes (Yêu cầu xác thực)
-app.use('/notifications', notificationRoutes);
+app.use('/notifications', authenticateToken, notificationRoutes);
 
-// 2. Activity Routes (Yêu cầu role organizer)
+// 4. Activity Routes (Yêu cầu role organizer)
 // UC501: CRUD Activities
 // UC502: List/View Activities
 app.use('/activity', authenticateToken, requireRole(['organizer']), activityRoutes);
 
-// 3. Participation Routes (Yêu cầu role student)
+// 5. Participation Routes (Yêu cầu role student)
 // UC601: Register/Submit Activities
 app.use('/participation', authenticateToken, requireRole(['student']), participationRoutes);
 
-// 4. Student Routes (Yêu cầu role student)
+// 6. Student Routes (Yêu cầu role student)
 // UC701: View Student Info/Scores
 app.use('/student', authenticateToken, requireRole(['student']), studentRoutes);
 
-// 5. Semester Routes (Yêu cầu xác thực)
+// 7. Semester Routes (Yêu cầu xác thực)
 // UC801: View Semester Info
 app.use('/semester', authenticateToken, semesterRoutes);
 
-// 6. Test Route (Không yêu cầu xác thực)
+// 8. Test Route (Không yêu cầu xác thực)
 app.get('/test', (req, res) => {
   res.json({ message: 'Hello, this is a test' });
 });
@@ -93,4 +108,3 @@ app.use((err, req, res, next) => {
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
-

@@ -57,7 +57,7 @@ class ActivityModel {
         return db.Activity.count({ where: { organizerID, activityStatus: status } });
     }
 
-    // Get activities by organizer ID
+    // Get activities by organizer ID with associations
     static async getActivitiesByOrganizer(organizerID) {
         try {
             const activities = await Activity.findAll({

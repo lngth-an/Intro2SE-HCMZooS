@@ -57,8 +57,23 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
     }
 
-    console.log('Comparing passwords...');
-    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Checking password...');
+    let isMatch = false;
+    
+    // Kiểm tra nếu password đã được hash
+    if (user.password.startsWith('$2')) {
+      isMatch = await bcrypt.compare(password, user.password);
+    } else {
+      // Nếu password chưa được hash, so sánh trực tiếp
+      isMatch = password === user.password;
+      
+      // Nếu match, hash password và lưu lại
+      if (isMatch) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await user.update({ password: hashedPassword });
+      }
+    }
+    
     console.log('Password match:', isMatch);
 
     if (!isMatch) {
@@ -103,11 +118,28 @@ exports.login = async (req, res) => {
 // UC103: Logout
 exports.logout = async (req, res) => {
   try {
-    res.clearCookie('token');
-    res.json({ message: 'Đăng xuất thành công' });
+    // Xóa cookie token
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+
+    // Xóa token trong header
+    res.removeHeader('Authorization');
+
+    res.json({ 
+      message: 'Đăng xuất thành công',
+      success: true
+    });
   } catch (error) {
     console.error('Logout error:', error);
-    res.status(500).json({ message: 'Lỗi server' });
+    res.status(500).json({ 
+      message: 'Lỗi server',
+      success: false,
+      error: error.message 
+    });
   }
 };
 

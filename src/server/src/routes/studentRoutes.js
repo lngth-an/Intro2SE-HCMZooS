@@ -6,14 +6,14 @@ const { Student, User } = require('../models');
 const { Op } = require('sequelize');
 
 // Lấy thông tin sinh viên hiện tại
-router.get('/me', authenticateToken, requireRole(['student']), StudentController.getMe);
+router.get('/me', StudentController.getMe);
 
-// Lấy điểm rèn luyện
-router.get('/score', authenticateToken, requireRole(['student']), StudentController.getScore);
-
+router.get('/score', StudentController.getScore);
 router.get('/activities', StudentController.getActivities);
 
 // Get student statistics
-router.get('/stats', authenticateToken, requireRole(['student']), StudentController.getStats);
+router.get('/stats', authenticateToken, StudentController.getStats);
 
+// Thêm route mới vào participationRoutes.js
+router.get('/activities/search', authenticateToken, StudentController.searchActivities);
 module.exports = router; 

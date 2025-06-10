@@ -7,7 +7,6 @@ import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
 import { Card, Row, Col, Statistic, Button, Badge } from 'antd';
 import { UserOutlined, CalendarOutlined, BellOutlined } from '@ant-design/icons';
-//import OrganizerHomeMain from "../components/pages/OrganizerHomeMain";
 
 // Cấu hình axios để tự động thêm token vào header
 axios.interceptors.request.use(
