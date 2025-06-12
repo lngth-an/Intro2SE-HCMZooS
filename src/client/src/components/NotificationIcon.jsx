@@ -37,7 +37,7 @@ const NotificationIcon = () => {
 
     const fetchUnreadCount = async () => {
         try {
-            const response = await axios.get(`/api/notifications/unread-count?userID=${user.userID}`);
+            const response = await axios.get(`/notifications/unread/count?userID=${user.userID}`);
             setUnreadCount(response.data.unreadCount);
         } catch (error) {
             console.error('Error fetching unread count:', error);

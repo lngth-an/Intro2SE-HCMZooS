@@ -1,6 +1,13 @@
 const ActivityModel = require('./activityModel');
 const db = require('../../models');
-const { Op, sequelize } = require('sequelize');
+const { Op } = require('sequelize');
+const Activity = db.Activity;
+const Organizer = db.Organizer;
+const User = db.User;
+const Student = db.Student;
+const Participation = db.Participation;
+const Semester = db.Semester;
+const pool = require('../../config/database');
 
 class ActivityController {
     // Helper: Get organizerID from req.user.userID
@@ -403,131 +410,132 @@ class ActivityController {
         }
     }
 
-
-/* ------------------------------------------------------------------
-   GET /api/activities/manage  - dành cho organizer
--------------------------------------------------------------------*/
-static searchActivitiesForOrganizers = async (req, res) => {
-  try {
-    /* ----------- Đọc query params ---------------- */
-    const {
-      q = '',                   // từ khoá
-      status,                   // activityStatus
-      dateRange,                // registrationStart trong khoảng
-      isApproved,               // a.isApproved  (boolean/0/1)
-      sortBy  = 'registrationStart', // cột sắp xếp
-      sortOrder = 'desc',       // asc | desc
-      page = 1,
-      limit = 10
-    } = req.query;
-
-    const offset = (page - 1) * limit;
-
-    /* ----------- Xây WHERE động + mảng values[] -- */
-    const conditions = [];
-    const values = [];
-    let idx = 1;
-
-    /* Lọc theo organizer hiện tại
-          activities.organizerID -> organizers.organizerID -> organizers.userID */
-    conditions.push(`o.userID = $${idx}`);
-    values.push(req.user.userID);
-    idx++;
-
-    /* Từ khoá */
-    if (q) {
-      conditions.push(`a.name ILIKE $${idx}`);
-      values.push(`%${q}%`);
-      idx++;
+    /* ------------------------------------------------------------------
+       GET /api/activities/manage  - dành cho organizer
+    -------------------------------------------------------------------*/
+    static searchActivitiesForOrganizers = async (req, res) => {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can access this endpoint.' });
+            }
+    
+            const {
+                q = '',
+                status,
+                dateRange,
+                isApproved,
+                sortBy = 'registrationStart',
+                sortOrder = 'desc',
+                page = 1,
+                limit = 10
+            } = req.query;
+    
+            const offset = (page - 1) * limit;
+    
+            // Tìm organizerID từ userID
+            const organizer = await db.Organizer.findOne({
+                where: { userID: req.user.userID }
+            });
+    
+            if (!organizer) {
+                return res.status(404).json({ message: 'Organizer not found' });
+            }
+    
+            // Xây dựng điều kiện tìm kiếm
+            const where = {
+                organizerID: organizer.organizerID
+            };
+    
+            if (q) {
+                where.name = {
+                    [Op.iLike]: `%${q}%`
+                };
+            }
+    
+            if (dateRange) {
+                const [startDate, endDate] = dateRange.split(',');
+                if (startDate) {
+                    where.registrationStart = {
+                        [Op.gte]: startDate
+                    };
+                }
+                if (endDate) {
+                    where.registrationStart = {
+                        ...(where.registrationStart || {}),
+                        [Op.lte]: endDate
+                    };
+                }
+            }
+    
+            // Xác định thứ tự sắp xếp
+            const order = [];
+            if (sortBy === 'registrations') {
+                order.push([db.sequelize.literal('"registrationCount"'), sortOrder.toUpperCase()]);
+            } else {
+                order.push([sortBy, sortOrder.toUpperCase()]);
+            }
+    
+            const activityAttributes = Object.keys(db.Activity.rawAttributes);
+            const groupByAttributes = activityAttributes.map(attr => `Activity.${attr}`);
+    
+    
+            // Thực hiện query
+            const { rows: activities, count: total } = await db.Activity.findAndCountAll({
+                where,
+                include: [
+                    {
+                        model: db.Participation,
+                        as: 'participations',
+                        attributes: [],
+                        required: false,
+                        ...(isApproved && {
+                            where: {
+                                participationStatus: isApproved
+                            }
+                        })
+                    }
+                ],
+                attributes: {
+                    include: [
+                        ...activityAttributes,
+                        [
+                            db.sequelize.literal('COUNT(DISTINCT "participations"."participationID")'),
+                            'registrationCount'
+                        ],
+                        [
+                            db.sequelize.literal('COUNT(DISTINCT CASE WHEN "participations"."participationStatus" = \'approved\' THEN "participations"."participationID" END)'),
+                            'approvedCount'
+                        ],
+                        [
+                            db.sequelize.literal('COALESCE(AVG("participations"."trainingPoint"), 0)'),
+                            'averageTrainingPoint'
+                        ]
+                    ]
+                },
+                group: ['Activity.activityID', ...groupByAttributes],
+                order,
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                subQuery: false
+            });
+    
+            const totalActivities = activities.length > 0 ? activities.length : 0;
+    
+            res.json({
+                activities,
+                total: totalActivities,
+                page: parseInt(page),
+                limit: parseInt(limit)
+            });
+    
+        } catch (error) {
+            console.error('Error searching activities:', error);
+            res.status(500).json({
+                    message: 'Error searching activities',
+                    error: error.message
+                });
+        }
     }
-
-    /*  Trạng thái activity */
-    if (status) {
-      conditions.push(`a.activityStatus = $${idx}`);
-      values.push(status);
-      idx++;
-    }
-
-    /* Khoảng thời gian */
-    if (dateRange) {
-      const [startDate, endDate] = dateRange.split(',');
-      conditions.push(`a.registrationStart >= $${idx}`);
-      values.push(startDate);
-      idx++;
-      conditions.push(`a.registrationStart <= $${idx}`);
-      values.push(endDate);
-      idx++;
-    }
-
-    /* Trạng thái duyệt */
-    if (isApproved !== undefined) {
-      conditions.push(`a.isApproved = $${idx}`);
-      values.push(isApproved === 'true');
-      idx++;
-    }
-
-    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    /* ----------- Tham số sort, limit, offset ------ */
-    const sortByParam = idx;
-    values.push(sortBy);               // $idx = sortBy
-    idx++;
-
-    const limitParam  = idx;
-    const offsetParam = idx + 1;
-    values.push(limit);                // $limitParam
-    values.push(offset);               // $offsetParam
-
-    /* ----------------- Query chính ---------------- */
-    const query = `
-      SELECT
-        a.*,
-        COUNT(p.participationID) AS registrationCount,
-        COUNT(CASE WHEN p.participationStatus = 'approved' THEN 1 END) AS approvedCount
-      FROM activities a
-      JOIN organizers       o ON a."organizerID" = o."organizerID"
-      LEFT JOIN participations p ON a."activityID" = p."activityID"
-      ${whereClause}
-      GROUP BY a."activityID"
-      ORDER BY
-        CASE
-          WHEN $${sortByParam} = 'registrationStart' THEN a."registrationStart"
-          WHEN $${sortByParam} = 'registrations'     THEN COUNT(p.participationID)
-          ELSE a."registrationStart"
-        END ${sortOrder}
-      LIMIT  $${limitParam}
-      OFFSET $${offsetParam};
-    `;
-
-    const result = await pool.query(query, values);
-
-    /* -------------- Đếm tổng số activity ---------- */
-    const countQuery = `
-      SELECT COUNT(DISTINCT a.activityID) AS count
-      FROM activities a
-      JOIN organizers o ON a."organizerID" = o."organizerID"
-      LEFT JOIN participations p ON a."activityID" = p."activityID"
-      ${whereClause};
-    `;
-    const countValues = values.slice(0, idx - 3);      // bỏ sortBy/limit/offset
-    const countRes = await pool.query(countQuery, countValues);
-
-    /* ----------------- Response ------------------- */
-    res.json({
-      activities : result.rows,
-      total      : parseInt(countRes.rows[0].count, 10),
-      page       : parseInt(page, 10),
-      limit      : parseInt(limit, 10)
-    });
-  } catch (error) {
-    console.error('Error searching activities:', error);
-    res.status(500).json({
-      success : false,
-      message : 'Lỗi khi tìm kiếm hoạt động',
-      error   : error.message
-    });
-  }
-}
 
 }
 

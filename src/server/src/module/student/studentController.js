@@ -160,88 +160,145 @@ class StudentController {
       } = req.query;
 
       const offset = (page - 1) * limit;
+      const parsedLimit = parseInt(limit);
+      const parsedPage = parseInt(page);
 
-      // Build where conditions
-      const whereConditions = {
-        activityStatus: 'published'
-      };
+      const whereConditions = {};
+      const havingConditions = {};
 
       if (search) {
-        whereConditions.name = {
-          [Op.iLike]: `%${search}%`
+        whereConditions[Op.or] = [
+          { title: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
+
+      if (organizerName) {
+        whereConditions['$organizer.department$'] = {
+          [Op.iLike]: `%${organizerName}%`
         };
       }
 
-      if (domain) {
-        whereConditions.type = domain;
+      if (minRegistrations) {
+        havingConditions['registrationCount'] = {
+          [Op.gte]: minRegistrations
+        };
+      }
+
+      if (maxRegistrations) {
+        havingConditions['registrationCount'] = {
+          ...havingConditions['registrationCount'],
+          [Op.lte]: maxRegistrations
+        };
       }
 
       if (startDate) {
-        whereConditions.eventStart = {
+        whereConditions.startDate = {
           [Op.gte]: startDate
         };
       }
 
       if (endDate) {
-        whereConditions.eventEnd = {
+        whereConditions.endDate = {
           [Op.lte]: endDate
         };
       }
 
-      // Build participation conditions
-      const participationWhere = {};
-      if (minRegistrations || maxRegistrations) {
-        participationWhere[Op.and] = [];
-        if (minRegistrations) {
-          participationWhere[Op.and].push(Sequelize.literal(`(SELECT COUNT(*) FROM "participations" WHERE "activityID" = "Activity"."activityID") >= ${minRegistrations}`));
-        }
-        if (maxRegistrations) {
-          participationWhere[Op.and].push(Sequelize.literal(`(SELECT COUNT(*) FROM "participations" WHERE "activityID" = "Activity"."activityID") <= ${maxRegistrations}`));
-        }
+      if (domain) {
+        whereConditions.domain = domain;
       }
 
-      // Execute query
-      const { rows: activities, count } = await Activity.findAndCountAll({
-        where: {
-          ...whereConditions,
-          ...participationWhere
-        },
+      const allowedSortFields = ['registrationStart', 'eventStart', 'eventEnd', 'name'];
+      const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'registrationStart';
+
+      // Truy vấn dữ liệu (có pagination)
+      const activities = await Activity.findAll({
+        where: whereConditions,
         include: [
           {
             model: Organizer,
             as: 'organizer',
+            attributes: ['department'],
             include: [
               {
                 model: User,
                 as: 'user',
-                attributes: ['userID', 'name', 'email', 'phone'],
-                where: organizerName ? {
-                  name: {
-                    [Op.iLike]: `%${organizerName}%`
-                  }
-                } : undefined
+                attributes: ['userID', 'name', 'email', 'phone']
               }
             ]
           },
           {
             model: Participation,
             as: 'participations',
-            attributes: ['participationID']
+            attributes: []
           }
         ],
-        order: [[sortBy, sortOrder]],
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        distinct: true
+        attributes: {
+          include: [
+            [Sequelize.fn('COUNT', Sequelize.col('participations.participationID')), 'registrationCount']
+          ]
+        },
+        group: [
+          'Activity.activityID',
+          'organizer.organizerID',
+          'organizer->user.userID'
+        ],
+        having: Object.keys(havingConditions).length > 0 ? havingConditions : undefined,
+        order: [[safeSortBy, sortOrder]],
+        limit: parsedLimit,
+        offset: offset,
+        subQuery: false
       });
 
+      // Truy vấn tổng số lượng activity phù hợp (không phân trang)
+      const totalResults = await Activity.findAll({
+        where: whereConditions,
+        include: [
+          {
+            model: Organizer,
+            as: 'organizer',
+            attributes: ['department'],
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['userID', 'name', 'email', 'phone']
+              }
+            ]
+          },
+          {
+            model: Participation,
+            as: 'participations',
+            attributes: []
+          }
+        ],
+        attributes: [
+          'activityID',
+          [Sequelize.fn('COUNT', Sequelize.col('participations.participationID')), 'registrationCount']
+        ],
+        group: [
+          'Activity.activityID',
+          'organizer.organizerID',
+          'organizer->user.userID'
+        ],
+        having: Object.keys(havingConditions).length > 0 ? havingConditions : undefined,
+        raw: true,
+        subQuery: false
+      });
+
+      // Map kết quả để trả về department thay vì name
+      const mappedActivities = activities.map(activity => ({
+        ...activity.toJSON(),
+        organizerName: activity.organizer ? activity.organizer.department : 'Đang cập nhật'
+      }));
+
       res.json({
-        activities,
+        activities: mappedActivities,
         pagination: {
-          total: count,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: Math.ceil(count / limit)
+          total: totalResults.length,
+          page: parsedPage,
+          limit: parsedLimit,
+          totalPages: Math.ceil(totalResults.length / parsedLimit)
         }
       });
     } catch (error) {

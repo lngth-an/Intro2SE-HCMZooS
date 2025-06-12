@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { Search, GraduationCap } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import { Link } from 'react-router-dom';
+const API_URL = 'http://localhost:3001';
 const Header = ({ user }) => {
   // Set default values for user properties
   const userName = user?.name || "Guest";
@@ -16,16 +19,57 @@ const Header = ({ user }) => {
     if (searchQuery.trim()) {
       const query = encodeURIComponent(searchQuery.trim());
       if (authUser?.role === 'student') {
-        navigate(`/activities/explore?q=${query}`);
+        navigate(`/student/search?q=${query}`);
       } else if (authUser?.role === 'organizer') {
-        navigate(`/organizer/activities/manage?q=${query}`);
+        navigate(`/organizer/activity/manage?q=${query}`);
       }
     }
   };
 
   // Nhấn Enter để tìm kiếm
-  const handleSearch = (e) => {
-    if (e.key === 'Enter') performSearch();
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    try {
+      const userRole = localStorage.getItem('userRole');
+      let searchUrl = '';
+
+      if (userRole === 'student') {
+        searchUrl = '/search';
+        navigate(`student/home?search=${encodeURIComponent(searchQuery)}`);
+      } else if (userRole === 'organizer') {
+        searchUrl = '/activities/manage';
+        navigate(`/activities/manage?search=${encodeURIComponent(searchQuery)}`);
+      }
+
+      // Gọi API search tương ứng
+      const response = await axios.get(`${API_URL}${searchUrl}`, {
+        params: {
+          search: searchQuery
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      // Lưu kết quả tìm kiếm vào localStorage để các component khác có thể sử dụng
+      if (response.data.activities) {
+        localStorage.setItem('searchResults', JSON.stringify(response.data.activities));
+      }
+
+      setSearchQuery('');
+    } catch (error) {
+      console.error('Error searching activities:', error);
+      toast.error('Có lỗi xảy ra khi tìm kiếm hoạt động');
+    }
+  };
+
+  // Thêm hàm xử lý khi nhấn Enter
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch(e);
+    }
   };
 
   return (
@@ -49,7 +93,7 @@ const Header = ({ user }) => {
                 className="w-full px-4 py-2 rounded-lg border bg-white border-gray-400 text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleSearch}
+                onKeyPress={handleKeyPress}
               />
               {/* Icon có thể click */}
               <Search

@@ -9,7 +9,7 @@ import { FileWarning, Eye, Edit, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 
 const API_BASE_URL = 'http://localhost:3001'; 
-const ACTIVITIES_API_URL = `${API_BASE_URL}/activity`;
+const ACTIVITIES_API_URL = `${API_BASE_URL}/activity/manage`;
 
 // Static data for domains (can be fetched from API if dynamic)
 const DOMAINS = [
@@ -30,7 +30,7 @@ const statusColors = {
   finished: 'bg-green-100 text-green-800',
   upcoming: 'bg-indigo-100 text-indigo-800',
   cancelled: 'bg-red-200 text-red-900',
-  published: 'bg-teal-100 text-teal-800' // Assuming 'published' is a status
+  published: 'bg-teal-100 text-teal-800' 
 };
 
 const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg';
@@ -46,8 +46,7 @@ const ACTIVITY_TYPES = [
 
 const ACTIVITY_STATUSES = [
   { value: 'draft', label: 'Bản nháp' },
-  { value: 'published', label: 'Đã xuất bản' },
-  { value: 'ongoing', label: 'Đang diễn ra' },
+  { value: 'published', label: 'Đang diễn ra' },
   { value: 'completed', label: 'Đã kết thúc' }
 ];
 
@@ -75,7 +74,16 @@ function ActivityManager() {
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [form] = Form.useForm();
 
-  // Function to fetch activities with search/filter parameters
+  const [totalPages, setTotalPages] = useState(0);
+
+  const filters = {
+    q: searchTerm,
+    status: activityStatusFilter,
+    isApproved: isApprovedFilter,
+    sortBy: sortBy,
+    sortOrder: sortOrder
+  };
+
   const fetchActivities = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -88,19 +96,20 @@ function ActivityManager() {
     }
 
     try {
-      const params = new URLSearchParams();
-      if (searchTerm) params.append('q', searchTerm);
-      if (activityStatusFilter) params.append('status', activityStatusFilter);
-      if (isApprovedFilter !== '') params.append('isApproved', isApprovedFilter);
-      params.append('sortBy', sortBy);
-      params.append('sortOrder', sortOrder);
-      params.append('page', currentPage);
-      params.append('limit', itemsPerPage);
-
+      // Truyền params trực tiếp vào axios.get
       const response = await axios.get(ACTIVITIES_API_URL, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        params: {
+          q: searchTerm,
+          status: activityStatusFilter,
+          isApproved: isApprovedFilter,
+          sortBy,
+          sortOrder,
+          page: currentPage,
+          limit: itemsPerPage
+        }
       });
-      
+
       setActivities(response.data.activities || []);
       setTotalActivities(response.data.total || 0);
       setCurrentPage(response.data.page || 1);
@@ -110,7 +119,6 @@ function ActivityManager() {
       console.error("Error fetching activities:", err);
       if (err.response && err.response.status === 401) {
         setError("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
-        // navigate('/login'); // Uncomment if you want to redirect
       } else {
         setError(err.response?.data?.message || "Đã có lỗi xảy ra khi tải danh sách hoạt động.");
       }
@@ -121,7 +129,7 @@ function ActivityManager() {
 
   useEffect(() => {
     fetchActivities();
-  }, [fetchActivities]); // Re-fetch when search/filter/pagination changes
+  }, [fetchActivities]);
 
   const handleEdit = (record) => {
     setSelectedActivity(record);
@@ -142,8 +150,7 @@ function ActivityManager() {
       await axios.delete(`${ACTIVITIES_API_URL}/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      toast.success('Xóa hoạt động thành công');
-      fetchActivities(); // Re-fetch activities after delete
+      toast.success('Xóa hoạt động thành công');// Re-fetch activities after delete
     } catch (error) {
       console.error("Delete error:", error);
       toast.error(error.response?.data?.message || 'Không thể xóa hoạt động');
@@ -181,8 +188,7 @@ function ActivityManager() {
       }
       setModalVisible(false);
       setEditingId(null);
-      setEditingActivity(null);
-      fetchActivities(); // Re-fetch activities after submit
+      setEditingActivity(null); // Re-fetch activities after submit
     } catch (error) {
       console.error("Form submit error:", error);
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi lưu hoạt động');
@@ -197,7 +203,6 @@ function ActivityManager() {
 
   // Helper to render pagination buttons
   const renderPagination = () => {
-    const totalPages = Math.ceil(totalActivities / itemsPerPage);
     if (totalPages <= 1) return null;
 
     const pages = [];
@@ -382,13 +387,8 @@ function ActivityManager() {
             >
               <option value="">Tất cả trạng thái</option>
               <option value="draft">Bản nháp</option>
-              <option value="pending">Chờ duyệt</option>
-              <option value="approved">Đã duyệt</option>
-              <option value="rejected">Bị từ chối</option>
-              <option value="published">Đã xuất bản</option>
-              <option value="upcoming">Sắp diễn ra</option>
-              <option value="finished">Đã hoàn thành</option>
-              <option value="cancelled">Đã hủy</option>
+              <option value="published">Đang diễn ra</option>
+              <option value="completed">Đã kết thúc</option>
             </select>
           </div>
 
@@ -407,8 +407,9 @@ function ActivityManager() {
               }}
             >
               <option value="">Tất cả</option>
-              <option value="true">Đã duyệt</option>
-              <option value="false">Chưa duyệt</option>
+              <option value="approved">Đã duyệt</option>
+              <option value="pending">Chờ duyệt</option>
+              <option value="present">Đã tham gia</option>
             </select>
           </div>
 
@@ -502,9 +503,9 @@ function ActivityManager() {
                     <div className="space-y-1 text-sm text-gray-600">
                       <p><span className="font-medium">Thời gian:</span> {new Date(activity.eventStart).toLocaleString('vi-VN')}</p>
                       <p><span className="font-medium">Địa điểm:</span> {activity.location || 'N/A'}</p>
-                      <p><span className="font-medium">Lĩnh vực:</span> {getDomainLabels(activity.domains)}</p>
-                      <p><span className="font-medium">Đối tượng:</span> {activity.targetAudience || 'N/A'}</p>
-                      <p><span className="font-medium">Điểm rèn luyện:</span> {activity.trainingPoint || 0} điểm</p>
+                      <p><span className="font-medium">Lĩnh vực:</span> {activity.type}</p>
+                      <p><span className="font-medium">Giới hạn:</span> {activity.capacity}</p>
+                      <p><span className="font-medium">Điểm rèn luyện trung bình:</span> {Math.round(activity.averageTrainingPoint || 0)} điểm</p>
                       <p><span className="font-medium">Đăng ký:</span> {activity.registrationCount || 0} / {activity.approvedCount || 0} (Tổng / Đã duyệt)</p>
                       <p><span className="font-medium">Duyệt bởi ĐV:</span> {activity.isApproved ? 'Đã duyệt' : 'Chờ duyệt'}</p>
                     </div>

@@ -9,6 +9,8 @@ const ComplaintController = require('../module/complaint/complaintController');
 router.get('/', ActivityController.listActivities);
 // Lấy tất cả hoạt động của organizer hiện tại
 router.get('/organizer', ActivityController.getActivitiesByOrganizer);
+// Route tìm kiếm hoạt động cho organizer
+router.get('/manage', ActivityController.searchActivitiesForOrganizers);
 // UC502: Get activity detail
 router.get('/:id', ActivityController.getActivityDetail);
 // UC501: Create activity
@@ -40,6 +42,5 @@ router.patch('/complaint/:id', ComplaintController.updateComplaintStatus);
 
 // Route cập nhật điểm rèn luyện
 router.patch('/:activityID/training-point', ActivityController.updateTrainingPoint);
-// Thêm route mới vào activityRoutes.js
-router.get('/manage', ActivityController.searchActivitiesForOrganizers);
+
 module.exports = router;
