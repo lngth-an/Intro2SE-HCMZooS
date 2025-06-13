@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Edit, Trash2, Upload, Eye } from 'lucide-react';
 import ActivityForm from './ActivityForm';
 import ActivityDetail from './ActivityDetail';
 
@@ -173,29 +174,33 @@ function ActivityManager() {
                     <>
                       <button 
                         onClick={() => handleEdit(activity)}
-                        className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
+                        className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors flex items-center gap-1"
                       >
-                        Chỉnh sửa
+                        <Edit className="w-4 h-4" />
+                        <span>Chỉnh sửa</span>
                       </button>
                       <button 
                         onClick={() => handleDelete(activity.activityID)}
-                        className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
+                        className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors flex items-center gap-1"
                       >
-                        Xóa
+                        <Trash2 className="w-4 h-4" />
+                        <span>Xóa</span>
                       </button>
                       <button 
                         onClick={() => handlePublish(activity.activityID)}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors"
+                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors flex items-center gap-1"
                       >
-                        Xuất bản
+                        <Upload className="w-4 h-4" />
+                        <span>Xuất bản</span>
                       </button>
                     </>
                   )}
                   <button 
                     onClick={() => handleShowDetail(activity)}
-                    className="px-3 py-1 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors ml-auto"
+                    className="px-3 py-1 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors ml-auto flex items-center gap-1"
                   >
-                    Xem chi tiết
+                    <Eye className="w-4 h-4" />
+                    <span>Xem chi tiết</span>
                   </button>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Edit, Trash2, Upload } from 'lucide-react';
 
 function ActivityDetail({ 
   activity,
@@ -247,21 +248,24 @@ function ActivityDetail({
                     <>
                       <button
                         onClick={() => onEdit(activity)}
-                        className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
+                        className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors flex items-center gap-1"
                       >
-                        Chỉnh sửa
+                        <Edit className="w-4 h-4" />
+                        <span>Chỉnh sửa</span>
                       </button>
                       <button
                         onClick={() => onDelete(activity.activityID)}
-                        className="px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
+                        className="px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors flex items-center gap-1"
                       >
-                        Xóa
+                        <Trash2 className="w-4 h-4" />
+                        <span>Xóa</span>
                       </button>
                       <button
                         onClick={() => onPublish(activity.activityID)}
-                        className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors"
+                        className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors flex items-center gap-1"
                       >
-                        Xuất bản
+                        <Upload className="w-4 h-4" />
+                        <span>Xuất bản</span>
                       </button>
                     </>
                   )}
