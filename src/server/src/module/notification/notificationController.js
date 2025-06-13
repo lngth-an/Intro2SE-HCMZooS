@@ -333,23 +333,29 @@ class NotificationController {
     static async markAsRead(req, res) {
         try {
             const { id } = req.params;
-            const notification = await Notification.findByPk(id);
+            const { toUserID } = req.body;
 
+            const notification = await Notification.findByPk(id);
             if (!notification) {
                 return res.status(404).json({ message: 'Không tìm thấy thông báo' });
             }
 
             await notification.update({ notificationStatus: 'read' });
 
-            req.io.emit('notification_read', {
-                notificationID: notification.notificationID,
-                toUserID: notification.toUserID
-            });
+            // Emit realtime notification status update
+            const io = req.app.get('io');
+            if (io) {
+                io.emit('notification_read', {
+                    notificationID: id,
+                    toUserID: toUserID || notification.toUserID,
+                    status: 'read'
+                });
+            }
 
-            res.json({ message: 'Đã đánh dấu đọc thông báo' });
+            res.json({ message: 'Đã đánh dấu thông báo đã đọc' });
         } catch (error) {
             console.error('Error marking notification as read:', error);
-            res.status(500).json({ message: 'Lỗi server khi đánh dấu thông báo' });
+            res.status(500).json({ message: 'Lỗi server khi đánh dấu thông báo đã đọc' });
         }
     }
 
