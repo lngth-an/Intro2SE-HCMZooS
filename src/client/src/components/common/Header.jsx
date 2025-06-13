@@ -1,12 +1,11 @@
 import React from "react";
 import { Search, GraduationCap } from "lucide-react";
 
-const Header = ({
-  user = {
-    name: "Guest",
-    avatar: "https://via.placeholder.com/40",
-  },
-}) => {
+const Header = ({ user }) => {
+  // Set default values for user properties
+  const userName = user?.name || "Guest";
+  const userAvatar = user?.avatar || "https://via.placeholder.com/40";
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-gray-50 shadow-sm z-50 transition-colors duration-200">
       <div className="px-4 sm:px-6 lg:px-8">
@@ -32,13 +31,13 @@ const Header = ({
           <div className="flex items-center space-x-4 ml-auto">
             <div className="flex items-center space-x-3">
               <img
-                src={user.avatar || "https://via.placeholder.com/40"}
+                src={userAvatar}
                 alt="Avatar"
                 className="w-10 h-10 rounded-full border-2 border-blue-500"
               />
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-600">
-                  {user.name}
+                  {userName}
                 </span>
               </div>
             </div>

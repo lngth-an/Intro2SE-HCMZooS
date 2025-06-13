@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Upload, Eye } from 'lucide-react';
 import ActivityForm from './ActivityForm';
-import ActivityDetail from './ActivityDetail';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const API_URL = '/activity';
 const DOMAINS = [
@@ -19,24 +19,22 @@ const statusColors = {
   completed: '#388e3c',
 };
 
+const DEFAULT_IMAGE = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg';
+
 function ActivityManager() {
   const [activities, setActivities] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
-  const [selected, setSelected] = useState(null);
-  const [showDetail, setShowDetail] = useState(false);
   const navigate = useNavigate();
 
   const fetchActivities = async () => {
     try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      setActivities(data.activities || []);
+      const res = await axios.get(API_URL);
+      setActivities(res.data.activities || []);
     } catch (error) {
-      setMessage('Không thể tải danh sách hoạt động');
-      setMessageType('error');
+      toast.error('Không thể tải danh sách hoạt động');
     }
   };
 
@@ -52,63 +50,40 @@ function ActivityManager() {
   const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa hoạt động này?')) {
       try {
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-        setMessage('Đã xóa hoạt động thành công!');
-        setMessageType('success');
+        await axios.delete(`${API_URL}/${id}`);
+        toast.success('Xóa hoạt động thành công');
         fetchActivities();
       } catch (error) {
-        setMessage('Không thể xóa hoạt động');
-        setMessageType('error');
+        toast.error('Không thể xóa hoạt động');
       }
     }
   };
 
   const handlePublish = async (id) => {
     try {
-      await fetch(`${API_URL}/${id}/publish`, { method: 'PATCH' });
-      setMessage('Đã xuất bản hoạt động thành công!');
-      setMessageType('success');
+      await axios.patch(`${API_URL}/${id}/publish`);
+      toast.success('Đã xuất bản hoạt động thành công!');
       fetchActivities();
     } catch (error) {
-      setMessage('Không thể xuất bản hoạt động');
-      setMessageType('error');
+      toast.error('Không thể xuất bản hoạt động');
     }
   };
 
   const handleFormSubmit = async (formData) => {
     try {
-      let res;
       if (editingId) {
-        res = await fetch(`${API_URL}/${editingId}`, {
-          method: 'PUT',
-          body: formData,
-        });
-        setMessage('Đã cập nhật hoạt động thành công!');
+        await axios.put(`${API_URL}/${editingId}`, formData);
+        toast.success('Đã cập nhật hoạt động thành công!');
       } else {
-        res = await fetch(API_URL, {
-          method: 'POST',
-          body: formData,
-        });
-        setMessage('Đã tạo hoạt động thành công!');
+        await axios.post(API_URL, formData);
+        toast.success('Đã tạo hoạt động thành công!');
       }
-      setMessageType('success');
       setEditingId(null);
       setEditingActivity(null);
       fetchActivities();
     } catch (error) {
-      setMessage('Có lỗi xảy ra khi lưu hoạt động');
-      setMessageType('error');
+      toast.error('Có lỗi xảy ra khi lưu hoạt động');
     }
-  };
-
-  const handleShowDetail = (activity) => {
-    setSelected(activity);
-    setShowDetail(true);
-  };
-
-  const handleCloseDetail = () => {
-    setShowDetail(false);
-    setSelected(null);
   };
 
   return (
@@ -141,13 +116,11 @@ function ActivityManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activities.map(activity => (
             <div key={activity.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
-              {activity.image && (
-                <img 
-                  src={activity.image} 
-                  alt={activity.name} 
-                  className="w-full h-48 object-cover"
-                />
-              )}
+              <img 
+                src={activity.image || DEFAULT_IMAGE} 
+                alt={activity.name} 
+                className="w-full h-48 object-cover"
+              />
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold text-blue-600">{activity.name}</h3>
@@ -174,33 +147,29 @@ function ActivityManager() {
                     <>
                       <button 
                         onClick={() => handleEdit(activity)}
-                        className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors flex items-center gap-1"
+                        className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
                       >
-                        <Edit className="w-4 h-4" />
-                        <span>Chỉnh sửa</span>
+                        Chỉnh sửa
                       </button>
                       <button 
                         onClick={() => handleDelete(activity.activityID)}
-                        className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors flex items-center gap-1"
+                        className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Xóa</span>
+                        Xóa
                       </button>
                       <button 
                         onClick={() => handlePublish(activity.activityID)}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors flex items-center gap-1"
+                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors"
                       >
-                        <Upload className="w-4 h-4" />
-                        <span>Xuất bản</span>
+                        Xuất bản
                       </button>
                     </>
                   )}
                   <button 
-                    onClick={() => handleShowDetail(activity)}
-                    className="px-3 py-1 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors ml-auto flex items-center gap-1"
+                    onClick={() => navigate(`/organizer/activities/${activity.activityID}`)}
+                    className="px-3 py-1 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors ml-auto"
                   >
-                    <Eye className="w-4 h-4" />
-                    <span>Xem chi tiết</span>
+                    Xem chi tiết
                   </button>
                 </div>
               </div>
@@ -208,22 +177,6 @@ function ActivityManager() {
           ))}
         </div>
       </div>
-
-      {/* Chi tiết hoạt động */}
-      {showDetail && selected && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px #bdbdbd', padding: 24, width: '95%', maxWidth: '95%', position: 'relative', maxHeight: '95vh', overflowY: 'auto' }}>
-            <button onClick={handleCloseDetail} style={{ position: 'absolute', top: 12, right: 12, background: '#bdbdbd', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer', zIndex: 1 }}>×</button>
-            <ActivityDetail
-              activity={selected}
-              isOrganizer={true}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onPublish={handlePublish}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

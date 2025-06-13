@@ -1,10 +1,7 @@
 import React from "react";
 import { GraduationCap } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const Footer = ({ isDarkMode }) => {
-  const navigate = useNavigate();
-
   return (
     <footer
       className={`w-full ${

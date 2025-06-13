@@ -144,13 +144,15 @@ export default function OrganizerHomeMain({
                 key={act.activityID || act.id}
                 className="bg-white rounded-lg shadow-md overflow-hidden"
               >
-                {act.image && (
-                  <img
-                    src={act.image}
-                    alt={act.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
+                <img
+                  src={act.image || 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg'}
+                  alt={act.name}
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg';
+                  }}
+                />
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-lg font-semibold text-blue-600">{act.name}</h3>
