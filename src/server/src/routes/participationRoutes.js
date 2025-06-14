@@ -7,5 +7,4 @@ router.get('/check-eligibility/:activityID', ParticipationController.checkEligib
 router.post('/register', ParticipationController.registerActivity);
 router.post('/submit', ParticipationController.submitRegistration);
 router.get('/suggest', ParticipationController.suggestActivities);
-
 module.exports = router; 

@@ -16,6 +16,7 @@ const StudentHomeMain = () => {
             <span className="text-3xl font-bold text-blue-600">85</span>
             <Link
               to="/student/points"
+              // to="/student/score"
               className="text-blue-600 hover:text-blue-800"
             >
               <FaArrowRight />
@@ -71,5 +72,4 @@ const StudentHomeMain = () => {
     </div>
   );
 };
-
 export default StudentHomeMain;
