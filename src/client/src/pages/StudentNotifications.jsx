@@ -81,8 +81,8 @@ const StudentNotifications = () => {
         <SidebarStudent />
 
         <main className="flex-1 flex flex-col ml-64 px-6 py-8 max-w-3xl mx-auto w-full">
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight mb-6">
-            Thông báo
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            THÔNG BÁO
           </h1>
 
           <div className="space-y-4">
