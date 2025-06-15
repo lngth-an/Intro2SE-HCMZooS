@@ -22,6 +22,8 @@ import OrganizerManageActivity from "./pages/OrganizerManageActivity";
 import ActivityDetail from "./components/pages/ActivityDetail";
 import OrganizerNotifications from "./pages/OrganizerNotifications";
 import OrganizerComplaints from "./pages/OrganizerComplaints";
+import ActivityCreate from "./pages/ActivityCreate";
+import ActivityEdit from "./pages/ActivityEdit";
 
 // Protected Route component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -199,6 +201,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["organizer"]}>
                 <OrganizerManageActivity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/organizer/activity-create"
+            element={
+              <ProtectedRoute allowedRoles={["organizer"]}>
+                <ActivityCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/organizer/activities/:id/edit"
+            element={
+              <ProtectedRoute allowedRoles={["organizer"]}>
+                <ActivityEdit />
               </ProtectedRoute>
             }
           />
