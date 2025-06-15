@@ -10,8 +10,8 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 
 // Student pages
 import StudentHome from "./pages/StudentHome";
-import StudentActivities from "./components/pages/StudentActivities";
-import StudentScore from "./components/pages/StudentScore";
+import StudentActivities from "./pages/StudentActivities";
+import StudentScore from "./pages/StudentScore";
 import ActivityRegister from "./components/pages/ActivityRegister";
 import StudentNotifications from "./pages/StudentNotifications";
 import Profile from "./pages/Profile";

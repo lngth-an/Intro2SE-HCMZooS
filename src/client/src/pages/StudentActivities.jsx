@@ -2,12 +2,12 @@ import React from "react";
 import Header from "../components/common/Header";
 import SidebarStudent from "../components/common/SidebarStudent";
 import Footer from "../components/common/Footer";
-import StudentScoreContent from "../components/pages/StudentScoreContent"; // Import the refactored content component
+import StudentActivitiesContent from "../components/pages/StudentActivitiesContent"; // Import the refactored content component
 import axios from "axios";
 import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 
-export default function StudentScore() {
+export default function StudentActivities() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -35,10 +35,10 @@ export default function StudentScore() {
         <SidebarStudent onLogout={handleLogout} />
 
         <div className="flex-1 flex flex-col ml-64">
-          <StudentScoreContent /> {/* Render the content component here */}
+          <StudentActivitiesContent /> {/* Render the content component here */}
           <Footer />
         </div>
       </div>
     </div>
   );
-}
+} 
