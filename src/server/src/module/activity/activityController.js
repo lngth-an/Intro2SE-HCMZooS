@@ -1,5 +1,13 @@
 const ActivityModel = require('./activityModel');
 const db = require('../../models');
+const { Op } = require('sequelize');
+const Activity = db.Activity;
+const Organizer = db.Organizer;
+const User = db.User;
+const Student = db.Student;
+const Participation = db.Participation;
+const Semester = db.Semester;
+const pool = require('../../config/database');
 
 class ActivityController {
     // Helper: Get organizerID from req.user.userID
@@ -401,6 +409,134 @@ class ActivityController {
             res.status(500).json({ message: 'Error updating training point.' });
         }
     }
+
+    /* ------------------------------------------------------------------
+       GET /api/activities/manage  - dành cho organizer
+    -------------------------------------------------------------------*/
+    static searchActivitiesForOrganizers = async (req, res) => {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can access this endpoint.' });
+            }
+    
+            const {
+                q = '',
+                status,
+                dateRange,
+                isApproved,
+                sortBy = 'registrationStart',
+                sortOrder = 'desc',
+                page = 1,
+                limit = 10
+            } = req.query;
+    
+            const offset = (page - 1) * limit;
+    
+            // Tìm organizerID từ userID
+            const organizer = await db.Organizer.findOne({
+                where: { userID: req.user.userID }
+            });
+    
+            if (!organizer) {
+                return res.status(404).json({ message: 'Organizer not found' });
+            }
+    
+            // Xây dựng điều kiện tìm kiếm
+            const where = {
+                organizerID: organizer.organizerID
+            };
+    
+            if (q) {
+                where.name = {
+                    [Op.iLike]: `%${q}%`
+                };
+            }
+    
+            if (dateRange) {
+                const [startDate, endDate] = dateRange.split(',');
+                if (startDate) {
+                    where.registrationStart = {
+                        [Op.gte]: startDate
+                    };
+                }
+                if (endDate) {
+                    where.registrationStart = {
+                        ...(where.registrationStart || {}),
+                        [Op.lte]: endDate
+                    };
+                }
+            }
+    
+            // Xác định thứ tự sắp xếp
+            const order = [];
+            if (sortBy === 'registrations') {
+                order.push([db.sequelize.literal('"registrationCount"'), sortOrder.toUpperCase()]);
+            } else {
+                order.push([sortBy, sortOrder.toUpperCase()]);
+            }
+    
+            const activityAttributes = Object.keys(db.Activity.rawAttributes);
+            const groupByAttributes = activityAttributes.map(attr => `Activity.${attr}`);
+    
+    
+            // Thực hiện query
+            const { rows: activities, count: total } = await db.Activity.findAndCountAll({
+                where,
+                include: [
+                    {
+                        model: db.Participation,
+                        as: 'participations',
+                        attributes: [],
+                        required: false,
+                        ...(isApproved && {
+                            where: {
+                                participationStatus: isApproved
+                            }
+                        })
+                    }
+                ],
+                attributes: {
+                    include: [
+                        ...activityAttributes,
+                        [
+                            db.sequelize.literal('COUNT(DISTINCT "participations"."participationID")'),
+                            'registrationCount'
+                        ],
+                        [
+                            db.sequelize.literal('COUNT(DISTINCT CASE WHEN "participations"."participationStatus" = \'approved\' THEN "participations"."participationID" END)'),
+                            'approvedCount'
+                        ],
+                        [
+                            db.sequelize.literal('COALESCE(AVG("participations"."trainingPoint"), 0)'),
+                            'averageTrainingPoint'
+                        ]
+                    ]
+                },
+                group: ['Activity.activityID', ...groupByAttributes],
+                order,
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                subQuery: false
+            });
+    
+            const totalActivities = activities.length > 0 ? activities.length : 0;
+    
+            res.json({
+                activities,
+                total: totalActivities,
+                page: parseInt(page),
+                limit: parseInt(limit)
+            });
+    
+        } catch (error) {
+            console.error('Error searching activities:', error);
+            res.status(500).json({
+                    message: 'Error searching activities',
+                    error: error.message
+                });
+        }
+    }
+
 }
 
 module.exports = ActivityController;
