@@ -5,13 +5,74 @@ import { supabase } from "../../supabaseClient";
 
 const SEMESTER_API = "/semester/current";
 
-function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
+// Cập nhật danh sách lĩnh vực
+const DOMAINS = [
+  {
+    id: "Workshop",
+    label: "Workshop",
+    type: "workshop",
+    color: "bg-blue-100 text-blue-800",
+    selectedColor: "bg-blue-600 text-white",
+  },
+  {
+    id: "Tình nguyện",
+    label: "Tình nguyện",
+    type: "volunteer",
+    color: "bg-green-100 text-green-800",
+    selectedColor: "bg-green-600 text-white",
+  },
+  {
+    id: "Học thuật",
+    label: "Học thuật",
+    type: "academic",
+    color: "bg-yellow-100 text-yellow-800",
+    selectedColor: "bg-yellow-600 text-white",
+  },
+  {
+    id: "Hội thảo",
+    label: "Hội thảo",
+    type: "seminar",
+    color: "bg-purple-100 text-purple-800",
+    selectedColor: "bg-purple-600 text-white",
+  },
+  {
+    id: "Cuộc thi",
+    label: "Cuộc thi",
+    type: "competition",
+    color: "bg-pink-100 text-pink-800",
+    selectedColor: "bg-pink-600 text-white",
+  },
+  {
+    id: "Chuyên đề",
+    label: "Chuyên đề",
+    type: "specialized",
+    color: "bg-indigo-100 text-indigo-800",
+    selectedColor: "bg-indigo-600 text-white",
+  },
+  {
+    id: "Khác",
+    label: "Khác",
+    type: "other",
+    color: "bg-gray-100 text-gray-800",
+    selectedColor: "bg-gray-600 text-white",
+  },
+];
+
+function ActivityForm({
+  onSubmit,
+  editingId,
+  onCancel,
+  domains = DOMAINS,
+  initialData,
+}) {
   console.log("ActivityForm received initialData:", initialData);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageUrl, setImageUrl] = useState(initialData?.image || "");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [selectedDomains, setSelectedDomains] = useState([]);
+  const [selectedDomain, setSelectedDomain] = useState(
+    initialData?.domains?.[0] || ""
+  );
   const [semesterID, setSemesterID] = useState(null);
   const [loadingSemester, setLoadingSemester] = useState(true);
 
@@ -21,7 +82,20 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
     setValue,
     reset,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: initialData
+      ? {
+          name: initialData.name,
+          description: initialData.description,
+          eventStart: initialData.eventStart?.slice(0, 16),
+          eventEnd: initialData.eventEnd?.slice(0, 16),
+          location: initialData.location,
+          capacity: initialData.capacity,
+          registrationStart: initialData.registrationStart?.slice(0, 16),
+          registrationEnd: initialData.registrationEnd?.slice(0, 16),
+        }
+      : {},
+  });
 
   useEffect(() => {
     fetch(SEMESTER_API)
@@ -36,21 +110,21 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
   useEffect(() => {
     console.log("Setting form values with initialData:", initialData);
     if (initialData) {
-      setValue("name", initialData.name);
-      setValue("description", initialData.description);
-      setValue("eventStart", initialData.eventStart?.slice(0, 16));
-      setValue("eventEnd", initialData.eventEnd?.slice(0, 16));
-      setValue("location", initialData.location);
-      setValue("capacity", initialData.capacity);
-      setValue("targetAudience", initialData.targetAudience || "");
-      setValue("trainingScore", initialData.trainingScore || "");
-      setValue(
-        "registrationStart",
-        initialData.registrationStart?.slice(0, 16)
-      );
-      setValue("registrationEnd", initialData.registrationEnd?.slice(0, 16));
-      setValue("contactInfo", initialData.contactInfo || "");
-      setSelectedDomains(initialData.domains || []);
+      // Đặt lại tất cả các giá trị form
+      Object.keys(initialData).forEach((key) => {
+        if (
+          key === "eventStart" ||
+          key === "eventEnd" ||
+          key === "registrationStart" ||
+          key === "registrationEnd"
+        ) {
+          setValue(key, initialData[key]?.slice(0, 16));
+        } else {
+          setValue(key, initialData[key]);
+        }
+      });
+      // Đặt lại domains và image
+      setSelectedDomain(initialData.domains?.[0] || "");
       setImageUrl(initialData.image || "");
     }
   }, [initialData, setValue]);
@@ -86,21 +160,20 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
     }
   };
 
-  const handleDomainToggle = (domainId) => {
-    setSelectedDomains((prev) =>
-      prev.includes(domainId)
-        ? prev.filter((id) => id !== domainId)
-        : [...prev, domainId]
-    );
+  const handleDomainSelect = (domainId) => {
+    setSelectedDomain(domainId);
   };
 
   const handleFormSubmit = async (data) => {
+    const selectedDomainType =
+      domains.find((d) => d.id === selectedDomain)?.type || selectedDomain;
+
     const submitData = {
       ...data,
       image:
         imageUrl ||
         "https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg", // Set default image if no image uploaded
-      domains: selectedDomains,
+      domains: [selectedDomainType],
       semesterID,
     };
     console.log("Submitting data:", submitData); // Debug log
@@ -108,7 +181,7 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
     if (!editingId) {
       reset();
       setSelectedImage(null);
-      setSelectedDomains([]);
+      setSelectedDomain("");
       setImageUrl("");
     }
   };
@@ -282,38 +355,19 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
         </div>
       </div>
 
-      {/* Đối tượng */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Đối tượng <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          {...register("targetAudience", {
-            required: "Vui lòng nhập đối tượng",
-          })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {errors.targetAudience && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.targetAudience.message}
-          </p>
-        )}
-      </div>
-
       {/* Lĩnh vực */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Lĩnh vực <span className="text-red-500">*</span>
+          Loại hoạt động <span className="text-red-500">*</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {domains.map((domain) => (
             <button
               key={domain.id}
               type="button"
-              onClick={() => handleDomainToggle(domain.id)}
+              onClick={() => handleDomainSelect(domain.id)}
               className={`px-3 py-1 rounded-full text-sm font-medium ${
-                selectedDomains.includes(domain.id)
+                selectedDomain === domain.id
                   ? domain.selectedColor
                   : domain.color
               }`}
@@ -322,33 +376,9 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
             </button>
           ))}
         </div>
-        {selectedDomains.length === 0 && (
+        {!selectedDomain && (
           <p className="mt-1 text-sm text-red-600">
-            Vui lòng chọn ít nhất một lĩnh vực
-          </p>
-        )}
-      </div>
-
-      {/* Điểm rèn luyện */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Điểm rèn luyện <span className="text-red-500">*</span>
-        </label>
-        <select
-          {...register("trainingScore", {
-            required: "Vui lòng chọn điểm rèn luyện",
-          })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Chọn điểm rèn luyện</option>
-          <option value="3">3 điểm</option>
-          <option value="5">5 điểm</option>
-          <option value="10">10 điểm</option>
-          <option value="15">15 điểm</option>
-        </select>
-        {errors.trainingScore && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.trainingScore.message}
+            Vui lòng chọn loại hoạt động
           </p>
         )}
       </div>
@@ -389,26 +419,6 @@ function ActivityForm({ onSubmit, editingId, onCancel, domains, initialData }) {
             </p>
           )}
         </div>
-      </div>
-
-      {/* Thông tin liên hệ */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Thông tin liên hệ <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          rows={3}
-          {...register("contactInfo", {
-            required: "Vui lòng nhập thông tin liên hệ",
-          })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Nhập thông tin liên hệ (email, số điện thoại, người phụ trách...)"
-        />
-        {errors.contactInfo && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.contactInfo.message}
-          </p>
-        )}
       </div>
 
       {/* Nút hành động */}
