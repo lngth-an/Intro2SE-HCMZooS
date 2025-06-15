@@ -168,7 +168,7 @@ class StudentController {
 
       if (search) {
         whereConditions[Op.or] = [
-          { title: { [Op.iLike]: `%${search}%` } },
+          { name: { [Op.iLike]: `%${search}%` } },
           { description: { [Op.iLike]: `%${search}%` } }
         ];
       }
