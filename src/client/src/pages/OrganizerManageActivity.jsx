@@ -14,28 +14,32 @@ const OrganizerManageActivity = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post('/auth/logout');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('role');
-      localStorage.removeItem('userID');
-      localStorage.removeItem('user');
-      message.success('Đăng xuất thành công');
-      navigate('/login');
+      await axios.post("/auth/logout");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("role");
+      localStorage.removeItem("userID");
+      localStorage.removeItem("user");
+      message.success("Đăng xuất thành công");
+      navigate("/login");
     } catch (error) {
-      message.error('Có lỗi xảy ra khi đăng xuất');
+      message.error("Có lỗi xảy ra khi đăng xuất");
     }
   };
-  
+
   useEffect(() => {
-    fetch('/activity/organizer/me')
-      .then(res => res.json())
-      .then(data => setUser({
-        name: data.name || "Organizer",
-        avatar: data.avatar || "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Default_pfp.jpg/120px-Default_pfp.jpg",
-        role: "organizer"
-      }));
+    fetch("/activity/organizer/me")
+      .then((res) => res.json())
+      .then((data) =>
+        setUser({
+          name: data.name || "Organizer",
+          avatar:
+            data.avatar ||
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Default_pfp.jpg/120px-Default_pfp.jpg",
+          role: "organizer",
+        })
+      );
   }, []);
- 
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}

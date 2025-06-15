@@ -173,18 +173,18 @@ const StudentHome = () => {
                     onClick={stat.onClick}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
+                  <div>
                         <h2 className="text-xl font-semibold mb-2 text-gray-800">
                           {stat.title}
                         </h2>
                         <p className="text-gray-600">{stat.value}</p>
-                      </div>
+                  </div>
                       <div
                         className={`p-3 rounded-full ${stat.color} text-white`}
                       >
                         <stat.icon className="w-6 h-6" />
-                      </div>
-                    </div>
+                  </div>
+                  </div>
                   </div>
                 ))}
               </div>
@@ -308,9 +308,9 @@ const StudentHome = () => {
                               >
                                 Xem chi tiết
                               </button>
-                            </div>
-                          </div>
-                        </div>
+                  </div>
+                </div>
+              </div>
                       ))}
                     </div>
                     <div className="flex justify-center">
