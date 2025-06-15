@@ -3,7 +3,7 @@ import Header from '../../components/common/Header';
 import SidebarStudent from '../../components/common/SidebarStudent';
 import Footer from '../../components/common/Footer';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
@@ -42,6 +42,7 @@ function ActivityRegister() {
 
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const location = useLocation();
 
   // --- Fetch Activities based on filters ---
   useEffect(() => {
@@ -79,6 +80,13 @@ function ActivityRegister() {
       clearTimeout(handler);
     };
   }, [searchTerm, organizerSearch, minRegistrations, maxRegistrations, startDate, endDate, selectedDomain]);
+
+  useEffect(() => {
+    // Lấy query search từ URL nếu có
+    const params = new URLSearchParams(location.search);
+    const search = params.get('search');
+    if (search) setSearchTerm(search);
+  }, [location.search]);
 
   // --- Handlers for Activity Details and Registration ---
 

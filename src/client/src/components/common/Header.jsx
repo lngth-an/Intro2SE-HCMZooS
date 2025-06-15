@@ -19,9 +19,9 @@ const Header = ({ user }) => {
     if (searchQuery.trim()) {
       const query = encodeURIComponent(searchQuery.trim());
       if (authUser?.role === 'student') {
-        navigate(`/student/search?q=${query}`);
+        navigate(`/student/register?search=${query}`);
       } else if (authUser?.role === 'organizer') {
-        navigate(`/organizer/activity/manage?q=${query}`);
+        navigate(`/organizer/activity/manage?search=${query}`);
       }
     }
   };
@@ -30,39 +30,7 @@ const Header = ({ user }) => {
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-
-    try {
-      const userRole = localStorage.getItem('userRole');
-      let searchUrl = '';
-
-      if (userRole === 'student') {
-        searchUrl = '/search';
-        navigate(`student/home?search=${encodeURIComponent(searchQuery)}`);
-      } else if (userRole === 'organizer') {
-        searchUrl = '/activities/manage';
-        navigate(`/activities/manage?search=${encodeURIComponent(searchQuery)}`);
-      }
-
-      // Gọi API search tương ứng
-      const response = await axios.get(`${API_URL}${searchUrl}`, {
-        params: {
-          search: searchQuery
-        },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      // Lưu kết quả tìm kiếm vào localStorage để các component khác có thể sử dụng
-      if (response.data.activities) {
-        localStorage.setItem('searchResults', JSON.stringify(response.data.activities));
-      }
-
-      setSearchQuery('');
-    } catch (error) {
-      console.error('Error searching activities:', error);
-      toast.error('Có lỗi xảy ra khi tìm kiếm hoạt động');
-    }
+    performSearch();
   };
 
   // Thêm hàm xử lý khi nhấn Enter
