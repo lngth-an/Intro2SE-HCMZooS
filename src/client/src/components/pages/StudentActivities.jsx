@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
 
+const API_BASE_URL = 'http://localhost:3001';
+
 export default function StudentActivities() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/student/activities?allStatus=true')
+    const token = localStorage.getItem('accessToken');
+    fetch(`${API_BASE_URL}/student/activities?allStatus=true`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(res => res.json())
       .then(data => {
         setActivities(data.activities || []);

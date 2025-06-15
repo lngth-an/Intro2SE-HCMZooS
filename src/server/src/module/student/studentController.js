@@ -1,10 +1,13 @@
 const { getStudentByUserID } = require('./studentModel');
 const db = require('../../models');
-const Student = db.Student;
 const Activity = db.Activity;
+const Organizer = db.Organizer;
+const User = db.User;
+const Student = db.Student;
 const Participation = db.Participation;
-const { Op } = require('sequelize');
-const { User } = require('../../models');
+const Semester = db.Semester;
+const { Op, Sequelize } = require('sequelize');
+const pool = require('../../config/database');
 
 class StudentController {
   // GET /student/me
@@ -136,6 +139,171 @@ class StudentController {
     } catch (error) {
       console.error('Error getting student stats:', error);
       res.status(500).json({ message: 'Lỗi server khi thống kê' });
+    }
+  }
+
+  // --- Search Activities ---
+  static async searchActivities(req, res) {
+    try {
+      const {
+        search,
+        organizerName,
+        minRegistrations,
+        maxRegistrations,
+        startDate,
+        endDate,
+        domain,
+        sortBy = 'registrationStart',
+        sortOrder = 'DESC',
+        page = 1,
+        limit = 10
+      } = req.query;
+
+      const offset = (page - 1) * limit;
+      const parsedLimit = parseInt(limit);
+      const parsedPage = parseInt(page);
+
+      const whereConditions = {};
+      const havingConditions = {};
+
+      if (search) {
+        whereConditions[Op.or] = [
+          { title: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
+
+      if (organizerName) {
+        whereConditions['$organizer.department$'] = {
+          [Op.iLike]: `%${organizerName}%`
+        };
+      }
+
+      if (minRegistrations) {
+        havingConditions['registrationCount'] = {
+          [Op.gte]: minRegistrations
+        };
+      }
+
+      if (maxRegistrations) {
+        havingConditions['registrationCount'] = {
+          ...havingConditions['registrationCount'],
+          [Op.lte]: maxRegistrations
+        };
+      }
+
+      if (startDate) {
+        whereConditions.startDate = {
+          [Op.gte]: startDate
+        };
+      }
+
+      if (endDate) {
+        whereConditions.endDate = {
+          [Op.lte]: endDate
+        };
+      }
+
+      if (domain) {
+        whereConditions.domain = domain;
+      }
+
+      const allowedSortFields = ['registrationStart', 'eventStart', 'eventEnd', 'name'];
+      const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'registrationStart';
+
+      // Truy vấn dữ liệu (có pagination)
+      const activities = await Activity.findAll({
+        where: whereConditions,
+        include: [
+          {
+            model: Organizer,
+            as: 'organizer',
+            attributes: ['department'],
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['userID', 'name', 'email', 'phone']
+              }
+            ]
+          },
+          {
+            model: Participation,
+            as: 'participations',
+            attributes: []
+          }
+        ],
+        attributes: {
+          include: [
+            [Sequelize.fn('COUNT', Sequelize.col('participations.participationID')), 'registrationCount']
+          ]
+        },
+        group: [
+          'Activity.activityID',
+          'organizer.organizerID',
+          'organizer->user.userID'
+        ],
+        having: Object.keys(havingConditions).length > 0 ? havingConditions : undefined,
+        order: [[safeSortBy, sortOrder]],
+        limit: parsedLimit,
+        offset: offset,
+        subQuery: false
+      });
+
+      // Truy vấn tổng số lượng activity phù hợp (không phân trang)
+      const totalResults = await Activity.findAll({
+        where: whereConditions,
+        include: [
+          {
+            model: Organizer,
+            as: 'organizer',
+            attributes: ['department'],
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['userID', 'name', 'email', 'phone']
+              }
+            ]
+          },
+          {
+            model: Participation,
+            as: 'participations',
+            attributes: []
+          }
+        ],
+        attributes: [
+          'activityID',
+          [Sequelize.fn('COUNT', Sequelize.col('participations.participationID')), 'registrationCount']
+        ],
+        group: [
+          'Activity.activityID',
+          'organizer.organizerID',
+          'organizer->user.userID'
+        ],
+        having: Object.keys(havingConditions).length > 0 ? havingConditions : undefined,
+        raw: true,
+        subQuery: false
+      });
+
+      // Map kết quả để trả về department thay vì name
+      const mappedActivities = activities.map(activity => ({
+        ...activity.toJSON(),
+        organizerName: activity.organizer ? activity.organizer.department : 'Đang cập nhật'
+      }));
+
+      res.json({
+        activities: mappedActivities,
+        pagination: {
+          total: totalResults.length,
+          page: parsedPage,
+          limit: parsedLimit,
+          totalPages: Math.ceil(totalResults.length / parsedLimit)
+        }
+      });
+    } catch (error) {
+      console.error('Error in searchActivities:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 }
