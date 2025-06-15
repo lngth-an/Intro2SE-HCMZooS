@@ -449,10 +449,8 @@ function ActivityRegister() {
           </div>
         </main>
       </div>
-      <footer className="w-full bg-gray-100 py-6">
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px" }}>
+      <footer className="bg-gray-100 py-6 ml-auto w-fit pr-4">
           <Footer />
-        </div>
       </footer>
     </div>
   );
