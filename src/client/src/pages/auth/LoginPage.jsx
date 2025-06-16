@@ -1,90 +1,73 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
+import bgImage from '../../assets/hcmus.jpg';
 
-const LoginPage = () => {
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const result = await login(email, password);
-      if (result.success) {
-        toast.success('Đăng nhập thành công');
-        const role = localStorage.getItem('role');
-        navigate(role === 'student' ? '/student/home' : '/organizer/home');
-      } else {
-        toast.error(result.message);
-      }
+      await login(email, password);
+      toast.success('Đăng nhập thành công!');
+      navigate('/student/dashboard');
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi đăng nhập');
+      toast.error('Sai email hoặc mật khẩu.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Đăng nhập vào ActiHub
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Mật khẩu
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Mật khẩu"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
+    <div
+      className="min-h-screen flex items-center justify-center bg-cover bg-center relative"
+      style={{ backgroundImage: `url(${bgImage})` }}
+    >
+      {/* Overlay mờ tối */}
+      <div className="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-0"></div>
 
+      {/* Form đăng nhập */}
+      <div className="relative z-10 w-full max-w-md bg-white bg-opacity-90 p-8 shadow-2xl rounded-2xl">
+        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">Đăng nhập</h2>
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-            </button>
+            <label className="block text-gray-700 font-medium">Email</label>
+            <input
+              type="email"
+              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
+          <div>
+            <label className="block text-gray-700 font-medium">Mật khẩu</label>
+            <input
+              type="password"
+              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className={`w-full py-2 rounded-lg text-white font-semibold ${
+              loading ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            disabled={loading}
+          >
+            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          </button>
         </form>
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}
