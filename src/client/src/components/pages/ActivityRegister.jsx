@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
-import Header from '../../components/common/Header';
-import SidebarStudent from '../../components/common/SidebarStudent';
-import Footer from '../../components/common/Footer';
-import axios from 'axios';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { toast } from 'react-toastify';
+import Header from "../../components/common/Header";
+import SidebarStudent from "../../components/common/SidebarStudent";
+import Footer from "../../components/common/Footer";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 const DOMAINS = [
   { id: "academic", label: "Học thuật" },
@@ -14,6 +12,13 @@ const DOMAINS = [
   { id: "skills", label: "Kỹ năng" },
   { id: "arts", label: "Nghệ thuật" },
   { id: "other", label: "Khác" },
+];
+
+const SORT_OPTIONS = [
+  { id: "eventStartAsc", label: "Ngày diễn ra (tăng dần)" },
+  { id: "eventStartDesc", label: "Ngày diễn ra (giảm dần)" },
+  { id: "registerStartAsc", label: "Ngày mở đăng ký (tăng dần)" },
+  { id: "registerStartDesc", label: "Ngày mở đăng ký (giảm dần)" },
 ];
 
 function ActivityRegister() {
@@ -33,12 +38,9 @@ function ActivityRegister() {
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
-  const [organizerSearch, setOrganizerSearch] = useState("");
-  const [minRegistrations, setMinRegistrations] = useState("");
-  const [maxRegistrations, setMaxRegistrations] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [selectedDomain, setSelectedDomain] = useState("");
+  const [sortBy, setSortBy] = useState("");
 
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -47,21 +49,37 @@ function ActivityRegister() {
   // --- Fetch Activities based on filters ---
   useEffect(() => {
     setLoading(true);
-    // Debounce search/filter inputs to avoid excessive API calls
     const fetchActivities = () => {
       let query = [];
       if (searchTerm) query.push(`search=${encodeURIComponent(searchTerm)}`);
-      if (organizerSearch) query.push(`organizer=${encodeURIComponent(organizerSearch)}`);
-      if (minRegistrations) query.push(`minRegistrations=${minRegistrations}`);
-      if (maxRegistrations) query.push(`maxRegistrations=${maxRegistrations}`);
       if (startDate) query.push(`startDate=${startDate}`);
       if (endDate) query.push(`endDate=${endDate}`);
-      if (selectedDomain || domain) query.push(`domain=${selectedDomain || domain}`);
-      const queryString = query.length > 0 ? `?${query.join('&')}` : '';
+      const queryString = query.length > 0 ? `?${query.join("&")}` : "";
       fetch(`/participation/open${queryString}`)
         .then((res) => res.json())
         .then((data) => {
-          setActivities(data.activities || []);
+          let filteredActivities = data.activities || [];
+          // Apply sorting
+          filteredActivities = filteredActivities.sort((a, b) => {
+            const getTime = (val) => (val ? new Date(val).getTime() : 0);
+            switch (sortBy) {
+              case "eventStartAsc":
+                return getTime(a.eventStart) - getTime(b.eventStart);
+              case "eventStartDesc":
+                return getTime(b.eventStart) - getTime(a.eventStart);
+              case "registerStartAsc":
+                return getTime(a.registerStart) - getTime(b.registerStart);
+              case "registerStartDesc":
+                return getTime(b.registerStart) - getTime(a.registerStart);
+              default:
+                return 0;
+            }
+          });
+          setActivities(filteredActivities);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching activities:", error);
           setLoading(false);
         });
     };
@@ -71,12 +89,11 @@ function ActivityRegister() {
     return () => {
       clearTimeout(handler);
     };
-  }, [searchTerm, organizerSearch, minRegistrations, maxRegistrations, startDate, endDate, selectedDomain, domain]);
+  }, [searchTerm, startDate, endDate, sortBy]);
 
   useEffect(() => {
-    // Lấy query search từ URL nếu có
     const params = new URLSearchParams(location.search);
-    const search = params.get('search');
+    const search = params.get("search");
     if (search) setSearchTerm(search);
   }, [location.search]);
 
@@ -109,14 +126,15 @@ function ActivityRegister() {
           setShowForm(true);
           setError("");
         } else {
-          setError(
-            data.reason || "Bạn không đủ điều kiện đăng ký hoạt động này"
-          );
-          // Gợi ý hoạt động cùng lĩnh vực
+          setError(data.reason || "Bạn không đủ điều kiện đăng ký hoạt động này");
           fetch(`/participation/suggest?domain=${activity.type}`)
             .then((res) => res.json())
             .then((data) => setSuggested(data.activities || []));
         }
+      })
+      .catch((error) => {
+        console.error("Error checking eligibility:", error);
+        setError("Có lỗi xảy ra, vui lòng thử lại!");
       });
   };
 
@@ -142,6 +160,10 @@ function ActivityRegister() {
           setParticipationID(data.participation.participationID);
           setConfirm(true);
         }
+      })
+      .catch((error) => {
+        console.error("Error registering:", error);
+        setError("Đăng ký thất bại, vui lòng thử lại!");
       });
   };
 
@@ -155,367 +177,281 @@ function ActivityRegister() {
       .then((data) => {
         if (data.error) setError(data.error);
         else {
-          setSuccess(
-            "Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức."
-          );
+          setSuccess("Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức.");
           setShowForm(false);
           setParticipationID(null);
         }
+      })
+      .catch((error) => {
+        console.error("Error submitting:", error);
+        setError("Gửi đăng ký thất bại, vui lòng thử lại!");
       });
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 900,
-        margin: "40px auto",
-        fontFamily: "Segoe UI, Arial, sans-serif",
-      }}
-    >
-      <h2 style={{ textAlign: "center", color: "#1976d2", marginBottom: 30 }}>
-        Đăng ký hoạt động
-      </h2>
-      <div style={{ marginBottom: 24 }}>
-        <span>Lọc theo lĩnh vực: </span>
-        {DOMAINS.map((d) => (
-          <button
-            key={d.id}
-            style={{
-              margin: 4,
-              padding: "6px 14px",
-              borderRadius: 16,
-              border: "1px solid #1976d2",
-              background: domain === d.id ? "#1976d2" : "#fff",
-              color: domain === d.id ? "#fff" : "#1976d2",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-            onClick={() => setDomain(d.id)}
-          >
-            {d.label}
-          </button>
-        ))}
-        <button
-          style={{
-            margin: 4,
-            padding: "6px 14px",
-            borderRadius: 16,
-            border: "1px solid #bdbdbd",
-            background: !domain ? "#1976d2" : "#fff",
-            color: !domain ? "#fff" : "#1976d2",
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-          onClick={() => setDomain("")}
-        >
-          Tất cả
-        </button>
-      </div>
-      {loading ? (
-        <div>Đang tải hoạt động...</div>
-      ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
-          {activities.map((a) => (
-            <div
-              key={a.activityID}
-              style={{
-                background: "#fff",
-                borderRadius: 12,
-                boxShadow: "0 2px 8px #e0e0e0",
-                padding: 24,
-                minWidth: 320,
-                maxWidth: 350,
-                flex: "1 1 320px",
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 18, color: "#1976d2" }}>
-                {a.name}
+    <div className="min-h-screen flex flex-col" style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+      <header className="fixed top-0 left-0 w-full bg-white shadow-md z-20">
+        <Header />
+      </header>
+      <div className="flex flex-1 mt-16">
+        <aside className="fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-md overflow-auto z-10">
+          <SidebarStudent />
+        </aside>
+        <main className="ml-64 flex-1 w-full p-6 bg-gray-50">
+          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+            <div className="space-y-3 order-1">
+              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">ĐĂNG KÝ HOẠT ĐỘNG</h1>
+              <p className="text-xl text-gray-700 font-medium">Xem và đăng ký các hoạt động bạn muốn tham gia.</p>
+            </div>
+
+            {/* Filter and Sort Section */}
+            <div className="flex items-center justify-end gap-6 mt-6 mb-6">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Tìm kiếm:</label>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm hoạt động..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-48 p-2 border rounded-md pr-8"
+                />
               </div>
-              <div style={{ color: "#555", fontSize: 15, marginBottom: 4 }}>
-                <b>Date:</b>{" "}
-                {a.eventStart ? new Date(a.eventStart).toLocaleString() : ""}
-              </div>
-              <div style={{ color: "#555", fontSize: 15, marginBottom: 4 }}>
-                <b>Location:</b> {a.location}
-              </div>
-              <div style={{ color: "#555", fontSize: 15, marginBottom: 4 }}>
-                <b>Lĩnh vực:</b> {a.type}
-              </div>
-              <button
-                style={{
-                  background: "#1976d2",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "8px 18px",
-                  fontWeight: 600,
-                  marginTop: 8,
-                  cursor: "pointer",
-                }}
-                onClick={() => handleShowDetail(a)}
-              >
-                Xem chi tiết
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {/* Chi tiết hoạt động */}
-      {showDetail && selected && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.25)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              boxShadow: "0 2px 16px #bdbdbd",
-              padding: 32,
-              minWidth: 350,
-              maxWidth: 500,
-              position: "relative",
-            }}
-          >
-            <button
-              onClick={handleCloseDetail}
-              style={{
-                position: "absolute",
-                top: 12,
-                right: 12,
-                background: "#bdbdbd",
-                color: "#fff",
-                border: "none",
-                borderRadius: "50%",
-                width: 28,
-                height: 28,
-                fontWeight: 700,
-                fontSize: 18,
-                cursor: "pointer",
-              }}
-            >
-              ×
-            </button>
-            <h2 style={{ color: "#1976d2", fontWeight: 700, fontSize: 22 }}>
-              {selected.name}
-            </h2>
-            <div style={{ color: "#555", margin: "8px 0" }}>
-              <b>Mô tả:</b> {selected.description}
-            </div>
-            <div style={{ color: "#555", margin: "8px 0" }}>
-              <b>Thời gian:</b>{" "}
-              {selected.eventStart
-                ? new Date(selected.eventStart).toLocaleString()
-                : ""}{" "}
-              -{" "}
-              {selected.eventEnd
-                ? new Date(selected.eventEnd).toLocaleString()
-                : ""}
-            </div>
-            <div style={{ color: "#555", margin: "8px 0" }}>
-              <b>Địa điểm:</b> {selected.location}
-            </div>
-            <div style={{ color: "#555", margin: "8px 0" }}>
-              <b>Lĩnh vực:</b> {selected.type}
-            </div>
-            <div style={{ color: "#555", margin: "8px 0" }}>
-              <b>Số lượng tối đa:</b> {selected.capacity || "Không giới hạn"}
-            </div>
-            <div style={{ color: "#555", margin: "8px 0" }}>
-              <b>Trạng thái:</b> {selected.activityStatus}
-            </div>
-            {/* Nút đăng ký */}
-            {!showForm && !success && (
-              <button
-                style={{
-                  background: "#1976d2",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "10px 28px",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  marginTop: 18,
-                  cursor: "pointer",
-                }}
-                onClick={() => handleRegister(selected)}
-              >
-                Đăng ký
-              </button>
-            )}
-            {/* Form đăng ký */}
-            {showForm && (
-              <form
-                onSubmit={handleFormSubmit}
-                style={{
-                  background: "#f5f5f5",
-                  borderRadius: 8,
-                  padding: 18,
-                  marginTop: 18,
-                }}
-              >
-                <div>
-                  <label>Ghi chú</label>
-                  <textarea
-                    name="note"
-                    value={form.note}
-                    onChange={handleFormChange}
-                    style={{
-                      width: "100%",
-                      marginBottom: 8,
-                      padding: 8,
-                      borderRadius: 6,
-                      border: "1px solid #bdbdbd",
-                    }}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  style={{
-                    background: "#1976d2",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "8px 18px",
-                    fontWeight: 600,
-                    marginTop: 8,
-                    cursor: "pointer",
-                  }}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Ngày diễn ra:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-48 p-2 border rounded-md pr-8"
                 >
-                  Gửi đăng ký
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    background: "#bdbdbd",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "8px 18px",
-                    fontWeight: 600,
-                    marginTop: 8,
-                    marginLeft: 8,
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setShowForm(false)}
-                >
-                  Hủy
-                </button>
-              </form>
-            )}
-            {/* Xác nhận đăng ký */}
-            {confirm && (
-              <div
-                style={{
-                  background: "#fffde7",
-                  border: "1px solid #ffe082",
-                  borderRadius: 8,
-                  padding: 18,
-                  marginTop: 18,
-                  textAlign: "center",
-                }}
-              >
-                <div>Bạn xác nhận gửi đăng ký tham gia hoạt động này?</div>
-                <button
-                  style={{
-                    background: "#388e3c",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "8px 18px",
-                    fontWeight: 600,
-                    margin: 8,
-                    cursor: "pointer",
-                  }}
-                  onClick={handleConfirm}
-                >
-                  Xác nhận
-                </button>
-                <button
-                  style={{
-                    background: "#bdbdbd",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "8px 18px",
-                    fontWeight: 600,
-                    margin: 8,
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setConfirm(false)}
-                >
-                  Hủy
-                </button>
-              </div>
-            )}
-            {/* Thông báo lỗi/thành công */}
-            {error && (
-              <div style={{ color: "#d32f2f", marginTop: 12 }}>{error}</div>
-            )}
-            {success && (
-              <div
-                style={{
-                  color: "#388e3c",
-                  marginTop: 18,
-                  textAlign: "center",
-                  fontWeight: 600,
-                }}
-              >
-                {success}
-              </div>
-            )}
-            {/* Gợi ý hoạt động tương tự */}
-            {suggested.length > 0 && (
-              <div style={{ marginTop: 18 }}>
-                <b>Hoạt động cùng lĩnh vực:</b>
-                <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                  {suggested.map((a) => (
-                    <div
-                      key={a.activityID}
-                      style={{
-                        background: "#f5f5f5",
-                        borderRadius: 8,
-                        padding: 12,
-                      }}
-                    >
-                      <div style={{ fontWeight: 500 }}>{a.name}</div>
-                      <button
-                        style={{
-                          background: "#1976d2",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "4px 12px",
-                          fontWeight: 500,
-                          marginTop: 4,
-                          cursor: "pointer",
-                        }}
-                        onClick={() => {
-                          handleCloseDetail();
-                          handleShowDetail(a);
-                        }}
-                      >
-                        Xem chi tiết
-                      </button>
-                    </div>
+                  <option value="">Sắp xếp theo</option>
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
                   ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Từ ngày:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-48 p-2 border rounded-md"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Đến ngày:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-48 p-2 border rounded-md"
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center text-gray-500">Đang tải hoạt động...</div>
+            ) : activities.length === 0 ? (
+              <div className="text-center text-gray-500">Chưa có hoạt động nào.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {activities.map((a) => (
+                  <div
+                    key={a.activityID}
+                    className="bg-white rounded-lg shadow-md overflow-hidden"
+                  >
+                    <img
+                      src={a.image || "https://via.placeholder.com/300x200"}
+                      alt={a.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-4">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{a.name}</h3>
+                      <p className="text-gray-700 text-sm mb-1">
+                        <span className="font-semibold">Loại:</span> {a.type}
+                      </p>
+                      <p className="text-gray-700 text-sm mb-1">
+                        <span className="font-semibold">Thời gian:</span>{" "}
+                        {a.eventStart ? new Date(a.eventStart).toLocaleString() : ""}
+                      </p>
+                      <p className="text-gray-700 text-sm mb-1">
+                        <span className="font-semibold">Địa điểm:</span> {a.location}
+                      </p>
+                      <div className="mt-2">
+                        <span
+                          className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
+                            a.activityStatus === "ĐANG DIỄN RA"
+                              ? "bg-blue-100 text-blue-800"
+                              : a.activityStatus === "SẮP DIỄN RA"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {a.activityStatus || "ĐANG DIỄN RA"}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex justify-between items-center">
+                        <button
+                          className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
+                          onClick={() => handleShowDetail(a)}
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Chi tiết hoạt động */}
+            {showDetail && selected && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  background: "rgba(0,0,0,0.25)",
+                  zIndex: 1000,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#fff",
+                    borderRadius: "12px",
+                    boxShadow: "0 2px 16px #bdbdbd",
+                    padding: "32px",
+                    minWidth: "350px",
+                    maxWidth: "500px",
+                    position: "relative",
+                  }}
+                >
+                  <button
+                    onClick={handleCloseDetail}
+                    style={{
+                      position: "absolute",
+                      top: "12px",
+                      right: "12px",
+                      background: "#bdbdbd",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "28px",
+                      height: "28px",
+                      fontWeight: "700",
+                      fontSize: "18px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-900">{selected.name}</h2>
+                  <div className="text-gray-700 mt-2">
+                    <p><strong>Mô tả:</strong> {selected.description || "Không có mô tả"}</p>
+                    <p className="mt-1"><strong>Thời gian:</strong> {selected.eventStart ? new Date(selected.eventStart).toLocaleString() : ""} - {selected.eventEnd ? new Date(selected.eventEnd).toLocaleString() : ""}</p>
+                    <p className="mt-1"><strong>Địa điểm:</strong> {selected.location}</p>
+                    <p className="mt-1"><strong>Lĩnh vực:</strong> {selected.type}</p>
+                    <p className="mt-1"><strong>Số lượng tối đa:</strong> {selected.capacity || "Không giới hạn"}</p>
+                    <p className="mt-1"><strong>Trạng thái:</strong> {selected.activityStatus}</p>
+                  </div>
+                  {!showForm && !success && (
+                    <button
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md mt-4"
+                      onClick={() => handleRegister(selected)}
+                    >
+                      Đăng ký
+                    </button>
+                  )}
+                  {showForm && (
+                    <form
+                      onSubmit={handleFormSubmit}
+                      className="bg-gray-100 rounded-md p-4 mt-4"
+                    >
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Ghi chú</label>
+                        <textarea
+                          name="note"
+                          value={form.note}
+                          onChange={handleFormChange}
+                          className="w-full mt-1 p-2 border rounded-md"
+                        />
+                      </div>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="submit"
+                          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md"
+                        >
+                          Gửi đăng ký
+                        </button>
+                        <button
+                          type="button"
+                          className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md"
+                          onClick={() => setShowForm(false)}
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                  {confirm && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-4 text-center">
+                      <p>Bạn xác nhận gửi đăng ký tham gia hoạt động này?</p>
+                      <div className="mt-2 flex gap-2 justify-center">
+                        <button
+                          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md"
+                          onClick={handleConfirm}
+                        >
+                          Xác nhận
+                        </button>
+                        <button
+                          className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md"
+                          onClick={() => setConfirm(false)}
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {error && <div className="text-red-500 mt-2">{error}</div>}
+                  {success && <div className="text-green-500 mt-2 font-semibold">{success}</div>}
+                  {suggested.length > 0 && (
+                    <div className="mt-4">
+                      <p className="font-semibold">Hoạt động cùng lĩnh vực:</p>
+                      <div className="mt-2 flex gap-2">
+                        {suggested.map((a) => (
+                          <div
+                            key={a.activityID}
+                            className="bg-gray-100 rounded-md p-2"
+                          >
+                            <p className="font-medium">{a.name}</p>
+                            <button
+                              className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-1 px-2 rounded-md mt-1"
+                              onClick={() => {
+                                handleCloseDetail();
+                                handleShowDetail(a);
+                              }}
+                            >
+                              Xem chi tiết
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
-        </div>
-      )}
+        </main>
+      </div>
+      <footer className="bg-gray-100 py-6 ml-auto w-fit pr-4">
+          <Footer />
+      </footer>
     </div>
   );
 }
