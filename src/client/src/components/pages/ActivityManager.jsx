@@ -92,6 +92,7 @@ function ActivityManager() {
   const [totalActivities, setTotalActivities] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activityTypes, setActivityTypes] = useState([]);
 
   const [editingId, setEditingId] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);
@@ -101,11 +102,12 @@ function ActivityManager() {
   // States for search and filter
   const [searchTerm, setSearchTerm] = useState("");
   const [activityStatusFilter, setActivityStatusFilter] = useState("");
-  const [isApprovedFilter, setIsApprovedFilter] = useState(""); // true/false or '' for all
+  const [activityTypeFilter, setActivityTypeFilter] = useState("");
+  const [isApprovedFilter, setIsApprovedFilter] = useState("");
   const [sortBy, setSortBy] = useState("registrationStart");
   const [sortOrder, setSortOrder] = useState("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10); // Matches default limit in backend
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -146,10 +148,25 @@ function ActivityManager() {
         },
       });
 
-      setActivities(response.data.activities || []);
-      setTotalActivities(response.data.total || 0);
-      setCurrentPage(response.data.page || 1);
-      setItemsPerPage(response.data.limit || 10); // Update from backend response
+      let activitiesData = response.data.activities || [];
+
+      // Extract unique activity types from all activities
+      const uniqueTypes = [
+        ...new Set(activitiesData.map((activity) => activity.type)),
+      ];
+      setActivityTypes(uniqueTypes);
+
+      // Filter activities by type if activityTypeFilter is set
+      if (activityTypeFilter) {
+        activitiesData = activitiesData.filter(
+          (activity) => activity.type === activityTypeFilter
+        );
+      }
+
+      setActivities(activitiesData);
+      setTotalActivities(activitiesData.length);
+      setCurrentPage(1); // Reset to first page after filtering
+      setItemsPerPage(response.data.limit || 10);
     } catch (err) {
       console.error("Error fetching activities:", err);
       if (err.response && err.response.status === 401) {
@@ -167,6 +184,7 @@ function ActivityManager() {
     searchTerm,
     activityStatusFilter,
     isApprovedFilter,
+    activityTypeFilter,
     sortBy,
     sortOrder,
     currentPage,
@@ -175,7 +193,11 @@ function ActivityManager() {
 
   useEffect(() => {
     fetchActivities();
-  }, [fetchActivities]);
+  }, [activityTypeFilter, fetchActivities]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activityTypeFilter, searchTerm, activityStatusFilter, isApprovedFilter]);
 
   const handleEdit = (record) => {
     setSelectedActivity(record);
@@ -406,7 +428,7 @@ function ActivityManager() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quản lý hoạt động</h1>
+        <h1 className="text-2xl font-bold uppercase">QUẢN LÝ HOẠT ĐỘNG</h1>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -417,48 +439,74 @@ function ActivityManager() {
       </div>
 
       {/* Search and Filter */}
-      <div className="flex space-x-4 mb-6">
+      <div className="flex justify-end space-x-4 mb-6">
         <Input
           placeholder="Tìm kiếm hoạt động..."
           prefix={<SearchOutlined />}
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to first page on new search
+            setCurrentPage(1);
           }}
           className="w-64"
         />
         <Select
-          placeholder="Trạng thái"
-          value={activityStatusFilter}
-          onChange={setActivityStatusFilter}
+          style={{ width: 200 }}
+          placeholder="Lọc theo loại hoạt động..."
+          value={activityTypeFilter}
+          onChange={(value) => {
+            setActivityTypeFilter(value);
+          }}
           allowClear
-          className="w-48"
+          className="w-64"
         >
-          <Option value="draft">Bản nháp</Option>
-          <Option value="published">Đã đăng tải</Option>
-          <Option value="finished">Đã hoàn thành</Option>
-          <Option value="cancelled">Đã hủy</Option>
-          <Option value="pending">Chờ duyệt</Option>
-          <Option value="approved">Đã duyệt</Option>
-          <Option value="rejected">Bị từ chối</Option>
-          <Option value="upcoming">Sắp diễn ra</Option>
+          {activityTypes.map((type) => (
+            <Option key={type} value={type}>
+              {type}
+            </Option>
+          ))}
         </Select>
       </div>
 
-      {/* Activities Table */}
-      <Table
-        columns={columns}
-        dataSource={activities}
-        rowKey="activityID"
-        loading={loading}
-        pagination={{
-          current: currentPage,
-          pageSize: itemsPerPage,
-          total: totalActivities,
-          onChange: handlePageChange,
-        }}
-      />
+      {/* Display message based on filter */}
+      {activityTypeFilter && (
+        <div className="mb-4 text-lg font-medium text-gray-700">
+          Những hoạt động thuộc lĩnh vực {activityTypeFilter}:
+        </div>
+      )}
+
+      {/* Activities Table or No Activities Message */}
+      {activities.length > 0 ? (
+        <Table
+          columns={columns}
+          dataSource={activities}
+          rowKey="activityID"
+          loading={loading}
+          pagination={{
+            current: currentPage,
+            pageSize: itemsPerPage,
+            total: totalActivities,
+            onChange: handlePageChange,
+          }}
+        />
+      ) : (
+        <div className="text-center py-8">
+          <div className="text-xl text-gray-600 mb-2">
+            {activityTypeFilter
+              ? `Không có hoạt động nào thuộc lĩnh vực ${activityTypeFilter}`
+              : "Chưa có hoạt động nào được tạo"}
+          </div>
+          {!activityTypeFilter && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/organizer/activity-create")}
+            >
+              Tạo hoạt động mới
+            </Button>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>
