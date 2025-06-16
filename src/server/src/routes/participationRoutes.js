@@ -4,6 +4,7 @@ const ParticipationController = require('../module/participation/participationCo
 
 router.get('/open', ParticipationController.getOpenActivities);
 router.get('/check-eligibility/:activityID', ParticipationController.checkEligibility);
+router.get('/check-registration/:activityID', ParticipationController.checkRegistration);
 router.post('/register', ParticipationController.registerActivity);
 router.post('/submit', ParticipationController.submitRegistration);
 router.get('/suggest', ParticipationController.suggestActivities);

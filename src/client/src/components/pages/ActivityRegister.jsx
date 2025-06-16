@@ -4,6 +4,7 @@ import SidebarStudent from "../../components/common/SidebarStudent";
 import Footer from "../../components/common/Footer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import StudentActivityDetail from "./StudentActivityDetail";
 
 const DOMAINS = [
   { id: "academic", label: "Học thuật" },
@@ -17,8 +18,8 @@ const DOMAINS = [
 const SORT_OPTIONS = [
   { id: "eventStartAsc", label: "Ngày diễn ra (tăng dần)" },
   { id: "eventStartDesc", label: "Ngày diễn ra (giảm dần)" },
-  { id: "registerStartAsc", label: "Ngày mở đăng ký (tăng dần)" },
-  { id: "registerStartDesc", label: "Ngày mở đăng ký (giảm dần)" },
+  { id: "registrationStartAsc", label: "Ngày mở đăng ký (tăng dần)" },
+  { id: "registrationStartDesc", label: "Ngày mở đăng ký (giảm dần)" },
 ];
 
 function ActivityRegister() {
@@ -35,6 +36,7 @@ function ActivityRegister() {
   const [suggested, setSuggested] = useState([]);
   const [participationID, setParticipationID] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
@@ -67,10 +69,10 @@ function ActivityRegister() {
                 return getTime(a.eventStart) - getTime(b.eventStart);
               case "eventStartDesc":
                 return getTime(b.eventStart) - getTime(a.eventStart);
-              case "registerStartAsc":
-                return getTime(a.registerStart) - getTime(b.registerStart);
-              case "registerStartDesc":
-                return getTime(b.registerStart) - getTime(a.registerStart);
+              case "registrationStartAsc":
+                return getTime(a.registrationStart) - getTime(b.registrationStart);
+              case "registrationStartDesc":
+                return getTime(b.registrationStart) - getTime(a.registrationStart);
               default:
                 return 0;
             }
@@ -106,6 +108,20 @@ function ActivityRegister() {
     setSuccess("");
     setConfirm(false);
     setSuggested([]);
+    // Check if student is already registered
+    fetch(`/participation/check-registration/${activity.activityID}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setIsRegistered(data.isRegistered);
+      })
+      .catch(error => {
+        console.error("Error checking registration:", error);
+        setIsRegistered(false);
+      });
   };
 
   const handleCloseDetail = () => {
@@ -116,6 +132,7 @@ function ActivityRegister() {
     setSuccess("");
     setConfirm(false);
     setSuggested([]);
+    setIsRegistered(false);
   };
 
   const handleRegister = (activity) => {
@@ -180,6 +197,7 @@ function ActivityRegister() {
           setSuccess("Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức.");
           setShowForm(false);
           setParticipationID(null);
+          setIsRegistered(true);
         }
       })
       .catch((error) => {
@@ -304,147 +322,23 @@ function ActivityRegister() {
               </div>
             )}
 
-            {/* Chi tiết hoạt động */}
             {showDetail && selected && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  width: "100vw",
-                  height: "100vh",
-                  background: "rgba(0,0,0,0.25)",
-                  zIndex: 1000,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    background: "#fff",
-                    borderRadius: "12px",
-                    boxShadow: "0 2px 16px #bdbdbd",
-                    padding: "32px",
-                    minWidth: "350px",
-                    maxWidth: "500px",
-                    position: "relative",
-                  }}
-                >
-                  <button
-                    onClick={handleCloseDetail}
-                    style={{
-                      position: "absolute",
-                      top: "12px",
-                      right: "12px",
-                      background: "#bdbdbd",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: "28px",
-                      height: "28px",
-                      fontWeight: "700",
-                      fontSize: "18px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ×
-                  </button>
-                  <h2 className="text-2xl font-bold text-gray-900">{selected.name}</h2>
-                  <div className="text-gray-700 mt-2">
-                    <p><strong>Mô tả:</strong> {selected.description || "Không có mô tả"}</p>
-                    <p className="mt-1"><strong>Thời gian:</strong> {selected.eventStart ? new Date(selected.eventStart).toLocaleString() : ""} - {selected.eventEnd ? new Date(selected.eventEnd).toLocaleString() : ""}</p>
-                    <p className="mt-1"><strong>Địa điểm:</strong> {selected.location}</p>
-                    <p className="mt-1"><strong>Lĩnh vực:</strong> {selected.type}</p>
-                    <p className="mt-1"><strong>Số lượng tối đa:</strong> {selected.capacity || "Không giới hạn"}</p>
-                    <p className="mt-1"><strong>Trạng thái:</strong> {selected.activityStatus}</p>
-                  </div>
-                  {!showForm && !success && (
-                    <button
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md mt-4"
-                      onClick={() => handleRegister(selected)}
-                    >
-                      Đăng ký
-                    </button>
-                  )}
-                  {showForm && (
-                    <form
-                      onSubmit={handleFormSubmit}
-                      className="bg-gray-100 rounded-md p-4 mt-4"
-                    >
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Ghi chú</label>
-                        <textarea
-                          name="note"
-                          value={form.note}
-                          onChange={handleFormChange}
-                          className="w-full mt-1 p-2 border rounded-md"
-                        />
-                      </div>
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          type="submit"
-                          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md"
-                        >
-                          Gửi đăng ký
-                        </button>
-                        <button
-                          type="button"
-                          className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md"
-                          onClick={() => setShowForm(false)}
-                        >
-                          Hủy
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                  {confirm && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-4 text-center">
-                      <p>Bạn xác nhận gửi đăng ký tham gia hoạt động này?</p>
-                      <div className="mt-2 flex gap-2 justify-center">
-                        <button
-                          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md"
-                          onClick={handleConfirm}
-                        >
-                          Xác nhận
-                        </button>
-                        <button
-                          className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md"
-                          onClick={() => setConfirm(false)}
-                        >
-                          Hủy
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {error && <div className="text-red-500 mt-2">{error}</div>}
-                  {success && <div className="text-green-500 mt-2 font-semibold">{success}</div>}
-                  {suggested.length > 0 && (
-                    <div className="mt-4">
-                      <p className="font-semibold">Hoạt động cùng lĩnh vực:</p>
-                      <div className="mt-2 flex gap-2">
-                        {suggested.map((a) => (
-                          <div
-                            key={a.activityID}
-                            className="bg-gray-100 rounded-md p-2"
-                          >
-                            <p className="font-medium">{a.name}</p>
-                            <button
-                              className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-1 px-2 rounded-md mt-1"
-                              onClick={() => {
-                                handleCloseDetail();
-                                handleShowDetail(a);
-                              }}
-                            >
-                              Xem chi tiết
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <StudentActivityDetail
+                activity={selected}
+                onClose={handleCloseDetail}
+                onRegister={handleRegister}
+                showForm={showForm}
+                form={form}
+                onFormChange={handleFormChange}
+                onFormSubmit={handleFormSubmit}
+                error={error}
+                success={success}
+                confirm={confirm}
+                onConfirm={handleConfirm}
+                onCancelConfirm={() => setConfirm(false)}
+                suggested={suggested}
+                isRegistered={isRegistered}
+              />
             )}
           </div>
         </main>

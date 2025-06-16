@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from "../../contexts/AuthContext";
+import StudentActivityDetail from "./StudentActivityDetail";
 
 const API_BASE_URL = 'http://localhost:3001';
 
 export default function StudentActivitiesContent() {
+  const { user } = useAuth();
   const [activities, setActivities] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [selected, setSelected] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ note: "" });
+  const [confirm, setConfirm] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [suggested, setSuggested] = useState([]);
+  const [participationID, setParticipationID] = useState(null);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -48,6 +61,165 @@ export default function StudentActivitiesContent() {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
+  const handleShowDetail = (activity) => {
+    setSelected(activity);
+    setShowDetail(true);
+    setShowForm(false);
+    setError("");
+    setSuccess("");
+    setConfirm(false);
+    setSuggested([]);
+    // Check if student is already registered
+    fetch(`${API_BASE_URL}/participation/check-registration/${activity.activityID}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setIsRegistered(data.isRegistered);
+      })
+      .catch(error => {
+        console.error("Error checking registration:", error);
+        setIsRegistered(false);
+      });
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelected(null);
+    setShowForm(false);
+    setError("");
+    setSuccess("");
+    setConfirm(false);
+    setSuggested([]);
+    setIsRegistered(false);
+  };
+
+  const handleRegister = (activity) => {
+    fetch(`${API_BASE_URL}/participation/check-eligibility/${activity.activityID}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.eligible) {
+          setShowForm(true);
+          setError("");
+        } else {
+          setError(data.reason || "Bạn không đủ điều kiện đăng ký hoạt động này");
+          fetch(`${API_BASE_URL}/participation/suggest?domain=${activity.type}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+          })
+            .then((res) => res.json())
+            .then((data) => setSuggested(data.activities || []));
+        }
+      })
+      .catch((error) => {
+        console.error("Error checking eligibility:", error);
+        setError("Có lỗi xảy ra, vui lòng thử lại!");
+      });
+  };
+
+  const handleFormChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setError("");
+    fetch(`${API_BASE_URL}/participation/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      },
+      body: JSON.stringify({
+        activityID: selected.activityID,
+        note: form.note,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) setError(data.error);
+        else {
+          setParticipationID(data.participation.participationID);
+          setConfirm(true);
+        }
+      })
+      .catch((error) => {
+        console.error("Error registering:", error);
+        setError("Đăng ký thất bại, vui lòng thử lại!");
+      });
+  };
+
+  const handleConfirm = () => {
+    fetch(`${API_BASE_URL}/participation/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      },
+      body: JSON.stringify({ participationID }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) setError(data.error);
+        else {
+          setSuccess("Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức.");
+          setShowForm(false);
+          setParticipationID(null);
+          setIsRegistered(true);
+          fetchActivities(); // Refresh the activities list
+        }
+      })
+      .catch((error) => {
+        console.error("Error submitting:", error);
+        setError("Gửi đăng ký thất bại, vui lòng thử lại!");
+      });
+  };
+
+  const fetchActivities = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/activities?allStatus=true`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setActivities(data.activities || []);
+        setFilteredActivities(data.activities || []);
+      }
+    } catch (error) {
+      setError("Có lỗi xảy ra khi tải danh sách hoạt động");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTypeChange = (type) => {
+    setSelectedType(type);
+    if (type === '') {
+      setFilteredActivities(activities);
+    } else {
+      setFilteredActivities(activities.filter(act => act.type === type));
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center text-gray-500">Đang tải hoạt động...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
+
   return (
     <div className="flex-1 p-6">
       <div className="space-y-3 order-1">
@@ -62,7 +234,7 @@ export default function StudentActivitiesContent() {
           <div className="relative">
             <select
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              onChange={(e) => handleTypeChange(e.target.value)}
               className="appearance-none w-48 p-2 border rounded-md pr-8 pl-8"
             >
               <option value="">Tất cả</option>
@@ -107,9 +279,7 @@ export default function StudentActivitiesContent() {
         </div>
       </div>
 
-      {loading ? (
-        <div>Đang tải hoạt động...</div>
-      ) : filteredActivities.length === 0 ? (
+      {filteredActivities.length === 0 ? (
         <div>Chưa có hoạt động nào.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -140,7 +310,7 @@ export default function StudentActivitiesContent() {
                   </span>
                 </div>
                 <div className="mt-4 flex justify-between items-center">
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md">
+                  <button className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md" onClick={() => handleShowDetail(act)}>
                     Xem chi tiết
                   </button>
                   {act.participationStatus !== 'present' && (
@@ -153,6 +323,26 @@ export default function StudentActivitiesContent() {
             </div>
           ))}
         </div>
+      )}
+
+      {showDetail && selected && (
+        <StudentActivityDetail
+          activity={selected}
+          onClose={handleCloseDetail}
+          onRegister={handleRegister}
+          showForm={showForm}
+          form={form}
+          onFormChange={handleFormChange}
+          onFormSubmit={handleFormSubmit}
+          error={error}
+          success={success}
+          confirm={confirm}
+          onConfirm={handleConfirm}
+          onCancelConfirm={() => setConfirm(false)}
+          suggested={suggested}
+          isRegistered={isRegistered}
+          isManagementView={true}
+        />
       )}
     </div>
   );
