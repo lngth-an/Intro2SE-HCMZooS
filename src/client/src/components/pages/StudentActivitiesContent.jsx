@@ -1,33 +1,50 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from "../../contexts/AuthContext";
+import StudentActivityDetail from "./StudentActivityDetail";
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:3001';
 
 export default function StudentActivitiesContent() {
+  const { user } = useAuth();
   const [activities, setActivities] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ note: "" });
+  const [confirm, setConfirm] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [suggested, setSuggested] = useState([]);
+  const [participationID, setParticipationID] = useState(null);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    fetch(`${API_BASE_URL}/student/activities?allStatus=true`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setActivities(data.activities || []);
-        setFilteredActivities(data.activities || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    fetchActivities();
   }, []);
+
+  const fetchActivities = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(`${API_BASE_URL}/student/activities?allStatus=true`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setActivities(response.data.activities || []);
+      setFilteredActivities(response.data.activities || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      toast.error('Không thể tải danh sách hoạt động');
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let filtered = [...activities];
@@ -51,24 +68,50 @@ export default function StudentActivitiesContent() {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
-    const handleShowDetail = (activity) => {
-        setSelectedActivity(activity);
-        setShowDetailModal(true);
-    };
+  const handleShowDetail = (activity) => {
+    setSelected(activity);
+    setShowDetail(true);
+    setShowForm(false);
+    setError("");
+    setSuccess("");
+    setConfirm(false);
+    setSuggested([]);
+    
+    // Check if student is already registered
+    const token = localStorage.getItem('accessToken');
+    axios.get(`${API_BASE_URL}/participation/check-registration/${activity.activityID}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        setIsRegistered(response.data.isRegistered);
+      })
+      .catch(error => {
+        console.error("Error checking registration:", error);
+        setIsRegistered(false);
+      });
+  };
 
-    const handleCloseDetailModal = () => {
-        setShowDetailModal(false);
-    };
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelected(null);
+    setShowForm(false);
+    setError("");
+    setSuccess("");
+    setConfirm(false);
+    setSuggested([]);
+    setIsRegistered(false);
+  };
 
   const handleCancelRegistration = async (participationID) => {
     try {
-      // Hiển thị xác nhận trước khi hủy
       if (!window.confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này?')) {
         return;
       }
 
       const token = localStorage.getItem('accessToken');
-      const response = await axios.delete(`${API_BASE_URL}/participation/${participationID}`, {
+      await axios.delete(`${API_BASE_URL}/participation/${participationID}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -87,11 +130,116 @@ export default function StudentActivitiesContent() {
 
       setActivities(updatedActivities);
       toast.success('Hủy đăng ký thành công!');
+      handleCloseDetail();
+      fetchActivities(); // Refresh the list
     } catch (error) {
       console.error('Error cancelling registration:', error);
       toast.error(error.response?.data?.error || 'Có lỗi xảy ra khi hủy đăng ký');
     }
   };
+
+  const handleRegister = (activity) => {
+    fetch(`${API_BASE_URL}/participation/check-eligibility/${activity.activityID}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.eligible) {
+          setShowForm(true);
+          setError("");
+        } else {
+          setError(data.reason || "Bạn không đủ điều kiện đăng ký hoạt động này");
+          fetch(`${API_BASE_URL}/participation/suggest?domain=${activity.type}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+          })
+            .then((res) => res.json())
+            .then((data) => setSuggested(data.activities || []));
+        }
+      })
+      .catch((error) => {
+        console.error("Error checking eligibility:", error);
+        setError("Có lỗi xảy ra, vui lòng thử lại!");
+      });
+  };
+
+  const handleFormChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setError("");
+    fetch(`${API_BASE_URL}/participation/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      },
+      body: JSON.stringify({
+        activityID: selected.activityID,
+        note: form.note,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) setError(data.error);
+        else {
+          setParticipationID(data.participation.participationID);
+          setConfirm(true);
+        }
+      })
+      .catch((error) => {
+        console.error("Error registering:", error);
+        setError("Đăng ký thất bại, vui lòng thử lại!");
+      });
+  };
+
+  const handleConfirm = () => {
+    fetch(`${API_BASE_URL}/participation/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      },
+      body: JSON.stringify({ participationID }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) setError(data.error);
+        else {
+          setSuccess("Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức.");
+          setShowForm(false);
+          setParticipationID(null);
+          setIsRegistered(true);
+          fetchActivities(); // Refresh the activities list
+        }
+      })
+      .catch((error) => {
+        console.error("Error submitting:", error);
+        setError("Gửi đăng ký thất bại, vui lòng thử lại!");
+      });
+  };
+
+  const handleTypeChange = (type) => {
+    setSelectedType(type);
+    if (type === '') {
+      setFilteredActivities(activities);
+    } else {
+      setFilteredActivities(activities.filter(act => act.type === type));
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center text-gray-500">Đang tải hoạt động...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
 
   return (
     <div className="flex-1 p-6">
@@ -107,7 +255,7 @@ export default function StudentActivitiesContent() {
           <div className="relative">
             <select
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              onChange={(e) => handleTypeChange(e.target.value)}
               className="appearance-none w-48 p-2 border rounded-md pr-8 pl-8"
             >
               <option value="">Tất cả</option>
@@ -152,9 +300,7 @@ export default function StudentActivitiesContent() {
         </div>
       </div>
 
-      {loading ? (
-        <div>Đang tải hoạt động...</div>
-      ) : filteredActivities.length === 0 ? (
+      {filteredActivities.length === 0 ? (
         <div>Chưa có hoạt động nào.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -208,48 +354,25 @@ export default function StudentActivitiesContent() {
         </div>
       )}
 
-        {/* Activity Detail Modal */}
-        {showDetailModal && selectedActivity && (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
-                    <button
-                        onClick={handleCloseDetailModal}
-                        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                    >
-                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                        {selectedActivity.name}
-                    </h2>
-
-                    <div className="space-y-2 text-gray-700 text-base">
-                        <p>
-                            <span className="font-semibold">Mô tả:</span> {selectedActivity.description || 'Chưa có mô tả chi tiết.'}
-                        </p>
-                        <p>
-                            <span className="font-semibold">Đơn vị tổ chức:</span> {selectedActivity.organizerName || 'Đang cập nhật'}
-                        </p>
-                        <p>
-                            <span className="font-semibold">Thời gian:</span>
-                            {selectedActivity.eventStart ? new Date(selectedActivity.eventStart).toLocaleString() : "N/A"} -
-                            {selectedActivity.eventEnd ? new Date(selectedActivity.eventEnd).toLocaleString() : "N/A"}
-                        </p>
-                        <p>
-                            <span className="font-semibold">Địa điểm:</span> {selectedActivity.location || 'Chưa xác định'}
-                        </p>
-                        <p>
-                            <span className="font-semibold">Lĩnh vực:</span>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                {selectedActivity.type || 'Chưa phân loại'}
-                            </span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        )}
+      {showDetail && selected && (
+        <StudentActivityDetail
+          activity={selected}
+          onClose={handleCloseDetail}
+          onRegister={handleRegister}
+          showForm={showForm}
+          form={form}
+          onFormChange={handleFormChange}
+          onFormSubmit={handleFormSubmit}
+          error={error}
+          success={success}
+          confirm={confirm}
+          onConfirm={handleConfirm}
+          onCancelConfirm={() => setConfirm(false)}
+          suggested={suggested}
+          isRegistered={isRegistered}
+          isManagementView={true}
+        />
+      )}
     </div>
   );
 }
