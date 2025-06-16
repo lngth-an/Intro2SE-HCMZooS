@@ -188,14 +188,26 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Thiếu token hoặc mật khẩu mới' });
+    }
 
-    // Tìm token trong database
-    const passwordReset = await PasswordReset.findOne({
+    // Tìm tất cả các token chưa hết hạn
+    const passwordResets = await PasswordReset.findAll({
       where: {
-        token: await bcrypt.hash(token, 10),
         expiresAt: { [Op.gt]: new Date() }
       }
     });
+
+    // So sánh token
+    let passwordReset = null;
+    for (const pr of passwordResets) {
+      const match = await bcrypt.compare(token, pr.token);
+      if (match) {
+        passwordReset = pr;
+        break;
+      }
+    }
 
     if (!passwordReset) {
       return res.status(400).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
@@ -212,6 +224,34 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: 'Password đã được reset thành công' });
   } catch (error) {
     console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+// Đổi mật khẩu cho user đã đăng nhập
+exports.changePassword = async (req, res) => {
+  try {
+    const userID = req.user.userID; // Lấy từ middleware xác thực JWT
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Thiếu mật khẩu hiện tại hoặc mật khẩu mới' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải ít nhất 6 ký tự' });
+    }
+    const user = await User.findByPk(userID);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await user.update({ password: hashedPassword });
+    res.json({ message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    console.error('Change password error:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 }; 

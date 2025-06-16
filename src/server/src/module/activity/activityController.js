@@ -537,82 +537,100 @@ class ActivityController {
         }
     }
 
-    // Tìm kiếm sinh viên theo mã số trong hoạt động của organizer
+    // Tìm kiếm sinh viên theo studentID trong hoạt động
     static async searchStudentInActivity(req, res) {
         try {
             if (!req.user || req.user.role !== 'organizer') {
                 return res.status(403).json({ message: 'Forbidden: Only organizers can search students.' });
             }
-
+    
             const { activityID } = req.params;
-            const { studentCode } = req.query;
-
-            if (!studentCode) {
+            const { studentID } = req.query;
+    
+            if (!studentID) {
                 return res.status(400).json({ message: 'Mã số sinh viên là bắt buộc.' });
             }
-
+    
+            // Lấy organizerID từ user hiện tại
             const organizerID = await ActivityController.getOrganizerID(req.user.userID);
             if (!organizerID) {
                 return res.status(404).json({ message: 'Organizer not found' });
             }
-
-            // Kiểm tra xem hoạt động có thuộc về organizer này không
+    
+            // Kiểm tra hoạt động có thuộc organizer không
             const activity = await Activity.findOne({
                 where: { activityID, organizerID }
             });
-
+    
             if (!activity) {
                 return res.status(404).json({ message: 'Không tìm thấy hoạt động hoặc bạn không có quyền truy cập.' });
             }
-
-            // Tìm kiếm sinh viên trong hoạt động
+    
+            // Tìm sinh viên trong danh sách đã đăng ký hoặc đã tham gia của hoạt động
             const student = await Student.findOne({
-                where: { studentCode },
+                where: { studentID },
                 include: [
                     {
                         model: User,
                         as: 'user',
-                        attributes: ['fullName', 'email', 'phone']
+                        attributes: ['name', 'email', 'phone', 'role']
                     },
                     {
                         model: Participation,
+                        as: 'participations',
                         where: {
                             activityID,
                             participationStatus: {
-                                [Op.notIn]: ['cancelled', 'rejected']
+                                [Op.in]: ['pending', 'approved'] // ✅ chỉ lấy các trạng thái đã đăng ký hoặc đã tham gia
                             }
                         },
-                        required: false
+                        required: true, // ✅ chỉ lấy khi có participation hợp lệ
+                        attributes: ['participationID', 'participationStatus', 'trainingPoint', 'type']
                     }
-                ]
+                ],
+                attributes: ['studentID', 'userID', 'sex', 'dateOfBirth', 'academicYear', 'falculty', 'point']
             });
-
+    
             if (!student) {
                 return res.status(404).json({ 
-                    message: 'Không tìm thấy sinh viên có mã số này trong hoạt động.',
+                    message: 'Không tìm thấy sinh viên có mã số này trong danh sách đăng ký/tham gia của hoạt động.',
                     found: false
                 });
             }
-
-            // Format dữ liệu trả về
+    
+            const p = student.participations[0]; // Vì required:true nên chắc chắn có ít nhất 1
+    
             const response = {
                 found: true,
                 student: {
                     studentID: student.studentID,
-                    studentCode: student.studentCode,
-                    fullName: student.user.fullName,
+                    userID: student.userID,
+                    name: student.user.name,
                     email: student.user.email,
                     phone: student.user.phone,
-                    participation: student.Participations[0]
+                    sex: student.sex,
+                    dateOfBirth: student.dateOfBirth,
+                    academicYear: student.academicYear,
+                    faculty: student.falculty,
+                    point: student.point,
+                    participation: {
+                        participationID: p.participationID,
+                        status: p.participationStatus,
+                        trainingPoint: p.trainingPoint,
+                        type: p.type
+                    },
+                    participationStatusText: p.participationStatus === 'approved'
+                        ? 'Đã tham gia'
+                        : 'Đang chờ duyệt'
                 }
             };
-
+    
             res.status(200).json(response);
         } catch (error) {
             console.error('Error searching student in activity:', error);
             res.status(500).json({ message: 'Lỗi khi tìm kiếm sinh viên.' });
         }
-    }
+    }    
 
 }
 
