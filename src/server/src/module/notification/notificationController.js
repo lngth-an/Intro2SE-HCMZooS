@@ -380,6 +380,86 @@ class NotificationController {
             });
         }
     }
+
+    // GET /notifications/sent
+    static async getSentNotifications(req, res) {
+        try {
+            const userID = req.user.userID;
+            const { page = 1, limit = 10 } = req.query;
+            const offset = (page - 1) * limit;
+
+            const requestingUser = await User.findByPk(userID, {
+                include: [{
+                    model: Organizer,
+                    as: 'organizer'
+                }]
+            });
+
+            if (!requestingUser) {
+                return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+            }
+
+            if (requestingUser.role !== 'organizer' && requestingUser.role !== 'admin') {
+                return res.status(403).json({ message: 'Không có quyền xem thông báo đã gửi' });
+            }
+
+            // Lấy danh sách thông báo đã gửi
+            const { count, rows: notifications } = await Notification.findAndCountAll({
+                where: {
+                    fromUserID: userID
+                },
+                include: [
+                    {
+                        model: User,
+                        as: 'toUser',
+                        attributes: ['userID', 'name', 'email', 'phone'],
+                        include: [{
+                            model: Student,
+                            as: 'student',
+                            attributes: ['userID', 'academicYear', 'falculty']
+                        }]
+                    }
+                ],
+                order: [['notificationID', 'DESC']],
+                limit: parseInt(limit),
+                offset: parseInt(offset)
+            });
+
+            // Format lại dữ liệu trả về
+            const formattedNotifications = notifications.map(notification => ({
+                notificationID: notification.notificationID,
+                notificationTitle: notification.notificationTitle,
+                notificationMessage: notification.notificationMessage,
+                notificationStatus: notification.notificationStatus,
+                recipient: {
+                    userID: notification.toUser.userID,
+                    fullName: notification.toUser.name,
+                    email: notification.toUser.email,
+                    phone: notification.toUser.phone,
+                    studentInfo: notification.toUser.student ? {
+                        academicYear: notification.toUser.student.academicYear,
+                        faculty: notification.toUser.student.falculty
+                    } : null
+                }
+            }));
+
+            res.status(200).json({
+                notifications: formattedNotifications,
+                pagination: {
+                    total: count,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(count / limit)
+                }
+            });
+        } catch (error) {
+            console.error('Error getting sent notifications:', error);
+            res.status(500).json({ 
+                message: 'Lỗi server khi lấy danh sách thông báo đã gửi',
+                error: error.message 
+            });
+        }
+    }
 }
 
 module.exports = NotificationController;

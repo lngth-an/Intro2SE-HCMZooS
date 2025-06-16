@@ -9,6 +9,9 @@ router.post('/send', authenticateToken, NotificationController.sendNotification)
 // Lấy danh sách thông báo
 router.get('/', authenticateToken, NotificationController.getNotifications);
 
+// Lấy danh sách thông báo đã gửi
+router.get('/sent', authenticateToken, NotificationController.getSentNotifications);
+
 // Đánh dấu thông báo đã đọc
 router.patch('/:id/read', authenticateToken, NotificationController.markAsRead);
 
