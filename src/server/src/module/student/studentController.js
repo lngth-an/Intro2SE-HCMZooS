@@ -163,8 +163,11 @@ class StudentController {
       const parsedLimit = parseInt(limit);
       const parsedPage = parseInt(page);
 
-      const whereConditions = {};
       const havingConditions = {};
+
+      const whereConditions = {
+        activityStatus: 'published' 
+      };
 
       if (search) {
         whereConditions[Op.or] = [

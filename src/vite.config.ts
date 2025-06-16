@@ -13,5 +13,19 @@ export default defineConfig({
         ws: true
       }
     }
+  },
+  build: {
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
   }
 });

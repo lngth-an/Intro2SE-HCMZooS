@@ -24,7 +24,10 @@ import {
     IconButton,
     Tooltip,
     Badge,
-    Autocomplete
+    Autocomplete,
+    Tabs,
+    Tab,
+    Pagination
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
@@ -44,6 +47,7 @@ const socket = io(API_URL, {
 
 const OrganizerNotifications = () => {
     const [notifications, setNotifications] = useState([]);
+    const [sentNotifications, setSentNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [students, setStudents] = useState([]);
@@ -53,6 +57,9 @@ const OrganizerNotifications = () => {
         message: '',
         targetType: 'all_students'
     });
+    const [activeTab, setActiveTab] = useState(0);
+    const [sentNotificationsPage, setSentNotificationsPage] = useState(1);
+    const [sentNotificationsTotalPages, setSentNotificationsTotalPages] = useState(1);
     const { user, token } = useAuth();
 
     const fetchNotifications = useCallback(async () => {
@@ -81,15 +88,30 @@ const OrganizerNotifications = () => {
         }
     }, [token]);
 
+    const fetchSentNotifications = useCallback(async (page = 1) => {
+        try {
+            const response = await axios.get(`/notifications/sent?page=${page}&limit=10`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSentNotifications(response.data.notifications);
+            setSentNotificationsTotalPages(response.data.pagination.totalPages);
+        } catch (error) {
+            console.error('Error fetching sent notifications:', error);
+            toast.error('Lỗi khi tải thông báo đã gửi');
+        }
+    }, [token]);
+
     useEffect(() => {
         if (user) {
             fetchNotifications();
             fetchStudents('');
+            fetchSentNotifications(1);
 
             // Subscribe to realtime notifications
             socket.on('new_notification', (data) => {
                 if (data.notifications.some(n => n.fromUserID === user.userID)) {
                     fetchNotifications();
+                    fetchSentNotifications(sentNotificationsPage);
                 }
             });
 
@@ -97,7 +119,7 @@ const OrganizerNotifications = () => {
                 socket.off('new_notification');
             };
         }
-    }, [user, fetchNotifications, fetchStudents]);
+    }, [user, fetchNotifications, fetchStudents, fetchSentNotifications, sentNotificationsPage]);
 
     const handleNotificationClick = async (notification) => {
         if (notification.notificationStatus === 'unread') {
@@ -174,6 +196,15 @@ const OrganizerNotifications = () => {
         setSelectedStudents([]);
     };
 
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
+    };
+
+    const handleSentNotificationsPageChange = (event, value) => {
+        setSentNotificationsPage(value);
+        fetchSentNotifications(value);
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -203,70 +234,134 @@ const OrganizerNotifications = () => {
             </Box>
 
             <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                {notifications.length === 0 ? (
-                    <Box p={4} textAlign="center">
-                        <NotificationsOff sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                        <Typography color="textSecondary" variant="h6">
-                            Không có thông báo nào
-                        </Typography>
-                    </Box>
-                ) : (
-                    <List>
-                        {notifications.map((notification, index) => (
-                            <React.Fragment key={notification.notificationID}>
-                                <ListItem
-                                    button
-                                    onClick={() => handleNotificationClick(notification)}
-                                    sx={{
-                                        backgroundColor: notification.notificationStatus === 'unread' ? 'action.hover' : 'inherit',
-                                        '&:hover': {
-                                            backgroundColor: 'action.selected',
-                                        },
-                                        py: 2,
-                                    }}
-                                >
-                                    <ListItemText
-                                        primary={
-                                            <Box display="flex" alignItems="center" gap={1}>
-                                                <Typography
-                                                    variant="subtitle1"
-                                                    fontWeight={notification.notificationStatus === 'unread' ? 'bold' : 'normal'}
-                                                >
-                                                    {notification.notificationTitle}
+                <Tabs value={activeTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <Tab label="Thông báo nhận được" />
+                    <Tab label="Thông báo đã gửi" />
+                </Tabs>
+
+                {activeTab === 0 ? (
+                    notifications.length === 0 ? (
+                        <Box p={4} textAlign="center">
+                            <NotificationsOff sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                            <Typography color="textSecondary" variant="h6">
+                                Không có thông báo nào
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <List>
+                            {notifications.map((notification, index) => (
+                                <React.Fragment key={notification.notificationID}>
+                                    <ListItem
+                                        button
+                                        onClick={() => handleNotificationClick(notification)}
+                                        sx={{
+                                            backgroundColor: notification.notificationStatus === 'unread' ? 'action.hover' : 'inherit',
+                                            '&:hover': {
+                                                backgroundColor: 'action.selected',
+                                            },
+                                            py: 2,
+                                        }}
+                                    >
+                                        <ListItemText
+                                            primary={
+                                                <Box display="flex" alignItems="center" gap={1}>
+                                                    <Typography
+                                                        variant="subtitle1"
+                                                        fontWeight={notification.notificationStatus === 'unread' ? 'bold' : 'normal'}
+                                                    >
+                                                        {notification.notificationTitle}
+                                                    </Typography>
+                                                    <Chip
+                                                        label={notification.notificationStatus === 'unread' ? 'Mới' : 'Đã đọc'}
+                                                        size="small"
+                                                        color={notification.notificationStatus === 'unread' ? 'primary' : 'default'}
+                                                    />
+                                                </Box>
+                                            }
+                                            secondary={
+                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                                    {notification.notificationMessage}
                                                 </Typography>
-                                                <Chip
-                                                    label={notification.notificationStatus === 'unread' ? 'Mới' : 'Đã đọc'}
-                                                    size="small"
-                                                    color={notification.notificationStatus === 'unread' ? 'primary' : 'default'}
-                                                />
-                                            </Box>
-                                        }
-                                        secondary={
-                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                                {notification.notificationMessage}
-                                            </Typography>
-                                        }
-                                    />
-                                    <Tooltip title="Xóa thông báo">
-                                        <IconButton
-                                            edge="end"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteNotification(notification.notificationID);
-                                            }}
-                                        >
-                                            <Delete />
-                                        </IconButton>
-                                    </Tooltip>
-                                </ListItem>
-                                {index < notifications.length - 1 && <Divider />}
-                            </React.Fragment>
-                        ))}
-                    </List>
+                                            }
+                                        />
+                                        <Tooltip title="Xóa thông báo">
+                                            <IconButton
+                                                edge="end"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteNotification(notification.notificationID);
+                                                }}
+                                            >
+                                                <Delete />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </ListItem>
+                                    {index < notifications.length - 1 && <Divider />}
+                                </React.Fragment>
+                            ))}
+                        </List>
+                    )
+                ) : (
+                    sentNotifications.length === 0 ? (
+                        <Box p={4} textAlign="center">
+                            <NotificationsOff sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                            <Typography color="textSecondary" variant="h6">
+                                Chưa gửi thông báo nào
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <>
+                            <List>
+                                {sentNotifications.map((notification) => (
+                                    <React.Fragment key={notification.notificationID}>
+                                        <ListItem sx={{ py: 2 }}>
+                                            <ListItemText
+                                                primary={
+                                                    <Box display="flex" alignItems="center" gap={1}>
+                                                        <Typography variant="subtitle1" fontWeight="medium">
+                                                            {notification.notificationTitle}
+                                                        </Typography>
+                                                        <Chip
+                                                            label={notification.notificationStatus}
+                                                            size="small"
+                                                            color={notification.notificationStatus === 'unread' ? 'primary' : 'default'}
+                                                        />
+                                                    </Box>
+                                                }
+                                                secondary={
+                                                    <>
+                                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                                            {notification.notificationMessage}
+                                                        </Typography>
+                                                        <Box mt={1}>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                Gửi đến: {notification.recipient.fullName} ({notification.recipient.studentCode})
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary" display="block">
+                                                                Thời gian: {new Date(notification.createdAt).toLocaleString()}
+                                                            </Typography>
+                                                        </Box>
+                                                    </>
+                                                }
+                                            />
+                                        </ListItem>
+                                        <Divider />
+                                    </React.Fragment>
+                                ))}
+                            </List>
+                            <Box display="flex" justifyContent="center" p={2}>
+                                <Pagination
+                                    count={sentNotificationsTotalPages}
+                                    page={sentNotificationsPage}
+                                    onChange={handleSentNotificationsPageChange}
+                                    color="primary"
+                                />
+                            </Box>
+                        </>
+                    )
                 )}
             </Paper>
 
-            {/* Dialog gửi thông báo mới */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>Gửi thông báo mới</DialogTitle>
                 <DialogContent>

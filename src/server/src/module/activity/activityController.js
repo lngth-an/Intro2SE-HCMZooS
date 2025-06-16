@@ -537,6 +537,83 @@ class ActivityController {
         }
     }
 
+    // Tìm kiếm sinh viên theo mã số trong hoạt động của organizer
+    static async searchStudentInActivity(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'organizer') {
+                return res.status(403).json({ message: 'Forbidden: Only organizers can search students.' });
+            }
+
+            const { activityID } = req.params;
+            const { studentCode } = req.query;
+
+            if (!studentCode) {
+                return res.status(400).json({ message: 'Mã số sinh viên là bắt buộc.' });
+            }
+
+            const organizerID = await ActivityController.getOrganizerID(req.user.userID);
+            if (!organizerID) {
+                return res.status(404).json({ message: 'Organizer not found' });
+            }
+
+            // Kiểm tra xem hoạt động có thuộc về organizer này không
+            const activity = await Activity.findOne({
+                where: { activityID, organizerID }
+            });
+
+            if (!activity) {
+                return res.status(404).json({ message: 'Không tìm thấy hoạt động hoặc bạn không có quyền truy cập.' });
+            }
+
+            // Tìm kiếm sinh viên trong hoạt động
+            const student = await Student.findOne({
+                where: { studentCode },
+                include: [
+                    {
+                        model: User,
+                        as: 'user',
+                        attributes: ['fullName', 'email', 'phone']
+                    },
+                    {
+                        model: Participation,
+                        where: {
+                            activityID,
+                            participationStatus: {
+                                [Op.notIn]: ['cancelled', 'rejected']
+                            }
+                        },
+                        required: false
+                    }
+                ]
+            });
+
+            if (!student) {
+                return res.status(404).json({ 
+                    message: 'Không tìm thấy sinh viên có mã số này trong hoạt động.',
+                    found: false
+                });
+            }
+
+            // Format dữ liệu trả về
+            const response = {
+                found: true,
+                student: {
+                    studentID: student.studentID,
+                    studentCode: student.studentCode,
+                    fullName: student.user.fullName,
+                    email: student.user.email,
+                    phone: student.user.phone,
+                    participation: student.Participations[0]
+                }
+            };
+
+            res.status(200).json(response);
+        } catch (error) {
+            console.error('Error searching student in activity:', error);
+            res.status(500).json({ message: 'Lỗi khi tìm kiếm sinh viên.' });
+        }
+    }
+
 }
 
 module.exports = ActivityController;
