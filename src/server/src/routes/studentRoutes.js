@@ -14,6 +14,5 @@ router.get('/activities', StudentController.getActivities);
 // Get student statistics
 router.get('/stats', authenticateToken, StudentController.getStats);
 
-// Thêm route mới vào participationRoutes.js
 router.get('/activities/search', authenticateToken, StudentController.searchActivities);
 module.exports = router; 

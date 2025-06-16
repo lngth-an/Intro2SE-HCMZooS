@@ -42,5 +42,6 @@ router.patch('/complaint/:id', ComplaintController.updateComplaintStatus);
 
 // Route cập nhật điểm rèn luyện
 router.patch('/:activityID/training-point', ActivityController.updateTrainingPoint);
+router.get('/:activityID/search-student',  ActivityController.searchStudentInActivity);
 
 module.exports = router;

@@ -17,5 +17,6 @@ router.post('/forgot-password', AuthController.forgotPassword);
 
 // UC102: Reset Password
 router.post('/reset-password', AuthController.resetPassword);
+router.post('/change-password', authenticateToken, AuthController.changePassword);
 
 module.exports = router; 

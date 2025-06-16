@@ -97,7 +97,7 @@ export default function ProfilePage() {
     }
 
     try {
-      await axios.patch('/auth/change-password', pwForm);
+      await axios.post('/auth/change-password', pwForm);
       setPwSuccess('Đổi mật khẩu thành công!');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPwMode(false);
