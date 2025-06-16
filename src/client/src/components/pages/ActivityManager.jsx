@@ -67,6 +67,7 @@ const statusLabels = {
   upcoming: "Sắp diễn ra",
   cancelled: "Đã hủy",
   published: "Đã đăng tải",
+  completed: "Đã hoàn thành",
 };
 
 const DEFAULT_IMAGE =
@@ -210,9 +211,6 @@ function ActivityManager() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa hoạt động này?")) {
-      return;
-    }
     const token = localStorage.getItem("accessToken");
     try {
       await axios.delete(`${API_BASE_URL}/activity/${id}`, {
@@ -236,12 +234,12 @@ function ActivityManager() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      toast.success("Đã xuất bản hoạt động thành công!");
+      toast.success("Đã đăng tải hoạt động thành công!");
       fetchActivities();
     } catch (error) {
       console.error("Publish error:", error);
       toast.error(
-        error.response?.data?.message || "Không thể xuất bản hoạt động"
+        error.response?.data?.message || "Không thể đăng tải hoạt động"
       );
     }
   };
@@ -387,38 +385,35 @@ function ActivityManager() {
           >
             Xem
           </Button>
-          <Button
-            type="default"
-            icon={<EditOutlined />}
-            onClick={() => {
-              console.log(
-                "Navigating to edit page for activity:",
-                record.activityID
-              );
-              navigate(`/organizer/activities/${record.activityID}/edit`, {
-                replace: false,
-              });
-            }}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa hoạt động này?"
-            onConfirm={() => handleDelete(record.activityID)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="default" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
-          </Popconfirm>
-          {record.activityStatus === "draft" && (
-            <Button
-              type="primary"
-              onClick={() => handlePublish(record.activityID)}
-            >
-              Xuất bản
-            </Button>
+
+          {record.activityStatus === "Bản nháp" && (
+            <>
+              <Button
+                type="default"
+                icon={<EditOutlined />}
+                onClick={() =>
+                  navigate(`/organizer/activities/${record.activityID}/edit`)
+                }
+              >
+                Sửa
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => handlePublish(record.activityID)}
+              >
+                Đăng tải
+              </Button>
+              <Popconfirm
+                title="Bạn có chắc chắn muốn xóa hoạt động này?"
+                onConfirm={() => handleDelete(record.activityID)}
+                okText="Có"
+                cancelText="Không"
+              >
+                <Button type="default" danger icon={<DeleteOutlined />}>
+                  Xóa
+                </Button>
+              </Popconfirm>
+            </>
           )}
         </Space>
       ),
@@ -428,13 +423,16 @@ function ActivityManager() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold uppercase">QUẢN LÝ HOẠT ĐỘNG</h1>
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          QUẢN LÝ HOẠT ĐỘNG
+        </h1>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => navigate("/organizer/activity-create")}
+          className="h-12 px-6 text-base font-semibold"
         >
-          Tạo hoạt động mới
+          TẠO HOẠT ĐỘNG
         </Button>
       </div>
 
