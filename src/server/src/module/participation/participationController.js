@@ -62,6 +62,42 @@ class ParticipationController {
       res.status(500).json({ message: 'Error suggesting activities' });
     }
   }
+
+  static async cancelRegistration(req, res) {
+    try {
+      const studentID = req.user.studentID;
+      const { participationID } = req.params;
+
+      // Kiểm tra xem đăng ký có tồn tại và thuộc về sinh viên này không
+      const participation = await ParticipationModel.getParticipationById(participationID, studentID);
+      if (!participation) {
+        return res.status(404).json({ error: 'Không tìm thấy đăng ký này.' });
+      }
+
+      // Kiểm tra trạng thái đăng ký
+      if (participation.participationStatus === 'approved') {
+        return res.status(400).json({ error: 'Không thể hủy đăng ký đã được duyệt.' });
+      }
+
+      if (participation.participationStatus === 'cancelled') {
+        return res.status(400).json({ error: 'Đăng ký này đã bị hủy trước đó.' });
+      }
+
+      // Cập nhật trạng thái đăng ký thành 'cancelled'
+      await ParticipationModel.updateParticipationStatus(participationID, 'cancelled');
+      
+      res.json({ 
+        message: 'Hủy đăng ký thành công.',
+        participation: {
+          ...participation,
+          participationStatus: 'cancelled'
+        }
+      });
+    } catch (err) {
+      console.error('Error cancelling registration:', err);
+      res.status(500).json({ error: 'Lỗi khi hủy đăng ký.' });
+    }
+  }
 }
 
 module.exports = ParticipationController; 

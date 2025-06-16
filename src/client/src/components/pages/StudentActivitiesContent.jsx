@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:3001';
 
@@ -7,7 +9,9 @@ export default function StudentActivitiesContent() {
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -27,18 +31,17 @@ export default function StudentActivitiesContent() {
 
   useEffect(() => {
     let filtered = [...activities];
-    
+
     if (selectedType) {
       filtered = filtered.filter(act => act.type === selectedType);
     }
 
-    // Sort activities by date
     filtered.sort((a, b) => {
       const dateA = new Date(a.eventStart);
       const dateB = new Date(b.eventStart);
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
-    
+
     setFilteredActivities(filtered);
   }, [selectedType, activities, sortOrder]);
 
@@ -46,6 +49,48 @@ export default function StudentActivitiesContent() {
 
   const toggleSort = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+    const handleShowDetail = (activity) => {
+        setSelectedActivity(activity);
+        setShowDetailModal(true);
+    };
+
+    const handleCloseDetailModal = () => {
+        setShowDetailModal(false);
+    };
+
+  const handleCancelRegistration = async (participationID) => {
+    try {
+      // Hiển thị xác nhận trước khi hủy
+      if (!window.confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này?')) {
+        return;
+      }
+
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.delete(`${API_BASE_URL}/participation/${participationID}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Cập nhật lại danh sách hoạt động
+      const updatedActivities = activities.map(activity => {
+        if (activity.participationID === participationID) {
+          return {
+            ...activity,
+            participationStatus: 'cancelled'
+          };
+        }
+        return activity;
+      });
+
+      setActivities(updatedActivities);
+      toast.success('Hủy đăng ký thành công!');
+    } catch (error) {
+      console.error('Error cancelling registration:', error);
+      toast.error(error.response?.data?.error || 'Có lỗi xảy ra khi hủy đăng ký');
+    }
   };
 
   return (
@@ -86,19 +131,19 @@ export default function StudentActivitiesContent() {
             onClick={toggleSort}
             className="w-48 p-2 border rounded-md bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
           >
-            <svg 
-              className="w-4 h-4" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
             </svg>
             <span>Ngày</span>
-            <svg 
-              className={`w-4 h-4 transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className={`w-4 h-4 transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -127,24 +172,32 @@ export default function StudentActivitiesContent() {
                 <div className="mt-2">
                   <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
                     act.participationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    act.participationStatus === 'approved' ? 'bg-blue-100 text-blue-800' :
-                    act.participationStatus === 'present' ? 'bg-green-100 text-green-800' :
-                    act.participationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-700'
+                      act.participationStatus === 'approved' ? 'bg-blue-100 text-blue-800' :
+                        act.participationStatus === 'present' ? 'bg-green-100 text-green-800' :
+                          act.participationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-700'
                   }`}>
                     {act.participationStatus === 'pending' ? 'Chờ duyệt' :
                       act.participationStatus === 'approved' ? 'Đã duyệt' :
-                      act.participationStatus === 'present' ? 'Đã tham gia' :
-                      act.participationStatus === 'rejected' ? 'Bị từ chối' :
-                      act.participationStatus}
+                        act.participationStatus === 'present' ? 'Đã tham gia' :
+                          act.participationStatus === 'rejected' ? 'Bị từ chối' :
+                            act.participationStatus}
                   </span>
                 </div>
                 <div className="mt-4 flex justify-between items-center">
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md">
+                  <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
+                    onClick={() => handleShowDetail(act)}
+                  >
                     Xem chi tiết
                   </button>
-                  {act.participationStatus !== 'present' && (
-                    <button className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md">
+                  {act.participationStatus !== 'present' && 
+                   act.participationStatus !== 'cancelled' && 
+                   act.participationStatus !== 'approved' && (
+                    <button 
+                      className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
+                      onClick={() => handleCancelRegistration(act.participationID)}
+                    >
                       Hủy đăng ký
                     </button>
                   )}
@@ -154,6 +207,49 @@ export default function StudentActivitiesContent() {
           ))}
         </div>
       )}
+
+        {/* Activity Detail Modal */}
+        {showDetailModal && selectedActivity && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+                    <button
+                        onClick={handleCloseDetailModal}
+                        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                    >
+                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                        {selectedActivity.name}
+                    </h2>
+
+                    <div className="space-y-2 text-gray-700 text-base">
+                        <p>
+                            <span className="font-semibold">Mô tả:</span> {selectedActivity.description || 'Chưa có mô tả chi tiết.'}
+                        </p>
+                        <p>
+                            <span className="font-semibold">Đơn vị tổ chức:</span> {selectedActivity.organizerName || 'Đang cập nhật'}
+                        </p>
+                        <p>
+                            <span className="font-semibold">Thời gian:</span>
+                            {selectedActivity.eventStart ? new Date(selectedActivity.eventStart).toLocaleString() : "N/A"} -
+                            {selectedActivity.eventEnd ? new Date(selectedActivity.eventEnd).toLocaleString() : "N/A"}
+                        </p>
+                        <p>
+                            <span className="font-semibold">Địa điểm:</span> {selectedActivity.location || 'Chưa xác định'}
+                        </p>
+                        <p>
+                            <span className="font-semibold">Lĩnh vực:</span>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                {selectedActivity.type || 'Chưa phân loại'}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
-} 
+}

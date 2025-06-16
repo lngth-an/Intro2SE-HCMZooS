@@ -4,7 +4,13 @@ const { Op } = require('sequelize');
 const ParticipationModel = {
   async findByStudentAndActivity(studentID, activityID) {
     return db.Participation.findOne({
-      where: { studentID, activityID, participationStatus: { [Op.ne]: 'canceled' } }
+      where: { 
+        studentID, 
+        activityID, 
+        participationStatus: { 
+          [Op.notIn]: ['cancelled', 'rejected'] 
+        } 
+      }
     });
   },
   async createParticipation(data) {
@@ -22,7 +28,9 @@ const ParticipationModel = {
       include: [{ model: db.Participation, as: 'participations', required: false }],
     });
     return activities.filter(a => {
-      const count = a.participations?.filter(p => p.participationStatus !== 'rejected' && p.participationStatus !== 'canceled').length || 0;
+      const count = a.participations?.filter(p => 
+        !['cancelled', 'rejected'].includes(p.participationStatus)
+      ).length || 0;
       return !a.capacity || count < a.capacity;
     });
   },
@@ -31,15 +39,33 @@ const ParticipationModel = {
     if (!activity || activity.activityStatus !== 'published' || new Date(activity.registrationEnd) < new Date()) {
       return { eligible: false, reason: 'Hoạt động không hợp lệ hoặc đã hết hạn đăng ký.' };
     }
-    const existed = await db.Participation.findOne({ where: { studentID, activityID, participationStatus: { [Op.ne]: 'canceled' } } });
-    if (existed) return { eligible: false, reason: 'Bạn đã đăng ký hoạt động này.' };
+    const existed = await db.Participation.findOne({ 
+      where: { 
+        studentID, 
+        activityID, 
+        participationStatus: { 
+          [Op.notIn]: ['cancelled', 'rejected'] 
+        } 
+      } 
+    });
+    if (existed) {
+      return { 
+        eligible: false, 
+        reason: existed.participationStatus === 'cancelled' 
+          ? 'Bạn đã hủy đăng ký hoạt động này trước đó.' 
+          : 'Bạn đã đăng ký hoạt động này.'
+      };
+    }
     return { eligible: true };
   },
   async getParticipationById(participationID, studentID) {
     return db.Participation.findOne({ where: { participationID, studentID } });
   },
   async updateParticipationStatus(participationID, status) {
-    return db.Participation.update({ participationStatus: status }, { where: { participationID } });
+    return db.Participation.update(
+      { participationStatus: status }, 
+      { where: { participationID } }
+    );
   },
   async suggestActivities(domain) {
     const now = new Date();

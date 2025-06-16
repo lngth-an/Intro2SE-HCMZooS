@@ -193,7 +193,7 @@ function ActivityManager() {
     }
     const token = localStorage.getItem("accessToken");
     try {
-      await axios.delete(`${ACTIVITIES_API_URL}/${id}`, {
+      await axios.delete(`${API_BASE_URL}/activity/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Xóa hoạt động thành công");
@@ -208,7 +208,7 @@ function ActivityManager() {
     const token = localStorage.getItem("accessToken");
     try {
       await axios.patch(
-        `${ACTIVITIES_API_URL}/${id}/publish`,
+        `${API_BASE_URL}/activity/${id}/publish`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
