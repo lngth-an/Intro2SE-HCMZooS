@@ -36,14 +36,37 @@ const DOMAINS = [
     color: "bg-green-100 text-green-800",
   },
   {
-    id: "Văn hóa - Thể thao",
-    label: "Văn hóa - Thể thao",
-    color: "bg-yellow-100 text-yellow-800",
+    id: "Văn hóa",
+    label: "Văn hóa",
+    color: "bg-orange-100 text-orange-800",
   },
-  { id: "Kỹ năng", label: "Kỹ năng", color: "bg-purple-100 text-purple-800" },
-  { id: "Nghệ thuật", label: "Nghệ thuật", color: "bg-pink-100 text-pink-800" },
-  { id: "Khác", label: "Khác", color: "bg-gray-100 text-gray-800" },
+  {
+    id: "Thể thao",
+    label: "Thể thao",
+    color: "bg-red-100 text-red-800",
+  },
+  {
+    id: "Kỹ năng",
+    label: "Kỹ năng",
+    color: "bg-purple-100 text-purple-800",
+  },
+  {
+    id: "Nghệ thuật",
+    label: "Nghệ thuật",
+    color: "bg-pink-100 text-pink-800",
+  },
+  {
+    id: "Hội thảo",
+    label: "Hội thảo",
+    color: "bg-indigo-100 text-indigo-800",
+  },
+  {
+    id: "Khác",
+    label: "Khác",
+    color: "bg-gray-100 text-gray-800",
+  },
 ];
+
 
 // Map activityStatus to display colors
 const statusColors = {
@@ -76,9 +99,14 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const ACTIVITY_TYPES = [
-  { value: "training", label: "Đào tạo" },
-  { value: "event", label: "Sự kiện" },
-  { value: "competition", label: "Cuộc thi" },
+  { value: "Học thuật", label: "Học thuật" },
+  { value: "Tình nguyện", label: "Tình nguyện" },
+  { value: "Văn hóa", label: "Văn hóa" },
+  { value: "Thể thao", label: "Thể thao" },
+  { value: "Kỹ năng", label: "Kỹ năng" },
+  { value: "Nghệ thuật", label: "Nghệ thuật" },
+  { value: "Hội thảo", label: "Hội thảo" },
+  { value: "Khác", label: "Khác" },
 ];
 
 const ACTIVITY_STATUSES = [
@@ -387,38 +415,40 @@ function ActivityManager() {
           >
             Xem
           </Button>
-          <Button
-            type="default"
-            icon={<EditOutlined />}
-            onClick={() => {
-              console.log(
-                "Navigating to edit page for activity:",
-                record.activityID
-              );
-              navigate(`/organizer/activities/${record.activityID}/edit`, {
-                replace: false,
-              });
-            }}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa hoạt động này?"
-            onConfirm={() => handleDelete(record.activityID)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="default" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
-          </Popconfirm>
           {record.activityStatus === "Bản nháp" && (
-            <Button
-              type="primary"
-              onClick={() => handlePublish(record.activityID)}
-            >
-              Xuất bản
-            </Button>
+            <>
+              <Button
+                type="default"
+                icon={<EditOutlined />}
+                onClick={() => {
+                  console.log(
+                    "Navigating to edit page for activity:",
+                    record.activityID
+                  );
+                  navigate(`/organizer/activities/${record.activityID}/edit`, {
+                    replace: false,
+                  });
+                }}
+              >
+                Sửa
+              </Button>
+              <Popconfirm
+                title="Bạn có chắc chắn muốn xóa hoạt động này?"
+                onConfirm={() => handleDelete(record.activityID)}
+                okText="Có"
+                cancelText="Không"
+              >
+                <Button type="default" danger icon={<DeleteOutlined />}>
+                  Xóa
+                </Button>
+              </Popconfirm>
+              <Button
+                type="primary"
+                onClick={() => handlePublish(record.activityID)}
+              >
+                Xuất bản
+              </Button>
+            </>
           )}
         </Space>
       ),

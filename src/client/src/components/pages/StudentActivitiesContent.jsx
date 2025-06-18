@@ -306,9 +306,12 @@ export default function StudentActivitiesContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {filteredActivities.map(act => (
             <div key={act.participationID || act.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                {/* Placeholder for activity image. Replace with <img src={act.imageUrl} alt={act.name} /> if image URL is available */}
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <div className="w-full h-48 bg-gray-200">
+                <img
+                  src={act.image || "https://via.placeholder.com/300x200"}
+                  alt={act.name}
+                  className="w-full h-48 object-cover"
+                />
               </div>
               <div className="p-4">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{act.name}</h3>

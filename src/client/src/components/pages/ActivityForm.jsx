@@ -6,7 +6,7 @@ import { supabase } from "../../supabaseClient";
 const SEMESTER_API = "/semester/current";
 
 // Cập nhật danh sách lĩnh vực
-const DOMAINS = [
+const ACTIVITY_TYPES = [
   {
     id: "Tình nguyện",
     label: "Tình nguyện",
@@ -20,6 +20,13 @@ const DOMAINS = [
     type: "Học thuật",
     color: "bg-blue-100 text-blue-800",
     selectedColor: "bg-blue-600 text-white",
+  },
+  {
+    id: "Văn hóa",
+    label: "Văn hóa",
+    type: "Văn hóa",
+    color: "bg-orange-100 text-orange-800",
+    selectedColor: "bg-orange-600 text-white",
   },
   {
     id: "Thể thao",
@@ -50,13 +57,6 @@ const DOMAINS = [
     selectedColor: "bg-indigo-600 text-white",
   },
   {
-    id: "Workshop",
-    label: "Workshop",
-    type: "Workshop",
-    color: "bg-orange-100 text-orange-800",
-    selectedColor: "bg-orange-600 text-white",
-  },
-  {
     id: "Khác",
     label: "Khác",
     type: "Khác",
@@ -69,7 +69,7 @@ function ActivityForm({
   onSubmit,
   editingId,
   onCancel,
-  domains = DOMAINS,
+  activityTypes = ACTIVITY_TYPES,
   initialData,
 }) {
   console.log("ActivityForm received initialData:", initialData);
@@ -77,8 +77,8 @@ function ActivityForm({
   const [imageUrl, setImageUrl] = useState(initialData?.image || "");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [selectedDomain, setSelectedDomain] = useState(
-    initialData?.domains?.[0] || ""
+  const [selectedType, setSelectedType] = useState(
+    initialData?.type || ""
   );
   const [semesterID, setSemesterID] = useState(null);
   const [loadingSemester, setLoadingSemester] = useState(true);
@@ -130,8 +130,8 @@ function ActivityForm({
           setValue(key, initialData[key]);
         }
       });
-      // Đặt lại domains và image
-      setSelectedDomain(initialData.domains?.[0] || "");
+      // Đặt lại type và image
+      setSelectedType(initialData.type || "");
       setImageUrl(initialData.image || "");
     }
   }, [initialData, setValue]);
@@ -167,20 +167,20 @@ function ActivityForm({
     }
   };
 
-  const handleDomainSelect = (domainId) => {
-    setSelectedDomain(domainId);
+  const handleTypeSelect = (typeId) => {
+    setSelectedType(typeId);
   };
 
   const handleFormSubmit = async (data) => {
-    const selectedDomainType =
-      domains.find((d) => d.id === selectedDomain)?.type || selectedDomain;
+    const selectedActivityType =
+      activityTypes.find((t) => t.id === selectedType)?.type || selectedType;
 
     const submitData = {
       ...data,
       image:
         imageUrl ||
         "https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg", // Set default image if no image uploaded
-      domains: [selectedDomainType],
+      type: selectedActivityType,
       semesterID,
     };
     console.log("Submitting data:", submitData); // Debug log
@@ -188,7 +188,7 @@ function ActivityForm({
     if (!editingId) {
       reset();
       setSelectedImage(null);
-      setSelectedDomain("");
+      setSelectedType("");
       setImageUrl("");
     }
   };
@@ -372,22 +372,22 @@ function ActivityForm({
             Loại hoạt động <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-wrap gap-2">
-            {DOMAINS.map((domain) => (
+            {ACTIVITY_TYPES.map((activityType) => (
               <button
-                key={domain.id}
+                key={activityType.id}
                 type="button"
-                onClick={() => handleDomainSelect(domain.id)}
+                onClick={() => handleTypeSelect(activityType.id)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                  selectedDomain === domain.id
-                    ? domain.selectedColor
-                    : domain.color
+                  selectedType === activityType.id
+                    ? activityType.selectedColor
+                    : activityType.color
                 }`}
               >
-                {domain.label}
+                {activityType.label}
               </button>
             ))}
           </div>
-          {!selectedDomain && (
+          {!selectedType && (
             <p className="mt-1 text-sm text-red-600">
               Vui lòng chọn loại hoạt động
             </p>
