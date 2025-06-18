@@ -46,6 +46,7 @@ const OrganizerHome = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [complaints, setComplaints] = useState([]);
 
   const handleLogout = async () => {
     try {
@@ -88,6 +89,10 @@ const OrganizerHome = () => {
           )
           .slice(0, 2);
         setPublishedActivities(published);
+
+        // Lấy danh sách khiếu nại
+        const complaintsRes = await axios.get("/complaint/organizer");
+        setComplaints(complaintsRes.data.complaints || []);
 
         // Lọc các hoạt động đã hoàn thành
         const completedActivities = activities.filter(
@@ -171,10 +176,12 @@ const OrganizerHome = () => {
                       </div>
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <Text className="text-gray-600 block mb-1">
-                          Các hoạt động đã hoàn thành:
-                        </Text>
-                        <Text className="text-2xl font-bold text-blue-600">
-                          {stats.completedActivities}
+                          Các hoạt động đã hoàn thành:{" "}
+                          {
+                            activities.filter(
+                              (a) => a.activityStatus === "Đã hoàn thành"
+                            ).length
+                          }
                         </Text>
                       </div>
                     </Card>
@@ -191,10 +198,12 @@ const OrganizerHome = () => {
                       </div>
                       <div className="bg-orange-50 p-4 rounded-lg">
                         <Text className="text-gray-600 block mb-1">
-                          Số lượng khiếu nại chưa xử lý:
-                        </Text>
-                        <Text className="text-2xl font-bold text-orange-600">
-                          {stats.pendingComplaints}
+                          Số lượng khiếu nại chưa xử lý:{" "}
+                          {
+                            complaints.filter(
+                              (c) => c.complaintStatus === "Đã duyệt"
+                            ).length
+                          }
                         </Text>
                       </div>
                     </Card>
