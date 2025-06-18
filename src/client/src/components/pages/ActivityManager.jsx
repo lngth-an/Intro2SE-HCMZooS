@@ -14,6 +14,7 @@ import {
   Space,
   Popconfirm,
 } from "antd";
+
 import {
   SearchOutlined,
   PlusOutlined,
@@ -74,14 +75,16 @@ const DOMAINS = [
 const statusColors = {
   draft: "bg-gray-200 text-gray-800",
   published: "bg-teal-100 text-teal-800",
-  completed: "bg-green-100 text-green-800",
+  absent: "bg-red-100 text-red-800",
+  completed: "bg-green-100 text-green-800"
 };
 
 // Map activityStatus to Vietnamese labels
 const statusLabels = {
   draft: "Bản nháp",
   published: "Đã đăng tải",
-  completed: "Đã hoàn thành",
+  absent: "Vắng",
+  completed: "Đã hoàn thành"
 };
 
 const DEFAULT_IMAGE =
@@ -105,6 +108,7 @@ const ACTIVITY_STATUSES = [
   { value: "Bản nháp", label: "Bản nháp" },
   { value: "Đã đăng tải", label: "Đang diễn ra" },
   { value: "Đã hoàn thành", label: "Đã kết thúc" },
+  { value: "Vắng", label: "Vắng" }
 ];
 
 function ActivityManager() {

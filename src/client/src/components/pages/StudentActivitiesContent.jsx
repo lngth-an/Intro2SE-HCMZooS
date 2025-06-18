@@ -364,13 +364,15 @@ export default function StudentActivitiesContent() {
                   <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
                     act.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
                       act.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
-                        act.participationStatus === 'Từ chối' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-700'
+                        act.participationStatus === 'Đã tham gia' ? 'bg-green-100 text-green-800' :
+                          act.participationStatus === 'Từ chối' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-700'
                   }`}>
                     {act.participationStatus === 'Chờ duyệt' ? 'Chờ duyệt' :
                       act.participationStatus === 'Đã duyệt' ? 'Đã duyệt' :
-                        act.participationStatus === 'Từ chối' ? 'Bị từ chối' :
-                          act.participationStatus}
+                        act.participationStatus === 'Đã tham gia' ? 'Đã tham gia' :
+                          act.participationStatus === 'Từ chối' ? 'Bị từ chối' :
+                            act.participationStatus}
                   </span>
                 </div>
                 <div className="mt-4 flex justify-between items-center">
@@ -380,7 +382,9 @@ export default function StudentActivitiesContent() {
                   >
                     Xem chi tiết
                   </button>
-                  {act.participationStatus !== 'Đã hủy' && 
+
+                  {act.participationStatus !== 'Đã tham gia' && 
+                   act.participationStatus !== 'Đã hủy' && 
                    act.participationStatus !== 'Đã duyệt' && (
                     <button 
                       className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md"

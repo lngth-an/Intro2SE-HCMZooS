@@ -30,6 +30,7 @@ const authenticateToken = async (req, res, next) => {
     const plainUser = user.toJSON();
     if (plainUser.role === 'student' && plainUser.student) {
       plainUser.studentID = plainUser.student.studentID;
+
     }
     req.user = plainUser;
     next();

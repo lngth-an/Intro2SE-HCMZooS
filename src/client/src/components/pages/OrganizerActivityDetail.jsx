@@ -179,6 +179,7 @@ export default function OrganizerActivityDetail() {
         });
     }
     if (tab === 'attendance') {
+
       fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Đã tham gia&status=Vắng`)
         .then(res => res.json())
         .then(data => {
@@ -637,16 +638,18 @@ export default function OrganizerActivityDetail() {
             </div>
             <div className="flex gap-2">
               <button 
+
                 disabled={selectedAtts.length===0} 
                 onClick={()=>handleBulkConfirm('Đã tham gia')} 
+
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Xác nhận tham gia ({selectedAtts.length})
               </button>
               <button 
-                disabled={selectedAtts.length===0} 
+                disabled={selectedAtts.length===0 || loading} 
                 onClick={()=>handleBulkConfirm('Vắng')} 
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Đánh dấu vắng ({selectedAtts.length})
               </button>
@@ -702,11 +705,13 @@ export default function OrganizerActivityDetail() {
                     <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '20%'}}>{att.faculty}</td>
                     <td className="px-2 py-4 whitespace-nowrap" style={{width: '15%'}}>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${att.displayStatus === 'Đã tham gia' ? 'bg-green-100 text-green-800' : 
-                          att.displayStatus === 'Chưa điểm danh' ? 'bg-yellow-100 text-yellow-800' : 
-                          att.displayStatus === 'Vắng' ? 'bg-red-100 text-red-800' :
+
+                        ${r.status === 'Đã tham gia' ? 'bg-green-100 text-green-800' : 
+                          r.status === 'Vắng' ? 'bg-red-100 text-red-800' : 
                           'bg-gray-100 text-gray-800'}`}>
-                        {att.displayStatus}
+                        {r.status === 'Đã tham gia' ? 'Đã tham gia' : 
+                         r.status === 'Vắng' ? 'Vắng' : 
+                         'Chưa điểm danh'}
                       </span>
                     </td>
                   </tr>
