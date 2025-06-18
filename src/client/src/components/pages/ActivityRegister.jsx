@@ -281,7 +281,9 @@ function ActivityRegister() {
             <div className="max-w-7xl mx-auto">
               {/* Page Header */}
               <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Đăng ký hoạt động</h1>
+                <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+                  ĐĂNG KÝ HOẠT ĐỘNG
+                </h1>
                 <p className="mt-2 text-sm text-gray-600">
                   Tìm và đăng ký tham gia các hoạt động phù hợp với bạn
                 </p>
@@ -296,33 +298,33 @@ function ActivityRegister() {
                       Tên hoạt động
                     </label>
                     <div className="relative">
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Tìm theo tên..."
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
+                      />
                       <FaSearch className="absolute left-3 top-3 text-gray-400" />
                     </div>
                   </div>
 
-                                    {/* Search by Organizer */}
-                                    <div>
+                  {/* Search by Organizer */}
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Đơn vị tổ chức
                     </label>
-                                        <input
-                                            type="text"
-                                            value={organizerSearch}
-                                            onChange={(e) => setOrganizerSearch(e.target.value)}
+                    <input
+                      type="text"
+                      value={organizerSearch}
+                      onChange={(e) => setOrganizerSearch(e.target.value)}
                       placeholder="Tìm theo đơn vị..."
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
 
                   {/* Filter by Domain */}
-                    <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Lĩnh vực
                     </label>
@@ -341,11 +343,11 @@ function ActivityRegister() {
                   </div>
 
                   {/* Date Filter */}
-                                        <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Chọn ngày
                     </label>
-                                            <input
+                    <input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -356,19 +358,19 @@ function ActivityRegister() {
               </div>
 
               {/* Activities Grid */}
-                {loading ? (
+              {loading ? (
                 <div className="text-center py-8">Đang tải...</div>
-                ) : error ? (
+              ) : error ? (
                 <div className="text-center py-8 text-red-600">{error}</div>
-                ) : activities.length === 0 ? (
+              ) : activities.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   Không tìm thấy hoạt động nào
-                  </div>
-                ) : (
+                </div>
+              ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {activities.map(activity => renderActivityCard(activity))}
-                  </div>
-                )}
+                  {activities.map((activity) => renderActivityCard(activity))}
+                </div>
+              )}
             </div>
           </main>
           <Footer />
@@ -376,7 +378,7 @@ function ActivityRegister() {
       </div>
 
       {/* Activity Detail Modal */}
-            {showDetailModal && selectedActivity && (
+      {showDetailModal && selectedActivity && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6">
@@ -384,166 +386,213 @@ function ActivityRegister() {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {selectedActivity.name}
                 </h2>
-                        <button
-                            onClick={handleCloseDetailModal}
+                <button
+                  onClick={handleCloseDetailModal}
                   className="text-gray-500 hover:text-gray-700"
-                        >
+                >
                   ×
-                        </button>
+                </button>
               </div>
 
-                        <div className="space-y-2 text-gray-700 text-base">
-                            <p>
-                                <span className="font-semibold">Mô tả:</span> {selectedActivity.description || 'Chưa có mô tả chi tiết.'}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Đơn vị tổ chức:</span> {selectedActivity.organizerName || 'Đang cập nhật'}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Thời gian:</span>{" "}
-                                {selectedActivity.eventStart ? new Date(selectedActivity.eventStart).toLocaleString() : "N/A"} -{" "}
-                                {selectedActivity.eventEnd ? new Date(selectedActivity.eventEnd).toLocaleString() : "N/A"}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Địa điểm:</span> {selectedActivity.location || 'Chưa xác định'}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Lĩnh vực:</span>{" "}
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                    {DOMAINS.find(d => d.id === selectedActivity.type)?.label || selectedActivity.type || 'Chưa phân loại'}
-                                </span>
-                            </p>
-                            <p>
-                                <span className="font-semibold">Số lượng tối đa:</span> {selectedActivity.capacity ? `${selectedActivity.capacity} người` : "Không giới hạn"}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Trạng thái hoạt động:</span>{" "}
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    ${selectedActivity.activityStatus === 'Open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                    {selectedActivity.activityStatus || 'N/A'}
-                                </span>
-                            </p>
-                            <p>
-                                <span className="font-semibold">Thời gian đăng ký:</span>{" "}
-                                {selectedActivity.registrationStart ? new Date(selectedActivity.registrationStart).toLocaleString() : "N/A"} -{" "}
-                                {selectedActivity.registrationEnd ? new Date(selectedActivity.registrationEnd).toLocaleString() : "N/A"}
-                            </p>
+              <div className="space-y-2 text-gray-700 text-base">
+                <p>
+                  <span className="font-semibold">Mô tả:</span>{" "}
+                  {selectedActivity.description || "Chưa có mô tả chi tiết."}
+                </p>
+                <p>
+                  <span className="font-semibold">Đơn vị tổ chức:</span>{" "}
+                  {selectedActivity.organizerName || "Đang cập nhật"}
+                </p>
+                <p>
+                  <span className="font-semibold">Thời gian:</span>{" "}
+                  {selectedActivity.eventStart
+                    ? new Date(selectedActivity.eventStart).toLocaleString()
+                    : "N/A"}{" "}
+                  -{" "}
+                  {selectedActivity.eventEnd
+                    ? new Date(selectedActivity.eventEnd).toLocaleString()
+                    : "N/A"}
+                </p>
+                <p>
+                  <span className="font-semibold">Địa điểm:</span>{" "}
+                  {selectedActivity.location || "Chưa xác định"}
+                </p>
+                <p>
+                  <span className="font-semibold">Lĩnh vực:</span>{" "}
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    {DOMAINS.find((d) => d.id === selectedActivity.type)
+                      ?.label ||
+                      selectedActivity.type ||
+                      "Chưa phân loại"}
+                  </span>
+                </p>
+                <p>
+                  <span className="font-semibold">Số lượng tối đa:</span>{" "}
+                  {selectedActivity.capacity
+                    ? `${selectedActivity.capacity} người`
+                    : "Không giới hạn"}
+                </p>
+                <p>
+                  <span className="font-semibold">Trạng thái hoạt động:</span>{" "}
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    ${
+                                      selectedActivity.activityStatus === "Open"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-yellow-100 text-yellow-800"
+                                    }`}
+                  >
+                    {selectedActivity.activityStatus || "N/A"}
+                  </span>
+                </p>
+                <p>
+                  <span className="font-semibold">Thời gian đăng ký:</span>{" "}
+                  {selectedActivity.registrationStart
+                    ? new Date(
+                        selectedActivity.registrationStart
+                      ).toLocaleString()
+                    : "N/A"}{" "}
+                  -{" "}
+                  {selectedActivity.registrationEnd
+                    ? new Date(
+                        selectedActivity.registrationEnd
+                      ).toLocaleString()
+                    : "N/A"}
+                </p>
+              </div>
+
+              {/* Registration Status / Button */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                {!isRegistrationOpen ? (
+                  <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-md text-sm">
+                    Hoạt động này hiện tại chưa mở đăng ký.
+                  </div>
+                ) : (
+                  <>
+                    {!showRegisterForm && !success && !error && (
+                      <button
+                        className="w-full bg-green-600 text-white py-3 rounded-md text-lg font-bold hover:bg-green-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                        onClick={handleRegisterEligibilityCheck}
+                      >
+                        Đăng ký
+                      </button>
+                    )}
+
+                    {/* Registration Form */}
+                    {showRegisterForm && !success && (
+                      <form
+                        onSubmit={handleRegistrationSubmit}
+                        className="mt-4 bg-gray-50 p-4 rounded-lg shadow-sm"
+                      >
+                        <div className="mb-4">
+                          <label
+                            htmlFor="note"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            Ghi chú (Tùy chọn)
+                          </label>
+                          <textarea
+                            id="note"
+                            name="note"
+                            rows="3"
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
+                            value={registrationNote}
+                            onChange={(e) =>
+                              setRegistrationNote(e.target.value)
+                            }
+                            placeholder="Nhập ghi chú của bạn (ví dụ: yêu cầu đặc biệt)..."
+                          ></textarea>
                         </div>
+                        <div className="flex justify-end space-x-3">
+                          <button
+                            type="button"
+                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                            onClick={() => setShowRegisterForm(false)}
+                          >
+                            Hủy
+                          </button>
+                          <button
+                            type="submit"
+                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            Gửi đăng ký
+                          </button>
+                        </div>
+                      </form>
+                    )}
 
-                        {/* Registration Status / Button */}
-                        <div className="mt-6 pt-4 border-t border-gray-200">
-                            {!isRegistrationOpen ? (
-                                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-md text-sm">
-                                    Hoạt động này hiện tại chưa mở đăng ký.
-                                </div>
-                            ) : (
-                                <>
-                                    {!showRegisterForm && !success && !error && (
-                                        <button
-                                            className="w-full bg-green-600 text-white py-3 rounded-md text-lg font-bold hover:bg-green-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                                            onClick={handleRegisterEligibilityCheck}
-                                        >
-                                            Đăng ký
-                                        </button>
-                                    )}
-
-                                    {/* Registration Form */}
-                                    {showRegisterForm && !success && (
-                                        <form onSubmit={handleRegistrationSubmit} className="mt-4 bg-gray-50 p-4 rounded-lg shadow-sm">
-                                            <div className="mb-4">
-                                                <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Ghi chú (Tùy chọn)
-                                                </label>
-                                                <textarea
-                                                    id="note"
-                                                    name="note"
-                                                    rows="3"
-                                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                                    value={registrationNote}
-                                                    onChange={(e) => setRegistrationNote(e.target.value)}
-                                                    placeholder="Nhập ghi chú của bạn (ví dụ: yêu cầu đặc biệt)..."
-                                                ></textarea>
-                                            </div>
-                                            <div className="flex justify-end space-x-3">
-                                                <button
-                                                    type="button"
-                                                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                                    onClick={() => setShowRegisterForm(false)}
-                                                >
-                                                    Hủy
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    Gửi đăng ký
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {/* Confirmation Message */}
-                                    {participationID && success && (
-                                        <div className="mt-4 p-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-center">
-                                            <p className="font-semibold mb-2">{success}</p>
-                                            <button
-                                                className="inline-flex justify-center py-2 px-5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                                onClick={handleConfirmRegistration}
-                                            >
-                                                Xác nhận cuối cùng
-                                            </button>
-                                            <button
-                                                className="ml-3 inline-flex justify-center py-2 px-5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    {/* Confirmation Message */}
+                    {participationID && success && (
+                      <div className="mt-4 p-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-center">
+                        <p className="font-semibold mb-2">{success}</p>
+                        <button
+                          className="inline-flex justify-center py-2 px-5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={handleConfirmRegistration}
+                        >
+                          Xác nhận cuối cùng
+                        </button>
+                        <button
+                          className="ml-3 inline-flex justify-center py-2 px-5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                           onClick={handleDeleteDraft}
-                                            >
-                                                Hủy
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
 
-                            {/* Error/Success Messages */}
-                            {error && (
-                                <div className="mt-4 p-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-center font-medium">
-                                    {error}
-                                </div>
-                            )}
+                {/* Error/Success Messages */}
+                {error && (
+                  <div className="mt-4 p-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-center font-medium">
+                    {error}
+                  </div>
+                )}
                 {success && !participationID && (
-                                <div className="mt-4 p-4 rounded-md bg-green-50 border border-green-200 text-green-700 text-center font-medium">
-                                    {success}
-                                </div>
-                            )}
+                  <div className="mt-4 p-4 rounded-md bg-green-50 border border-green-200 text-green-700 text-center font-medium">
+                    {success}
+                  </div>
+                )}
 
-                            {/* Suggested Activities */}
-                            {suggestedActivities.length > 0 && (
-                                <div className="mt-6 pt-4 border-t border-gray-200">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Hoạt động tương tự có thể bạn quan tâm:</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {suggestedActivities.map((a) => (
-                                            <div key={a.activityID} className="bg-gray-100 p-4 rounded-md shadow-sm">
-                                                <h4 className="text-base font-semibold text-gray-800">{a.name}</h4>
-                                                <p className="text-sm text-gray-600 mb-2">
-                                                    {a.eventStart ? new Date(a.eventStart).toLocaleDateString() : ""} - {a.location || ''}
-                                                </p>
-                                                <button
-                                                    className="text-blue-600 hover:underline text-sm font-medium"
-                                                    onClick={() => {
+                {/* Suggested Activities */}
+                {suggestedActivities.length > 0 && (
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                      Hoạt động tương tự có thể bạn quan tâm:
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {suggestedActivities.map((a) => (
+                        <div
+                          key={a.activityID}
+                          className="bg-gray-100 p-4 rounded-md shadow-sm"
+                        >
+                          <h4 className="text-base font-semibold text-gray-800">
+                            {a.name}
+                          </h4>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {a.eventStart
+                              ? new Date(a.eventStart).toLocaleDateString()
+                              : ""}{" "}
+                            - {a.location || ""}
+                          </p>
+                          <button
+                            className="text-blue-600 hover:underline text-sm font-medium"
+                            onClick={() => {
                               handleCloseDetailModal();
                               handleShowDetail(a);
-                                                    }}
-                                                >
-                                                    Xem chi tiết
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-              </div>
+                            }}
+                          >
+                            Xem chi tiết
+                          </button>
                         </div>
+                      ))}
                     </div>
-                </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

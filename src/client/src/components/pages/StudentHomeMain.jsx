@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
-import { DOMAINS } from '../../constants/activityTypes';
+import { DOMAINS } from "../../constants/activityTypes";
 import StudentActivityDetail from "./StudentActivityDetail";
 
 const StudentHomeMain = () => {
@@ -21,28 +21,31 @@ const StudentHomeMain = () => {
         setError(null);
 
         // Lấy học kỳ hiện tại
-        const semesterRes = await fetch('/semester/current');
-        if (!semesterRes.ok) throw new Error('Failed to fetch current semester');
+        const semesterRes = await fetch("/semester/current");
+        if (!semesterRes.ok)
+          throw new Error("Failed to fetch current semester");
         const semesterData = await semesterRes.json();
-        
-        console.log('Current semester:', semesterData);
+
+        console.log("Current semester:", semesterData);
         if (!semesterData) {
-          console.log('No current semester found');
+          console.log("No current semester found");
           setScore(0);
           return;
         }
-        
+
         setCurrentSemester(semesterData);
 
         // Lấy điểm của học kỳ hiện tại
-        const scoreRes = await fetch(`/student/score?semesterID=${semesterData.semesterID}`);
-        if (!scoreRes.ok) throw new Error('Failed to fetch score');
+        const scoreRes = await fetch(
+          `/student/score?semesterID=${semesterData.semesterID}`
+        );
+        if (!scoreRes.ok) throw new Error("Failed to fetch score");
         const scoreData = await scoreRes.json();
-        
-        console.log('Score response:', scoreData);
+
+        console.log("Score response:", scoreData);
         setScore(scoreData.score || 0);
       } catch (error) {
-        console.error('Error fetching score:', error);
+        console.error("Error fetching score:", error);
         setError(error.message);
         setScore(0);
       } finally {
@@ -57,12 +60,12 @@ const StudentHomeMain = () => {
     const fetchActivities = async () => {
       try {
         setActivitiesLoading(true);
-        const response = await fetch('/student/activities?status=Đã đăng tải');
-        if (!response.ok) throw new Error('Failed to fetch activities');
+        const response = await fetch("/student/activities?status=Đã đăng tải");
+        if (!response.ok) throw new Error("Failed to fetch activities");
         const data = await response.json();
         setActivities(data.activities || []);
       } catch (error) {
-        console.error('Error fetching activities:', error);
+        console.error("Error fetching activities:", error);
       } finally {
         setActivitiesLoading(false);
       }
@@ -73,7 +76,10 @@ const StudentHomeMain = () => {
 
   const isRegistrationOpen = (activity) => {
     const now = new Date();
-    return now >= new Date(activity.registrationStart) && now <= new Date(activity.registrationEnd);
+    return (
+      now >= new Date(activity.registrationStart) &&
+      now <= new Date(activity.registrationEnd)
+    );
   };
 
   const handleShowDetail = (activity) => {
@@ -87,11 +93,14 @@ const StudentHomeMain = () => {
   };
 
   const renderActivityCard = (activity) => {
-    const domain = DOMAINS.find(d => d.id === activity.type);
+    const domain = DOMAINS.find((d) => d.id === activity.type);
     const points = domain ? domain.defaultPoint : 3;
 
     return (
-      <div key={activity.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div
+        key={activity.activityID}
+        className="bg-white rounded-lg shadow-md overflow-hidden"
+      >
         <img
           src={activity.image || "/activity-placeholder.jpg"}
           alt={activity.name}
@@ -103,7 +112,11 @@ const StudentHomeMain = () => {
               {activity.name}
             </h3>
             <div className="flex items-center space-x-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  domain?.color || "bg-gray-100 text-gray-800"
+                }`}
+              >
                 {activity.type}
               </span>
               <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
@@ -116,7 +129,9 @@ const StudentHomeMain = () => {
           </p>
           <p className="text-gray-600 mb-2">Địa điểm: {activity.location}</p>
           {activity.maxParticipants && (
-            <p className="text-gray-600">Số lượng: {activity.maxParticipants} người</p>
+            <p className="text-gray-600">
+              Số lượng: {activity.maxParticipants} người
+            </p>
           )}
           <div className="mt-4">
             <button
@@ -187,10 +202,14 @@ const StudentHomeMain = () => {
         {activitiesLoading ? (
           <div>Loading...</div>
         ) : activities.filter(isRegistrationOpen).length === 0 ? (
-          <div className="text-gray-600">Không có hoạt động nào đang mở đăng ký</div>
+          <div className="text-gray-600">
+            Không có hoạt động nào đang mở đăng ký
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.filter(isRegistrationOpen).map(activity => renderActivityCard(activity))}
+            {activities
+              .filter(isRegistrationOpen)
+              .map((activity) => renderActivityCard(activity))}
           </div>
         )}
       </div>
