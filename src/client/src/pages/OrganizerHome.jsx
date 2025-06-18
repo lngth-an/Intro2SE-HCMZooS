@@ -14,6 +14,7 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   EnvironmentOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -79,11 +80,13 @@ const OrganizerHome = () => {
         setActivities(activities);
 
         // Lọc các hoạt động đã đăng tải nhưng chưa hoàn thành, chỉ lấy tối đa 2
-        const published = activities.filter(
-          (activity) =>
-            activity.activityStatus === "Đã đăng tải" &&
-            activity.activityStatus !== "Đã hoàn thành"
-        ).slice(0, 2);
+        const published = activities
+          .filter(
+            (activity) =>
+              activity.activityStatus === "Đã đăng tải" &&
+              activity.activityStatus !== "Đã hoàn thành"
+          )
+          .slice(0, 2);
         setPublishedActivities(published);
 
         // Lọc các hoạt động đã hoàn thành
@@ -201,9 +204,19 @@ const OrganizerHome = () => {
 
               {/* Published Activities */}
               <div className="mb-8">
-                <Title level={3} className="mb-6">
-                  Các hoạt động đã đăng tải
-                </Title>
+                <div className="flex justify-between items-center mb-6">
+                  <Title level={3} className="m-0">
+                    Các hoạt động đã đăng tải
+                  </Title>
+                  <Button
+                    type="primary"
+                    icon={<RightOutlined />}
+                    onClick={() => navigate("/organizer/activities")}
+                    className="h-9 px-4 text-sm font-medium"
+                  >
+                    Xem thêm
+                  </Button>
+                </div>
                 <Row gutter={[24, 24]}>
                   {publishedActivities.map((activity) => (
                     <Col xs={24} md={12} key={activity.activityID}>
@@ -222,7 +235,12 @@ const OrganizerHome = () => {
                             />
                           </div>
                         }
-                        onClick={() => navigate(`/organizer/activities/${activity.activityID}`, { state: { from: 'home' } })}
+                        onClick={() =>
+                          navigate(
+                            `/organizer/activities/${activity.activityID}`,
+                            { state: { from: "home" } }
+                          )
+                        }
                       >
                         <div className="flex items-center mb-4">
                           <CalendarOutlined className="text-2xl text-green-500 mr-3" />
@@ -234,7 +252,10 @@ const OrganizerHome = () => {
                           <div className="flex items-center">
                             <CalendarOutlined className="text-gray-400 mr-2" />
                             <Text className="text-gray-600">
-                              Ngày mở đơn: {new Date(activity.registrationStart).toLocaleDateString()}
+                              Ngày mở đơn:{" "}
+                              {new Date(
+                                activity.registrationStart
+                              ).toLocaleDateString()}
                             </Text>
                           </div>
                           <div className="flex items-center">
@@ -250,43 +271,16 @@ const OrganizerHome = () => {
                 </Row>
               </div>
 
-              {/* Nút điều hướng đến trang Quản lý hoạt động */}
+              {/* Create Activity Button */}
               <div className="flex justify-center items-center mb-8">
                 <Button
                   type="primary"
-                  size="large"
-                  icon={<CheckCircleOutlined />}
-                  className="h-12 px-8 text-base flex items-center shadow-md hover:shadow-lg transition-all duration-300"
-                  style={{
-                    background: "linear-gradient(45deg, #1890ff, #096dd9)",
-                    border: "none",
-                    minWidth: "220px",
-                  }}
-                  onClick={() => navigate("/organizer/activities")}
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate("/organizer/activity-create")}
+                  className="h-12 px-6 text-base font-semibold"
                 >
-                  <span className="ml-2 font-semibold">Xem thêm</span>
+                  Tạo hoạt động mới
                 </Button>
-              </div>
-
-              {/* Create Activity Button */}
-              <div className="flex justify-center items-center mb-8">
-                <Link to="/organizer/activity-create">
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<PlusOutlined />}
-                    className="h-12 px-8 text-base flex items-center shadow-md hover:shadow-lg transition-all duration-300"
-                    style={{
-                      background: "linear-gradient(45deg, #1890ff, #096dd9)",
-                      border: "none",
-                      minWidth: "180px",
-                    }}
-                  >
-                    <span className="ml-2 font-semibold">
-                      Tạo hoạt động mới
-                    </span>
-                  </Button>
-                </Link>
               </div>
             </div>
           </main>
