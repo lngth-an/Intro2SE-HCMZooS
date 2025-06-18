@@ -427,11 +427,17 @@ export default function StudentActivitiesContent() {
       {loading ? (
         <div>Loading...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredActivities
-            .filter(activity => activity.participationStatus !== 'Đã hủy' && activity.participationStatus !== 'Từ chối')
-            .map(activity => renderActivityCard(activity))}
-        </div>
+        filteredActivities.filter(activity => activity.participationStatus !== 'Đã hủy' && activity.participationStatus !== 'Từ chối').length === 0 ? (
+          <div className="text-center text-gray-500 py-12 text-lg font-medium">
+            Bạn chưa đăng ký tham gia hoạt động nào
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredActivities
+              .filter(activity => activity.participationStatus !== 'Đã hủy' && activity.participationStatus !== 'Từ chối')
+              .map(activity => renderActivityCard(activity))}
+          </div>
+        )
       )}
 
       {showDetail && selected && (
