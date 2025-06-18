@@ -187,6 +187,51 @@ function ActivityRegister() {
     }
   };
 
+  const renderActivityCard = (activity) => {
+    const domain = DOMAINS.find(d => d.id === activity.type);
+    const points = domain ? domain.defaultPoint : 3;
+
+    return (
+      <div
+        key={activity.activityID}
+        className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+        onClick={() => handleShowDetail(activity)}
+      >
+        <div className="relative">
+          <img
+            src={activity.image || "https://via.placeholder.com/400x200"}
+            alt={activity.name}
+            className="w-full h-48 object-cover"
+          />
+        </div>
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{activity.name}</h3>
+          <div className="flex items-center space-x-2 mb-3">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+              {activity.type}
+            </span>
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              {points} điểm
+            </span>
+          </div>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>Đơn vị tổ chức: {activity.organizerName}</p>
+            <p>Thời gian: {new Date(activity.eventStart).toLocaleString()}</p>
+            <p>Địa điểm: {activity.location}</p>
+            {activity.maxParticipants && (
+              <p>Số lượng: {activity.maxParticipants} người</p>
+            )}
+          </div>
+          <div className="mt-4 text-sm">
+            <span className="text-blue-600 hover:text-blue-800">
+              Xem chi tiết →
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header onLogout={handleLogout} />
@@ -199,188 +244,106 @@ function ActivityRegister() {
             <div className="max-w-7xl mx-auto">
               {/* Page Header */}
               <div className="mb-8">
-                <h1 className="text-3xl font-extrabold text-gray-900">
-                  Đăng ký hoạt động
-                </h1>
-                <p className="mt-2 text-base text-gray-600">
-                  Tìm kiếm và đăng ký các hoạt động phù hợp với bạn
+                <h1 className="text-2xl font-bold text-gray-900">Đăng ký hoạt động</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Tìm và đăng ký tham gia các hoạt động phù hợp với bạn
                 </p>
               </div>
 
               {/* Search and Filter Section */}
               <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Tìm kiếm & Lọc</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Search by Name */}
                   <div>
-                    <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700">Tên hoạt động</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tên hoạt động
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Tìm theo tên..."
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <FaSearch className="absolute left-3 top-3 text-gray-400" />
+                    </div>
+                  </div>
+
+                  {/* Search by Organizer */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Đơn vị tổ chức
+                    </label>
                     <input
                       type="text"
-                      id="searchTerm"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                      placeholder="Tìm theo tên hoạt động..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      value={organizerSearch}
+                      onChange={(e) => setOrganizerSearch(e.target.value)}
+                      placeholder="Tìm theo đơn vị..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
-                                    {/* Search by Organizer */}
-                                    <div>
-                                        <label htmlFor="organizerSearch" className="block text-sm font-medium text-gray-700">Đơn vị tổ chức</label>
-                                        <input
-                                            type="text"
-                                            id="organizerSearch"
-                                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                            placeholder="Tìm theo tên đơn vị..."
-                                            value={organizerSearch}
-                                            onChange={(e) => setOrganizerSearch(e.target.value)}
-                    />
-                  </div>
-                  {/* Filter by Date Range */}
-                                    {/* Lưu ý: Sau khi xóa phần Registrations, nếu bạn muốn giữ layout 3 cột, bạn có thể cần chỉnh lại col-span hoặc thêm một trường lọc khác vào đây. */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-1 grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">Từ ngày</label>
-                      <input
-                        type="date"
-                        id="startDate"
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">Đến ngày</label>
-                      <input
-                        type="date"
-                        id="endDate"
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                                    {/* XÓA KHỐI DIV DƯỚI ĐÂY: Filter by Registrations (Optional, can be removed if not practical) */}
-                                    {/* <div className="col-span-1 md:col-span-2 lg:col-span-1 grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label htmlFor="minRegistrations" className="block text-sm font-medium text-gray-700">Đăng ký từ</label>
-                                            <input
-                                                type="number"
-                                                id="minRegistrations"
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                                placeholder="Min"
-                                                value={minRegistrations}
-                                                onChange={(e) => setMinRegistrations(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="maxRegistrations" className="block text-sm font-medium text-gray-700">Đến</label>
-                                            <input
-                                                type="number"
-                                                id="maxRegistrations"
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                                placeholder="Max"
-                                                value={maxRegistrations}
-                                                onChange={(e) => setMaxRegistrations(e.target.value)}
-                                            />
-                                        </div>
-                                    </div> */}
-                </div>
 
-                {/* Domain Filter Pills */}
-                <div className="mb-4">
-                  <span className="block text-sm font-medium text-gray-700 mb-2">Lọc theo lĩnh vực:</span>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200
-                                                ${!selectedDomain
-                          ? "bg-blue-600 text-white shadow"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                                            onClick={() => setSelectedDomain("")}
+                  {/* Filter by Domain */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Lĩnh vực
+                    </label>
+                    <select
+                      value={selectedDomain}
+                      onChange={(e) => setSelectedDomain(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     >
-                      Tất cả
-                    </button>
-                    {DOMAINS.map((d) => (
-                      <button
-                        key={d.id}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200
-                                                    ${selectedDomain === d.id
-                            ? "bg-blue-600 text-white shadow"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
-                                                onClick={() => setSelectedDomain(d.id)}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
+                      <option value="">Tất cả lĩnh vực</option>
+                      {DOMAINS.map((domain) => (
+                        <option key={domain.id} value={domain.id}>
+                          {domain.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Date Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Từ ngày
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Đến ngày
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Activity List */}
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800">Danh sách hoạt động</h2>
+              {/* Activities Grid */}
+              {loading ? (
+                <div className="text-center py-8">Đang tải...</div>
+              ) : error ? (
+                <div className="text-center py-8 text-red-600">{error}</div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Không tìm thấy hoạt động nào
                 </div>
-                {loading ? (
-                  <div className="p-6 text-center text-gray-500">
-                    Đang tải hoạt động...
-                  </div>
-                ) : error ? (
-                  <div className="p-6 text-center text-red-600">
-                    {error}
-                  </div>
-                ) : activities.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">
-                    Không tìm thấy hoạt động nào phù hợp.
-                  </div>
-                ) : (
-                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {activities
-                      .slice() // copy mảng để không ảnh hưởng state
-                      .sort((a, b) => new Date(a.registrationStart) - new Date(b.registrationStart))
-                      .map((a) => (
-                        <div
-                          key={a.activityID}
-                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200"
-                        >
-                          <div className="p-4">
-                            <img
-                              src={a.image || "https://via.placeholder.com/300x200"}
-                              alt={a.name}
-                              className="w-full h-48 object-cover rounded-lg mb-4"
-                            />
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                              {a.name}
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <span className="font-semibold">Đơn vị:</span> {a.organizerName || 'Đang cập nhật'}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <span className="font-semibold">Thời gian:</span> {a.eventStart ? new Date(a.eventStart).toLocaleString() : ""}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <span className="font-semibold">Địa điểm:</span> {a.location || 'Chưa xác định'}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {DOMAINS.find(d => d.id === a.type)?.label || a.type || 'Chưa phân loại'}
-                              </span>
-                            </p>
-                          </div>
-                          <div className="p-5 border-t border-gray-200">
-                            <button
-                              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md text-base font-semibold hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                              onClick={() => handleShowDetail(a)}
-                            >
-                              Xem chi tiết
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activities.map(activity => renderActivityCard(activity))}
+                </div>
+              )}
             </div>
           </main>
           <Footer />
@@ -388,173 +351,155 @@ function ActivityRegister() {
       </div>
 
       {/* Activity Detail Modal */}
-            {showDetailModal && selectedActivity && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
-                        <button
-                            onClick={handleCloseDetailModal}
-                            className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                        >
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+      {showDetailModal && selectedActivity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedActivity.name}
+                </h2>
+                <button
+                  onClick={handleCloseDetailModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </button>
+              </div>
 
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                            {selectedActivity.name}
-                        </h2>
-
-                        <div className="space-y-2 text-gray-700 text-base">
-                            <p>
-                                <span className="font-semibold">Mô tả:</span> {selectedActivity.description || 'Chưa có mô tả chi tiết.'}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Đơn vị tổ chức:</span> {selectedActivity.organizerName || 'Đang cập nhật'}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Thời gian:</span>{" "}
-                                {selectedActivity.eventStart ? new Date(selectedActivity.eventStart).toLocaleString() : "N/A"} -{" "}
-                                {selectedActivity.eventEnd ? new Date(selectedActivity.eventEnd).toLocaleString() : "N/A"}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Địa điểm:</span> {selectedActivity.location || 'Chưa xác định'}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Lĩnh vực:</span>{" "}
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                    {DOMAINS.find(d => d.id === selectedActivity.type)?.label || selectedActivity.type || 'Chưa phân loại'}
-                                </span>
-                            </p>
-                            <p>
-                                <span className="font-semibold">Số lượng tối đa:</span> {selectedActivity.capacity ? `${selectedActivity.capacity} người` : "Không giới hạn"}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Trạng thái hoạt động:</span>{" "}
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    ${selectedActivity.activityStatus === 'Open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                    {selectedActivity.activityStatus || 'N/A'}
-                                </span>
-                            </p>
-                            <p>
-                                <span className="font-semibold">Thời gian đăng ký:</span>{" "}
-                                {selectedActivity.registrationStart ? new Date(selectedActivity.registrationStart).toLocaleString() : "N/A"} -{" "}
-                                {selectedActivity.registrationEnd ? new Date(selectedActivity.registrationEnd).toLocaleString() : "N/A"}
-                            </p>
-                        </div>
-
-                        {/* Registration Status / Button */}
-                        <div className="mt-6 pt-4 border-t border-gray-200">
-                            {!isRegistrationOpen ? (
-                                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-md text-sm">
-                                    Hoạt động này hiện tại chưa mở đăng ký.
-                                </div>
-                            ) : (
-                                <>
-                                    {!showRegisterForm && !success && !error && (
-                                        <button
-                                            className="w-full bg-green-600 text-white py-3 rounded-md text-lg font-bold hover:bg-green-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                                            onClick={handleRegisterEligibilityCheck}
-                                        >
-                                            Đăng ký
-                                        </button>
-                                    )}
-
-                                    {/* Registration Form */}
-                                    {showRegisterForm && !success && (
-                                        <form onSubmit={handleRegistrationSubmit} className="mt-4 bg-gray-50 p-4 rounded-lg shadow-sm">
-                                            <div className="mb-4">
-                                                <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Ghi chú (Tùy chọn)
-                                                </label>
-                                                <textarea
-                                                    id="note"
-                                                    name="note"
-                                                    rows="3"
-                                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                                    value={registrationNote}
-                                                    onChange={(e) => setRegistrationNote(e.target.value)}
-                                                    placeholder="Nhập ghi chú của bạn (ví dụ: yêu cầu đặc biệt)..."
-                                                ></textarea>
-                                            </div>
-                                            <div className="flex justify-end space-x-3">
-                                                <button
-                                                    type="button"
-                                                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                                    onClick={() => setShowRegisterForm(false)}
-                                                >
-                                                    Hủy
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    Gửi đăng ký
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {/* Confirmation Message */}
-                                    {participationID && success && (
-                                        <div className="mt-4 p-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-center">
-                                            <p className="font-semibold mb-2">{success}</p>
-                                            <button
-                                                className="inline-flex justify-center py-2 px-5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                                onClick={handleConfirmRegistration}
-                                            >
-                                                Xác nhận cuối cùng
-                                            </button>
-                                            <button
-                                                className="ml-3 inline-flex justify-center py-2 px-5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                                onClick={() => { setParticipationID(null); setSuccess(""); }}
-                                            >
-                                                Hủy
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            {/* Error/Success Messages */}
-                            {error && (
-                                <div className="mt-4 p-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-center font-medium">
-                                    {error}
-                                </div>
-                            )}
-                            {success && !participationID && ( // Show final success if no confirmation needed
-                                <div className="mt-4 p-4 rounded-md bg-green-50 border border-green-200 text-green-700 text-center font-medium">
-                                    {success}
-                                </div>
-                            )}
-
-                            {/* Suggested Activities */}
-                            {suggestedActivities.length > 0 && (
-                                <div className="mt-6 pt-4 border-t border-gray-200">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Hoạt động tương tự có thể bạn quan tâm:</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {suggestedActivities.map((a) => (
-                                            <div key={a.activityID} className="bg-gray-100 p-4 rounded-md shadow-sm">
-                                                <h4 className="text-base font-semibold text-gray-800">{a.name}</h4>
-                                                <p className="text-sm text-gray-600 mb-2">
-                                                    {a.eventStart ? new Date(a.eventStart).toLocaleDateString() : ""} - {a.location || ''}
-                                                </p>
-                                                <button
-                                                    className="text-blue-600 hover:underline text-sm font-medium"
-                                                    onClick={() => {
-                                                        handleCloseDetailModal(); // Close current modal
-                                                        handleShowDetail(a); // Open detail for suggested activity
-                                                    }}
-                                                >
-                                                    Xem chi tiết
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <img
+                    src={selectedActivity.image || "https://via.placeholder.com/400x300"}
+                    alt={selectedActivity.name}
+                    className="w-full h-64 object-cover rounded-lg"
+                  />
                 </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Thông tin chi tiết</h3>
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Đơn vị tổ chức:</span> {selectedActivity.organizerName}</p>
+                      <p><span className="font-medium">Thời gian:</span> {new Date(selectedActivity.eventStart).toLocaleString()}</p>
+                      <p><span className="font-medium">Địa điểm:</span> {selectedActivity.location}</p>
+                      {selectedActivity.maxParticipants && (
+                        <p><span className="font-medium">Số lượng:</span> {selectedActivity.maxParticipants} người</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Mô tả</h3>
+                    <p className="text-gray-600 whitespace-pre-line">
+                      {selectedActivity.description || "Không có mô tả"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Thời gian đăng ký</h3>
+                    <p>Từ: {new Date(selectedActivity.registrationStart).toLocaleString()}</p>
+                    <p>Đến: {new Date(selectedActivity.registrationEnd).toLocaleString()}</p>
+                  </div>
+
+                  {!showRegisterForm && (
+                    <button
+                      onClick={handleRegisterEligibilityCheck}
+                      disabled={!isRegistrationOpen}
+                      className={`w-full py-2 px-4 rounded-md text-white font-medium ${
+                        isRegistrationOpen
+                          ? "bg-blue-600 hover:bg-blue-700"
+                          : "bg-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      {isRegistrationOpen ? "Đăng ký tham gia" : "Chưa đến thời gian đăng ký"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Registration Form */}
+              {showRegisterForm && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-4">Đăng ký tham gia</h3>
+                  <form onSubmit={handleRegistrationSubmit}>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Ghi chú (không bắt buộc)
+                      </label>
+                      <textarea
+                        value={registrationNote}
+                        onChange={(e) => setRegistrationNote(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        placeholder="Nhập ghi chú nếu có..."
+                      />
+                    </div>
+
+                    {error && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm text-red-600">{error}</p>
+                      </div>
+                    )}
+
+                    {success && (
+                      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                        <p className="text-sm text-green-600">{success}</p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowRegisterForm(false)}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                      >
+                        Hủy
+                      </button>
+                      {!participationID ? (
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                          Gửi đăng ký
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleConfirmRegistration}
+                          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                        >
+                          Xác nhận đăng ký
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Suggested Activities */}
+              {suggestedActivities.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4">Các hoạt động tương tự</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {suggestedActivities.map(activity => (
+                      <div
+                        key={activity.activityID}
+                        className="bg-white border rounded-lg p-4 cursor-pointer hover:shadow-md"
+                        onClick={() => handleShowDetail(activity)}
+                      >
+                        <h4 className="font-medium mb-2">{activity.name}</h4>
+                        <p className="text-sm text-gray-600">
+                          {new Date(activity.eventStart).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

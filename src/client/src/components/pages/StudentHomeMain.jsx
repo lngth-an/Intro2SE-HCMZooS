@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
+import { DOMAINS } from '../../constants/activityTypes';
 
 const StudentHomeMain = () => {
   const [score, setScore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentSemester, setCurrentSemester] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     const fetchCurrentSemesterScore = async () => {
@@ -46,6 +49,69 @@ const StudentHomeMain = () => {
 
     fetchCurrentSemesterScore();
   }, []);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setActivitiesLoading(true);
+        const response = await fetch('/student/activities?status=Đã đăng tải');
+        if (!response.ok) throw new Error('Failed to fetch activities');
+        const data = await response.json();
+        setActivities(data.activities || []);
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+      } finally {
+        setActivitiesLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, []);
+
+  const renderActivityCard = (activity) => {
+    const domain = DOMAINS.find(d => d.id === activity.type);
+    const points = domain ? domain.defaultPoint : 3;
+
+    return (
+      <div key={activity.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
+        <img
+          src={activity.image || "/activity-placeholder.jpg"}
+          alt={activity.name}
+          className="w-full h-48 object-cover"
+        />
+        <div className="p-4">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="font-semibold text-lg text-gray-800">
+              {activity.name}
+            </h3>
+            <div className="flex items-center space-x-2">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+                {activity.type}
+              </span>
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                {points} điểm
+              </span>
+            </div>
+          </div>
+          <p className="text-gray-600 mb-2">
+            Thời gian: {new Date(activity.eventStart).toLocaleString()}
+          </p>
+          <p className="text-gray-600 mb-2">Địa điểm: {activity.location}</p>
+          {activity.maxParticipants && (
+            <p className="text-gray-600">Số lượng: {activity.maxParticipants} người</p>
+          )}
+          <div className="mt-4">
+            <Link
+              to={`/student/activities/${activity.activityID}`}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Xem chi tiết
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -100,28 +166,15 @@ const StudentHomeMain = () => {
         <h2 className="text-xl font-semibold mb-6 text-gray-800">
           Các hoạt động đang diễn ra
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Activity Card Example */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <img
-              src="/activity-placeholder.jpg"
-              alt="Activity"
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-4">
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">
-                Tên hoạt động
-              </h3>
-              <p className="text-gray-600 mb-2">Tên đơn vị</p>
-              <p className="text-gray-600 mb-2">
-                Thời gian: 01/01/2024 - 02/01/2024
-              </p>
-              <p className="text-gray-600 mb-2">Địa điểm: Hội trường A</p>
-              <p className="text-gray-600">Số lượng: 20 tình nguyện viên</p>
-            </div>
+        {activitiesLoading ? (
+          <div>Loading...</div>
+        ) : activities.length === 0 ? (
+          <div className="text-gray-600">Không có hoạt động nào đang diễn ra</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activities.map(activity => renderActivityCard(activity))}
           </div>
-          {/* Add more activity cards as needed */}
-        </div>
+        )}
       </div>
     </div>
   );

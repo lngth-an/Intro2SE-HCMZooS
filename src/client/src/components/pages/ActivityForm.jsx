@@ -296,12 +296,20 @@ function ActivityForm({
               </label>
               <input
                 type="number"
-                min="1"
                 {...register("capacity", {
                   required: "Vui lòng nhập số lượng tham gia",
-                  min: { value: 1, message: "Số lượng phải lớn hơn 0" },
+                  validate: (value) => {
+                    const numValue = parseInt(value);
+                    if (isNaN(numValue)) return "Số lượng tham gia không hợp lệ";
+                    if (numValue <= 0) return "Số lượng tham gia phải lớn hơn 0";
+                    return true;
+                  }
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  errors.capacity
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-blue-500"
+                }`}
               />
               {errors.capacity && (
                 <p className="mt-1 text-sm text-red-600">

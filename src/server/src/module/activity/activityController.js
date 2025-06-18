@@ -8,6 +8,8 @@ const Student = db.Student;
 const Participation = db.Participation;
 const Semester = db.Semester;
 const pool = require('../../config/database');
+const { ACTIVITY_TYPES } = require('../../constants/activityTypes');
+
 
 class ActivityController {
     // Helper: Get organizerID from req.user.userID
@@ -304,6 +306,7 @@ class ActivityController {
                 academicYear: p.student?.academicYear,
                 faculty: p.student?.falculty,
                 status: p.participationStatus,
+                trainingPoint: p.trainingPoint || 0,
                 registrationTime: p.createdAt,
             })) });
         } catch (err) {
@@ -365,35 +368,22 @@ class ActivityController {
             // Cập nhật trạng thái tham gia
             const newStatus = status === 'Đã tham gia' ? 'Đã tham gia' : 'Vắng';
 
-            // Lấy điểm mặc định dựa trên loại hoạt động
-            let defaultPoint = 3; // Điểm mặc định cho loại "Khác"
-            switch (activity.type) {
-                case 'Học thuật':
-                    defaultPoint = 10;
-                    break;
-                case 'Tình nguyện':
-                    defaultPoint = 8;
-                    break;
-                case 'Thể thao':
-                case 'Nghệ thuật':
-                case 'Hội thảo':
-                    defaultPoint = 5;
-                    break;
-                case 'Kỹ năng':
-                    defaultPoint = 10;
-                    break;
-                default:
-                    defaultPoint = 3; // Loại "Khác"
-                    break;
-            }
+            // Lấy điểm mặc định từ ACTIVITY_TYPES dựa trên loại hoạt động
+            const defaultPoint = ACTIVITY_TYPES[activity.type]?.defaultPoint || 3; // Mặc định là 3 điểm nếu không tìm thấy loại
 
+            // Cập nhật trạng thái và điểm rèn luyện
             await db.Participation.update(
                 { 
                     participationStatus: newStatus,
-                    // Nếu có mặt, cập nhật điểm rèn luyện theo loại hoạt động, nếu vắng thì 0
                     trainingPoint: status === 'Đã tham gia' ? defaultPoint : 0
                 },
-                { where: { activityID, participationID: participationIDs } }
+                { 
+                    where: { 
+                        activityID, 
+                        participationID: participationIDs,
+                        participationStatus: 'Đã duyệt' // Chỉ cập nhật những participation có trạng thái "Đã duyệt"
+                    } 
+                }
             );
 
             res.json({ 
