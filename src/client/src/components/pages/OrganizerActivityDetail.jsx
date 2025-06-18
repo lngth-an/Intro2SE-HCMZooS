@@ -244,9 +244,9 @@ export default function OrganizerActivityDetail() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-500">Trạng thái hoạt động</h3>
               <p className="mt-1 text-sm font-medium">
-                {activity.activityStatus === 'Đã đăng tải' && <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-500">Đã công khai</span>}
-                {activity.activityStatus === 'Bản nháp' && <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-500">Bản nháp</span>}
-                {activity.activityStatus === 'Đã hoàn thành' && <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-500">Đã kết thúc</span>}
+                <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800">
+                  {activity.activityStatus}
+                </span>
               </p>
             </div>
           </div>

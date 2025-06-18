@@ -448,7 +448,7 @@ function ActivityManager() {
           onClick={() => navigate("/organizer/activity-create")}
           className="h-12 px-6 text-base font-semibold"
         >
-          TẠO HOẠT ĐỘNG
+          Tạo hoạt động
         </Button>
       </div>
 

@@ -671,8 +671,6 @@ class ActivityController {
     // GET /activity/available-for-student
     static async getAvailableActivitiesForStudent(req, res) {
         try {
-            console.log('DEBUG CONTROLLER req.user:', req.user);
-            console.log('DEBUG CONTROLLER req.user.role:', req.user ? req.user.role : undefined);
             if (!req.user || req.user.role !== 'student') {
                 return res.status(403).json({ message: 'Forbidden: Only students can view available activities.' });
             }
