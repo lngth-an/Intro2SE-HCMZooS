@@ -55,25 +55,6 @@ const Header = () => {
             </span>
           </div>
 
-          {/* Search bar */}
-          <div className="flex-1 max-w-2xl mx-10">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm hoạt động..."
-                className="w-full px-4 py-2 rounded-lg border bg-white border-gray-400 text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-              {/* Icon có thể click */}
-              <Search
-                className="absolute right-3 top-2.5 h-5 w-5 text-gray-600 cursor-pointer"
-                onClick={performSearch}
-              />
-            </div>
-          </div>
-
           {/* Avatar và tên người dùng */}
           <div className="flex items-center space-x-4 ml-auto">
             <div className="flex items-center space-x-3">

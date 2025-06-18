@@ -1,288 +1,283 @@
-import React, { useEffect, useState } from "react";
-import {
-  ClipboardList,
-  FileWarning,
-  Eye,
-  Edit,
-  Trash2,
-  Upload,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { message } from "antd";
-import Header from "../common/Header";
-import SidebarOrganizer from "../common/SidebarOrganizer";
-import Footer from "../common/Footer";
+import { toast } from "react-toastify";
+import { Card, Row, Col, Button, Badge, Typography } from "antd";
+import {
+  UserOutlined,
+  CalendarOutlined,
+  BellOutlined,
+  PlusOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  EnvironmentOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
 
-const DOMAINS = [
-  { id: "academic", label: "Học thuật" },
-  { id: "volunteer", label: "Tình nguyện" },
-  { id: "sports", label: "Thể thao" },
-  { id: "skills", label: "Kỹ năng" },
-  { id: "arts", label: "Nghệ thuật" },
-  { id: "other", label: "Khác" },
-];
-const statusColors = {
-  'Bản nháp': "bg-gray-300 text-gray-800",
-  'Đã đăng tải': "bg-blue-600 text-white",
-  'Đã hoàn thành': "bg-green-600 text-white",
-};
+const { Title, Text } = Typography;
 
-export default function OrganizerHomeMain({
-  onManageActivities,
-  onReviewComplaints,
-}) {
-  console.log("Component rendered");
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("success");
-  const [pendingComplaints, setPendingComplaints] = useState(0);
-  const [stats, setStats] = useState({
-    completedCount: 0,
-    draftCount: 0,
-    publishedCount: 0
-  });
+// Cấu hình axios để tự động thêm token vào header
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+const OrganizerHome = (props) => {
   const navigate = useNavigate();
-
-  const fetchActivities = async () => {
-    console.log("Fetching activities...");
-    setLoading(true);
-    try {
-      // Sử dụng endpoint mới để lấy danh sách có kèm thống kê
-      const res = await fetch("/activity/list?page=1&limit=10");
-      if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu hoạt động");
-      const data = await res.json();
-      console.log("Raw activities response:", data);
-      
-      // Cập nhật cả activities và stats
-      setActivities(data.activities || []);
-      setStats({
-        completedCount: data.activities ? data.activities.filter(act => act.activityStatus === "Đã hoàn thành").length : 0,
-        draftCount: data.draftCount || 0,
-        publishedCount: data.publishedCount || 0
-      });
-      
-      console.log("Activities and stats updated:", {
-        activities: data.activities,
-        stats: {
-          completedCount: data.activities ? data.activities.filter(act => act.activityStatus === "Đã hoàn thành").length : 0,
-          draftCount: data.draftCount,
-          publishedCount: data.publishedCount
-        }
-      });
-    } catch (err) {
-      setError(err.message);
-      console.log("Error fetching activities:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPendingComplaints = async () => {
-    console.log("Fetching pending complaints...");
-    try {
-      const res = await fetch("/activity/complaint/organizer?status=Chờ duyệt");
-      if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu khiếu nại");
-      const data = await res.json();
-      console.log("Raw complaints response:", data);
-      const count = data.complaints ? data.complaints.length : 0;
-      setPendingComplaints(count);
-      console.log("Pending complaints state updated:", count);
-    } catch (err) {
-      console.log("Error fetching complaints:", err);
-      setPendingComplaints(0);
-    }
-  };
+  const [activities, setActivities] = useState([]);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalActivities: 0,
+    completedActivities: 0,
+    pendingComplaints: 0,
+  });
+  const [publishedActivities, setPublishedActivities] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [complaints, setComplaints] = useState([]);
 
   useEffect(() => {
-    console.log("useEffect triggered");
-    fetchActivities();
-    fetchPendingComplaints();
+    const fetchData = async () => {
+      try {
+        // Lấy thông tin người dùng
+        const userResponse = await axios.get("/auth/me");
+        console.log("User data:", userResponse.data); // Debug log
+        setUser(userResponse.data);
+
+        // Lấy danh sách hoạt động của organizer
+        const response = await axios.get("/activity/organizer");
+        const activities = response.data.activities;
+        setActivities(activities);
+
+        // Lọc các hoạt động đã đăng tải nhưng chưa hoàn thành, chỉ lấy tối đa 2
+        const published = activities
+          .filter(
+            (activity) =>
+              activity.activityStatus === "Đã đăng tải" &&
+              activity.activityStatus !== "Đã hoàn thành"
+          )
+          .slice(0, 2);
+        setPublishedActivities(published);
+
+        // Lấy danh sách khiếu nại
+        const complaintsRes = await axios.get("/complaint/organizer");
+        setComplaints(complaintsRes.data.complaints || []);
+
+        // Lọc các hoạt động đã hoàn thành của organizer hiện tại
+        const completedActivities = activities.filter(
+          (a) =>
+            a.organizerID === userResponse.data.organizerID &&
+            a.activityStatus === "Đã hoàn thành"
+        ).length;
+
+        // Cập nhật stats
+        setStats((prev) => ({
+          ...prev,
+          completedActivities,
+        }));
+
+        // Lấy số lượng khiếu nại chưa xử lý
+        const organizerActivityIDs = activities
+          .filter((a) => a.organizerID === userResponse.data.organizerID)
+          .map((a) => a.activityID);
+
+        const pendingComplaints = complaints.filter(
+          (c) =>
+            organizerActivityIDs.includes(c.activityID) &&
+            c.complaintStatus === "Chờ duyệt"
+        ).length;
+
+        setStats((prev) => ({
+          ...prev,
+          pendingComplaints,
+        }));
+
+        fetchStats();
+        fetchUnreadCount();
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Không thể tải thông tin hoạt động");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // Handler cho các nút thao tác
-  const handleEdit = (activity) => {
-    navigate(`/organizer/activity/edit/${activity.activityID}`);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa hoạt động này?")) {
-      try {
-        const res = await fetch(`/activity/${id}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Không thể xóa hoạt động");
-        setMessage("Đã xóa hoạt động thành công!");
-        setMessageType("success");
-        fetchActivities();
-      } catch (error) {
-        setMessage("Không thể xóa hoạt động");
-        setMessageType("error");
-      }
-    }
-  };
-
-  const handlePublish = async (id) => {
+  const fetchStats = async () => {
     try {
-      const res = await fetch(`/activity/${id}/publish`, { method: "PATCH" });
-      if (!res.ok) throw new Error("Không thể xuất bản hoạt động");
-      setMessage("Đã xuất bản hoạt động thành công!");
-      setMessageType("success");
-      fetchActivities();
+      const response = await axios.get("/organizer/stats");
+      setStats(response.data);
     } catch (error) {
-      setMessage("Không thể xuất bản hoạt động");
-      setMessageType("error");
+      console.error("Error fetching stats:", error);
     }
   };
 
-  const handleLogout = async () => {
+  const fetchUnreadCount = async () => {
     try {
-      await axios.post("/auth/logout");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("role");
-      localStorage.removeItem("userID");
-      localStorage.removeItem("user");
-      message.success("Đăng xuất thành công");
-      navigate("/login");
+      const response = await axios.get("/notifications/unread/count");
+      setUnreadCount(response.data.unreadCount);
     } catch (error) {
-      message.error("Có lỗi xảy ra khi đăng xuất");
+      console.error("Error fetching unread count:", error);
     }
   };
+
+  if (loading) {
+    return <div>Đang tải...</div>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header onLogout={handleLogout} />
+      {props.Header ? <props.Header user={user} /> : null}
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer onLogout={handleLogout} />
-        <main className="min-h-screen bg-gray-50 p-6">
-          {/* Quản lý và khiếu nại Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Quản lý hoạt động */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                    Quản lý các hoạt động
-                    <span className="inline-block bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded ml-2">
-                      Đã hoàn thành: {stats.completedCount}
-                    </span>
-                  </h3>
-                  <p className="text-gray-600">
-                    Xem, chỉnh sửa hoặc kết thúc hoạt động
-                  </p>
-                </div>
-                <button
-                  onClick={onManageActivities}
-                  className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <ClipboardList className="w-5 h-5" />
-                </button>
+        {props.SidebarOrganizer ? (
+          <props.SidebarOrganizer onLogout={props.onLogout} />
+        ) : null}
+        <div className="flex-1 flex flex-col ml-64">
+          <main className="flex-1 p-6">
+            <div className="container mx-auto px-4 py-8">
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-800">
+                  XIN CHÀO, {user?.name || "Organizer"}
+                </h1>
               </div>
-            </div>
 
-            {/* Đơn khiếu nại */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                    Đơn khiếu nại chờ duyệt
-                    <span className="inline-block bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded ml-2">
-                      Chờ xử lý: {pendingComplaints}
-                    </span>
-                  </h3>
-                  <p className="text-gray-600">
-                    Xử lý các đơn khiếu nại đang chờ duyệt
-                  </p>
-                </div>
-                <button
-                  onClick={onReviewComplaints}
-                  className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <FileWarning className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
+              {/* Management Cards */}
+              <Row gutter={[24, 24]} className="mb-8">
+                <Col xs={24} md={12}>
+                  <Link to="/organizer/activities" className="block">
+                    <Card hoverable className="h-full">
+                      <div className="flex items-center mb-4">
+                        <CheckCircleOutlined className="text-2xl text-blue-500 mr-3" />
+                        <Title level={4} className="m-0">
+                          Quản lý hoạt động
+                        </Title>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <Text className="text-gray-600 block mb-1">
+                          Xem các hoạt động của bạn...
+                        </Text>
+                      </div>
+                    </Card>
+                  </Link>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Link to="/complaint/organizer" className="block">
+                    <Card hoverable className="h-full">
+                      <div className="flex items-center mb-4">
+                        <ExclamationCircleOutlined className="text-2xl text-orange-500 mr-3" />
+                        <Title level={4} className="m-0">
+                          Quản lý khiếu nại
+                        </Title>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-lg">
+                        <Text className="text-gray-600 block mb-1">
+                          Xem các đơn khiếu nại...
+                          
+                        </Text>
+                      </div>
+                    </Card>
+                  </Link>
+                </Col>
+              </Row>
 
-          {/* Thông báo */}
-          {message && (
-            <div
-              className={`mb-4 p-3 rounded-md text-center ${
-                messageType === "success"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              {message}
-            </div>
-          )}
-
-          {/* Các hoạt động đang diễn ra */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">
-              Các hoạt động đang diễn ra
-            </h2>
-            {loading ? (
-              <div>Đang tải hoạt động...</div>
-            ) : error ? (
-              <div className="text-red-500">{error}</div>
-            ) : activities.length === 0 ? (
-              <div>Không có hoạt động nào</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activities.map((activity) => (
-                  <div
-                    key={activity.activityID}
-                    className="bg-white rounded-lg shadow-sm p-6"
+              {/* Published Activities */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-6">
+                  <Title level={3} className="m-0">
+                    Các hoạt động đã đăng tải
+                  </Title>
+                  <Button
+                    type="primary"
+                    icon={<RightOutlined />}
+                    onClick={() => navigate("/organizer/activities")}
+                    className="h-9 px-4 text-sm font-medium"
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        {activity.name}
-                      </h3>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          statusColors[activity.activityStatus]
-                        }`}
+                    Xem thêm
+                  </Button>
+                </div>
+                <Row gutter={[24, 24]}>
+                  {publishedActivities.map((activity) => (
+                    <Col xs={24} md={12} key={activity.activityID}>
+                      <Card
+                        hoverable
+                        className="h-full cursor-pointer"
+                        cover={
+                          <div className="h-48 overflow-hidden">
+                            <img
+                              alt={activity.name}
+                              src={
+                                activity.image ||
+                                "https://via.placeholder.com/400x200?text=Activity+Image"
+                              }
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        }
+                        onClick={() =>
+                          navigate(
+                            `/organizer/activities/${activity.activityID}`,
+                            { state: { from: "home" } }
+                          )
+                        }
                       >
-                        {activity.activityStatus}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-4">{activity.description}</p>
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={() => handleEdit(activity)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                        title="Chỉnh sửa"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      {activity.activityStatus === "Bản nháp" && (
-                        <>
-                          <button
-                            onClick={() => handlePublish(activity.activityID)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                            title="Xuất bản"
-                          >
-                            <Upload className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(activity.activityID)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                            title="Xóa"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                        <div className="flex items-center mb-4">
+                          <CalendarOutlined className="text-2xl text-green-500 mr-3" />
+                          <Title level={4} className="m-0">
+                            {activity.name}
+                          </Title>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center">
+                            <CalendarOutlined className="text-gray-400 mr-2" />
+                            <Text className="text-gray-600">
+                              Ngày mở đơn:{" "}
+                              {new Date(
+                                activity.registrationStart
+                              ).toLocaleDateString()}
+                            </Text>
+                          </div>
+                          <div className="flex items-center">
+                            <EnvironmentOutlined className="text-gray-400 mr-2" />
+                            <Text className="text-gray-600">
+                              Địa điểm: {activity.location}
+                            </Text>
+                          </div>
+                        </div>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
               </div>
-            )}
-          </div>
-        </main>
+
+              {/* Create Activity Button */}
+              <div className="flex justify-center items-center mb-8">
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate("/organizer/activity-create")}
+                  className="h-12 px-6 text-base font-semibold"
+                >
+                  Tạo hoạt động mới
+                </Button>
+              </div>
+            </div>
+          </main>
+          {props.Footer ? <props.Footer /> : null}
+        </div>
       </div>
-      <Footer />
     </div>
   );
-}
+};
+
+export default OrganizerHome;
