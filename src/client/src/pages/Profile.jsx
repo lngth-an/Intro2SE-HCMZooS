@@ -150,13 +150,31 @@ export default function ProfilePage() {
                   className="w-full px-3 py-2 rounded-lg bg-gray-100 border text-gray-500"
                 />
               </div>
+              {/* Thông tin riêng cho student */}
+              {user?.role === 'student' && profile && (
+                <>
+                  <div><span className="font-medium">Mã sinh viên:</span> {profile.studentID}</div>
+                  <div><span className="font-medium">Giới tính:</span> {profile.sex || 'Chưa cập nhật'}</div>
+                  <div><span className="font-medium">Ngày sinh:</span> {profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : 'Chưa cập nhật'}</div>
+                  <div><span className="font-medium">Niên khoá:</span> {profile.academicYear || 'Chưa cập nhật'}</div>
+                  <div><span className="font-medium">Khoa:</span> {profile.falculty || 'Chưa cập nhật'}</div>
+                </>
+              )}
+              {/* Thông tin riêng cho organizer */}
+              {user?.role === 'organizer' && profile && (
+                <>
+                  <div><span className="font-medium">Mã tổ chức:</span> {profile.organizerID}</div>
+                  <div><span className="font-medium">Đơn vị:</span> {profile.department || 'Chưa cập nhật'}</div>
+                  <div><span className="font-medium">Chức vụ:</span> {profile.position || 'Chưa cập nhật'}</div>
+                </>
+              )}
               <div>
                 <label className="block text-sm font-medium">Email</label>
                 <input
                   name="email"
                   value={form.email}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 rounded-lg border"
+                  disabled
+                  className="w-full px-3 py-2 rounded-lg bg-gray-100 border text-gray-500"
                 />
               </div>
               <div>

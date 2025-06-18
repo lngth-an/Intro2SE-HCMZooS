@@ -77,6 +77,10 @@ export default function StudentActivitiesContent() {
       filtered = filtered.filter(act => act.type === selectedType);
     }
 
+    // Chỉ hiển thị các trạng thái mong muốn
+    const allowedStatuses = ['Chờ duyệt', 'Đã duyệt', 'Đã hoàn thành', 'Vắng'];
+    filtered = filtered.filter(act => allowedStatuses.includes(act.participationStatus));
+
     // Sắp xếp theo eventStart gần nhất (tương lai gần nhất lên đầu)
     filtered.sort((a, b) => {
       const now = new Date();
