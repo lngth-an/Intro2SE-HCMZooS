@@ -82,8 +82,8 @@ function ActivityRegister() {
         if (isMounted) setError("Không thể tải hoạt động. Vui lòng thử lại.");
             } finally {
         if (isMounted) setLoading(false);
-      }
-    };
+            }
+        };
     const handler = setTimeout(() => { fetchActivities(); }, 500);
     return () => { isMounted = false; clearTimeout(handler); };
   }, [searchTerm, organizerSearch, startDate, endDate, selectedDomain]);
@@ -356,11 +356,11 @@ function ActivityRegister() {
               </div>
 
               {/* Activities Grid */}
-              {loading ? (
+                {loading ? (
                 <div className="text-center py-8">Đang tải...</div>
-              ) : error ? (
+                ) : error ? (
                 <div className="text-center py-8 text-red-600">{error}</div>
-              ) : activities.length === 0 ? (
+                ) : activities.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   Không tìm thấy hoạt động nào
                   </div>

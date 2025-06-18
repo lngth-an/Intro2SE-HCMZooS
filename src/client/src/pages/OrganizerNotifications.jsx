@@ -159,21 +159,16 @@ const OrganizerNotifications = () => {
     };
 
     const handleSendNotification = async () => {
+        if (!selectedActivity) {
+            toast.error('Bạn phải chọn hoạt động để gửi thông báo!');
+            return;
+        }
         try {
-            let toUserIDs = undefined;
-            let activityID = undefined;
-            if (selectedActivity) {
-                activityID = selectedActivity;
-                if (sendTarget === 'specific') {
-                    toUserIDs = selectedStudents.map(student => student.userID);
-                }
-            }
             await axios.post('/notifications/send', {
                 fromUserID: user.userID,
-                toUserIDs,
                 notificationTitle: newNotification.title,
                 notificationMessage: newNotification.message,
-                activityID
+                activityID: selectedActivity
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -391,41 +386,6 @@ const OrganizerNotifications = () => {
               </Option>
             ))}
           </Select>
-          <Select
-            value={sendTarget}
-            onChange={setSendTarget}
-            className="w-full"
-          >
-            <Option value="all">Tất cả sinh viên tham gia hoạt động</Option>
-            <Option value="specific">Một số sinh viên cụ thể</Option>
-          </Select>
-          {sendTarget === "specific" && (
-            <Select
-              mode="multiple"
-              showSearch
-              placeholder="Tìm kiếm sinh viên..."
-              value={selectedStudents.map((s) => s.userID)}
-              onSearch={handleSearchStudents}
-              onChange={(values) => {
-                const selected = students.filter((s) =>
-                  values.includes(s.userID)
-                );
-                setSelectedStudents(selected);
-              }}
-              className="w-full"
-              optionLabelProp="label"
-            >
-              {students.map((student) => (
-                <Option
-                  key={student.userID}
-                  value={student.userID}
-                  label={student.name || student.userID}
-                >
-                  {student.name || student.userID}
-                </Option>
-              ))}
-            </Select>
-          )}
           <Input
             placeholder="Tiêu đề thông báo"
             value={newNotification.title}

@@ -349,7 +349,7 @@ function ActivityManager() {
       render: (text, record) => (
         <div>
           <div className="font-medium text-gray-900">{text}</div>
-          <div className="text-sm text-gray-500">{record.location}</div>
+          <div className="text-sm text-gray-500 w-40 min-h-5 truncate">{record.location}</div>
         </div>
       ),
     },
