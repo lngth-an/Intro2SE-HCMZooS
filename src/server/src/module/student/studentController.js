@@ -40,15 +40,43 @@ class StudentController {
     try {
       const studentID = req.user.studentID;
       const semesterID = req.query.semesterID;
-      if (!studentID || !semesterID) return res.status(400).json({ message: 'Missing studentID or semesterID' });
+      
+      if (!studentID || !semesterID) {
+        return res.status(400).json({ message: 'Missing studentID or semesterID' });
+      }
+
+      // Lấy tất cả participations của sinh viên trong học kỳ đó
       const participations = await db.Participation.findAll({
-        where: { studentID, participationStatus: 'present' },
-        include: [{ model: db.Activity, as: 'activity', where: { semesterID } }]
+        where: { 
+          studentID,
+          participationStatus: 'Đã tham gia', // Chỉ tính điểm cho những hoạt động đã tham gia
+        },
+        include: [{ 
+          model: db.Activity, 
+          as: 'activity',
+          required: true, // INNER JOIN để chỉ lấy những participation có activity
+          where: { 
+            semesterID,
+            activityStatus: 'Đã kết thúc' // Chỉ tính điểm cho hoạt động đã kết thúc
+          }
+        }]
       });
-      const score = participations.reduce((sum, p) => sum + (p.trainingPoint || 0), 0);
-      res.json({ score });
+
+      // Tính tổng điểm
+      const score = participations.reduce((sum, p) => {
+        // Nếu có điểm rèn luyện thì cộng vào, nếu không thì cộng 0
+        return sum + (p.trainingPoint || 0);
+      }, 0);
+
+      res.json({ 
+        score,
+        details: participations.map(p => ({
+          activityName: p.activity.name,
+          trainingPoint: p.trainingPoint || 0
+        }))
+      });
     } catch (err) {
-      console.error(err);
+      console.error('Error in getScore:', err);
       res.status(500).json({ message: 'Error fetching score' });
     }
   }
