@@ -105,7 +105,7 @@ const OrganizerHome = (props) => {
         fetchUnreadCount();
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("Không thể tải thông tin hoạt động");
+        //toast.error("Không thể tải thông tin hoạt động");
       } finally {
         setLoading(false);
       }
