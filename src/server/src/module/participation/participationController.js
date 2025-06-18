@@ -148,6 +148,19 @@ static async deleteDraft(req, res) {
   }
 }
 
+  static async getMyParticipations(req, res) {
+    try {
+      const studentID = req.user.studentID;
+      const participations = await db.Participation.findAll({
+        where: { studentID },
+        attributes: ['activityID', 'participationStatus']
+      });
+      res.json({ participations });
+    } catch (err) {
+      res.status(500).json({ error: 'Lỗi lấy danh sách participation.' });
+    }
+  }
+
 }
 
 module.exports = ParticipationController; 
