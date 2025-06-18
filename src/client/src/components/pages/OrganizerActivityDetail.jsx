@@ -34,27 +34,90 @@ function UpdatePointModal({ open, onClose, student, activityId, reload }) {
     setLoading(false);
   };
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <form className="bg-white p-6 rounded shadow max-w-sm w-full" onSubmit={handleSubmit}>
-        <h3 className="text-lg font-bold mb-2">Cập nhật điểm rèn luyện</h3>
-        <div className="mb-2">MSSV: <b>{student.studentID}</b></div>
-        <div className="mb-2">Họ tên: <b>{student.studentName}</b></div>
-        <div className="mb-2">Điểm hiện tại: <b>{student.trainingPoint ?? 'Chưa có'}</b></div>
-        <div className="mb-2">
-          <label>Điểm mới:</label>
-          <input type="number" min={0} max={100} className="border rounded px-2 py-1 ml-2 w-24" value={newPoint} onChange={e=>setNewPoint(e.target.value)} />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900">Cập nhật điểm rèn luyện</h3>
         </div>
-        <div className="mb-2">
-          <label>Lý do cập nhật:</label>
-          <input type="text" className="border rounded px-2 py-1 ml-2 w-full" value={reason} onChange={e=>setReason(e.target.value)} />
-        </div>
-        {error && <div className="text-red-600 mb-2">{error}</div>}
-        {success && <div className="text-green-600 mb-2">{success}</div>}
-        <div className="flex gap-2 mt-2">
-          <button type="submit" className="bg-blue-600 text-white px-4 py-1 rounded" disabled={loading}>{loading ? 'Đang lưu...' : 'Xác nhận'}</button>
-          <button type="button" className="bg-gray-300 px-4 py-1 rounded" onClick={onClose}>Hủy</button>
-        </div>
-      </form>
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">MSSV</label>
+                <div className="text-gray-900 font-medium">{student.studentID}</div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
+                <div className="text-gray-900 font-medium">{student.studentName}</div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Điểm hiện tại</label>
+              <div className="text-gray-900 font-medium">{student.trainingPoint ?? 'Chưa có'}</div>
+            </div>
+
+            <div>
+              <label htmlFor="newPoint" className="block text-sm font-medium text-gray-700 mb-1">
+                Điểm mới
+              </label>
+              <input
+                type="number"
+                id="newPoint"
+                min={0}
+                max={100}
+                value={newPoint}
+                onChange={e => setNewPoint(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Nhập điểm"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+                Lý do cập nhật
+              </label>
+              <textarea
+                id="reason"
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Nhập lý do cập nhật điểm"
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm text-green-600">{success}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Đang lưu...' : 'Xác nhận'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -262,13 +325,6 @@ export default function OrganizerActivityDetail() {
               </button>
               <button 
                 disabled={selectedRegs.length===0 || loading} 
-                onClick={()=>handleBulkApprove('pending')} 
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Chuyển về chờ duyệt
-              </button>
-              <button 
-                disabled={selectedRegs.length===0 || loading} 
                 onClick={()=>handleBulkApprove('reject')} 
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -426,11 +482,11 @@ export default function OrganizerActivityDetail() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.faculty}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${r.status === 'present' ? 'bg-green-100 text-green-800' : 
-                          r.status === 'absent' ? 'bg-red-100 text-red-800' : 
+                        ${r.attendanceStatus === 'present' ? 'bg-green-100 text-green-800' : 
+                          r.attendanceStatus === 'absent' ? 'bg-red-100 text-red-800' : 
                           'bg-gray-100 text-gray-800'}`}>
-                        {r.status === 'present' ? 'Có mặt' : 
-                         r.status === 'absent' ? 'Vắng mặt' : 
+                        {r.attendanceStatus === 'present' ? 'Đã tham gia' : 
+                         r.attendanceStatus === 'absent' ? 'Vắng mặt' : 
                          'Chưa điểm danh'}
                       </span>
                     </td>
