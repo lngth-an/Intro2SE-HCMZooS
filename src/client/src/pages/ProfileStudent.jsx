@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import Header from '../components/common/Header';
-import SidebarStudent from '../components/common/SidebarStudent';
-import Footer from '../components/common/Footer';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { message } from 'antd';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Header from "../components/common/Header";
+import SidebarStudent from "../components/common/SidebarStudent";
+import Footer from "../components/common/Footer";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { message } from "antd";
 
 export default function ProfileStudent() {
   const { user } = useAuth();
@@ -124,19 +124,22 @@ export default function ProfileStudent() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('/auth/logout');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('role');
-      localStorage.removeItem('userID');
-      localStorage.removeItem('user');
-      message.success('Đăng xuất thành công');
-      navigate('/login');
+      await axios.post("/auth/logout");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("role");
+      localStorage.removeItem("userID");
+      localStorage.removeItem("user");
+      message.success("Đăng xuất thành công");
+      navigate("/login");
     } catch (error) {
-      message.error('Có lỗi xảy ra khi đăng xuất');
+      message.error("Có lỗi xảy ra khi đăng xuất");
     }
   };
 
-  if (!user) return <div className="p-8 text-center">Vui lòng đăng nhập để tiếp tục.</div>;
+  if (!user)
+    return (
+      <div className="p-8 text-center">Vui lòng đăng nhập để tiếp tục.</div>
+    );
   if (!profile) return <div className="p-8 text-center">Đang tải hồ sơ...</div>;
 
   return (
@@ -163,21 +166,47 @@ export default function ProfileStudent() {
                 />
               </div>
               {/* Thông tin riêng cho student */}
-              {user?.role === 'student' && profile && (
+              {user?.role === "student" && profile && (
                 <>
-                  <div><span className="font-medium">Mã sinh viên:</span> {profile.studentID}</div>
-                  <div><span className="font-medium">Giới tính:</span> {profile.sex || 'Chưa cập nhật'}</div>
-                  <div><span className="font-medium">Ngày sinh:</span> {profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : 'Chưa cập nhật'}</div>
-                  <div><span className="font-medium">Niên khoá:</span> {profile.academicYear || 'Chưa cập nhật'}</div>
-                  <div><span className="font-medium">Khoa:</span> {profile.falculty || 'Chưa cập nhật'}</div>
+                  <div>
+                    <span className="font-medium">Mã sinh viên:</span>{" "}
+                    {profile.studentID}
+                  </div>
+                  <div>
+                    <span className="font-medium">Giới tính:</span>{" "}
+                    {profile.sex || "Chưa cập nhật"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Ngày sinh:</span>{" "}
+                    {profile.dateOfBirth
+                      ? new Date(profile.dateOfBirth).toLocaleDateString()
+                      : "Chưa cập nhật"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Niên khoá:</span>{" "}
+                    {profile.academicYear || "Chưa cập nhật"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Khoa:</span>{" "}
+                    {profile.falculty || "Chưa cập nhật"}
+                  </div>
                 </>
               )}
               {/* Thông tin riêng cho organizer */}
-              {user?.role === 'organizer' && profile && (
+              {user?.role === "organizer" && profile && (
                 <>
-                  <div><span className="font-medium">Mã tổ chức:</span> {profile.organizerID}</div>
-                  <div><span className="font-medium">Đơn vị:</span> {profile.department || 'Chưa cập nhật'}</div>
-                  <div><span className="font-medium">Chức vụ:</span> {profile.position || 'Chưa cập nhật'}</div>
+                  <div>
+                    <span className="font-medium">Mã tổ chức:</span>{" "}
+                    {profile.organizerID}
+                  </div>
+                  <div>
+                    <span className="font-medium">Đơn vị:</span>{" "}
+                    {profile.department || "Chưa cập nhật"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Chức vụ:</span>{" "}
+                    {profile.position || "Chưa cập nhật"}
+                  </div>
                 </>
               )}
               <div>
