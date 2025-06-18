@@ -450,12 +450,12 @@ export default function OrganizerActivityDetail() {
             </div>
 
             <div className="flex justify-end space-x-4">
-              <Link
+              {/* <Link
                 to={`/organizer/activities/${activityId}/edit`}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 Chỉnh sửa
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
@@ -526,7 +526,7 @@ export default function OrganizerActivityDetail() {
               <input
                 type="text"
                 placeholder="Tìm kiếm sinh viên theo MSSV..."
-                className="border rounded px-3 py-1"
+                className="border rounded px-3 py-1 w-80"
                 value={searchRegStudentCode}
                 onChange={(e) => setSearchRegStudentCode(e.target.value)}
               />

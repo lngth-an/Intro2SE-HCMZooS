@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import { useAuth } from "../contexts/AuthContext";
-import { Box, CircularProgress, Modal, IconButton } from "@mui/material";
-import { toast } from "react-toastify";
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+import { Box, CircularProgress, Modal, IconButton } from '@mui/material';
+import { toast } from 'react-toastify';
 import Header from "../components/common/Header";
 import SidebarStudent from "../components/common/SidebarStudent";
 import Footer from "../components/common/Footer";
 import CloseIcon from "@mui/icons-material/Close";
-import { useNavigate } from "react-router-dom";
+import EmailIcon from "@mui/icons-material/Email";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { useNavigate } from 'react-router-dom';
 
 axios.defaults.baseURL = "http://localhost:3001";
 axios.defaults.headers.common["Content-Type"] = "application/json";
@@ -22,8 +25,7 @@ const StudentNotifications = () => {
   const [users, setUsers] = useState([]);
   const navigate = useNavigate();
 
-  const allSelected =
-    notifications.length > 0 && selectedIds.length === notifications.length;
+  const allSelected = notifications.length > 0 && selectedIds.length === notifications.length;
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -52,12 +54,7 @@ const StudentNotifications = () => {
   }, [user, fetchNotifications, fetchUsers]);
 
   const getSenderNameById = (fromUserID) => {
-    console.log("users:", users);
-    console.log("fromUserID:", fromUserID);
-    const matchedUser = users.find(
-      (u) => Number(u.userID) === Number(fromUserID)
-    );
-    console.log("matchedUser:", matchedUser);
+    const matchedUser = users.find((u) => Number(u.userID) === Number(fromUserID));
     return matchedUser?.name || "Không xác định";
   };
 
@@ -130,6 +127,11 @@ const StudentNotifications = () => {
     }
   };
 
+  const handleSendMail = (notification) => {
+    const mailto = `mailto:${notification.senderEmail || 'example@domain.com'}?subject=Phản hồi thông báo: ${encodeURIComponent(notification.notificationTitle)}`;
+    window.open(mailto);
+  };
+
   const handleLogout = async () => {
     try {
       await axios.post("/auth/logout");
@@ -155,7 +157,7 @@ const StudentNotifications = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       <Header user={user} onLogout={handleLogout} />
-
+      
       <div className="flex flex-1 pt-16">
         <SidebarStudent onLogout={handleLogout} />
         <SidebarStudent onLogout={handleLogout} />
@@ -164,14 +166,10 @@ const StudentNotifications = () => {
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
             THÔNG BÁO
           </h1>
+
           <div className="mb-6">
             <span className="text-lg text-gray-600 font-medium">
-              Có{" "}
-              {
-                notifications.filter((n) => n.notificationStatus === "unread")
-                  .length
-              }{" "}
-              thông báo mới.
+              Có {notifications.filter((n) => n.notificationStatus === "unread").length} thông báo mới.
             </span>
           </div>
 
@@ -200,6 +198,7 @@ const StudentNotifications = () => {
             {notifications.length === 0 && (
               <p className="text-lg text-gray-500">Không có thông báo nào</p>
             )}
+
             {[...notifications]
               .sort((a, b) => {
                 if (
@@ -217,7 +216,7 @@ const StudentNotifications = () => {
               .map((notification) => (
                 <div
                   key={notification.notificationID}
-                  className={`w-full rounded-lg shadow-md p-5 transition duration-300 flex flex-row items-center gap-4 cursor-pointer border ${
+                  className={`rounded-lg shadow-md p-5 transition duration-300 flex flex-row items-center gap-4 cursor-pointer border w-full ${
                     selectedIds.includes(notification.notificationID)
                       ? "border-blue-600 ring-2 ring-blue-300 bg-blue-50"
                       : notification.notificationStatus === "unread"
@@ -228,9 +227,7 @@ const StudentNotifications = () => {
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(notification.notificationID)}
-                    onChange={() =>
-                      handleSelectOne(notification.notificationID)
-                    }
+                    onChange={() => handleSelectOne(notification.notificationID)}
                     className="w-5 h-5 accent-blue-600 mr-4"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -263,6 +260,17 @@ const StudentNotifications = () => {
                     <p className="text-base text-gray-700 leading-relaxed mb-3">
                       {notification.notificationMessage}
                     </p>
+                  </div>
+                  <div className="flex flex-col gap-2 ml-2">
+                    {notification.senderEmail && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleSendMail(notification)}
+                        title="Gửi mail phản hồi"
+                      >
+                        <EmailIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </div>
                 </div>
               ))}
@@ -302,12 +310,6 @@ const StudentNotifications = () => {
               <h2 className="text-2xl font-bold mb-4">
                 {selectedNotification.notificationTitle}
               </h2>
-              <div className="mb-2 text-gray-600 text-sm">
-                Được gửi từ:{" "}
-                <span className="font-semibold">
-                  {getSenderNameById(selectedNotification.fromUserID)}
-                </span>
-              </div>
               <div className="text-base text-gray-800 mb-2">
                 {selectedNotification.notificationMessage}
               </div>

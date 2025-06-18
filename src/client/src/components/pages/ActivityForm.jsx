@@ -236,6 +236,13 @@ function ActivityForm({
                 type="datetime-local"
                 {...register("eventStart", {
                   required: "Vui lòng chọn thời gian bắt đầu",
+                  validate: (value) => {
+                    const registrationEnd = document.querySelector('input[name="registrationEnd"]')?.value;
+                    if (registrationEnd && value && value < registrationEnd) {
+                      return "Thời gian diễn ra phải lớn hơn hoặc bằng thời gian kết thúc đăng ký!";
+                    }
+                    return true;
+                  }
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

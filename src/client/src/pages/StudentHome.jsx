@@ -6,6 +6,8 @@ import Header from "../components/common/Header";
 import SidebarStudent from "../components/common/SidebarStudent";
 import Footer from "../components/common/Footer";
 import { Award, GraduationCap } from "lucide-react";
+import StudentActivityDetail from "../components/pages/StudentActivityDetail";
+import { DOMAINS } from "../constants/activityTypes";
 
 const StudentHome = () => {
   const navigate = useNavigate();
@@ -17,6 +19,8 @@ const StudentHome = () => {
     totalScore: 0,
     totalActivities: 0,
   });
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -33,82 +37,28 @@ const StudentHome = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const studentResponse = await axios.get("/student/me");
-        setStudentInfo(studentResponse.data);
-
-        const activitiesResponse = await axios.get("/participation/open");
-        const currentDate = new Date();
-
-        // Log chi tiết về thời gian hiện tại
-        console.log("Current date (ISO):", currentDate.toISOString());
-        console.log("Current date (Local):", currentDate.toString());
-        console.log("Current date (UTC):", currentDate.toUTCString());
-        console.log("Timezone offset:", currentDate.getTimezoneOffset());
-
-        // Log toàn bộ response từ API
-        console.log("API Response:", activitiesResponse);
-        console.log("Activities data:", activitiesResponse.data);
-
-        if (
-          !activitiesResponse.data.activities ||
-          !Array.isArray(activitiesResponse.data.activities)
-        ) {
-          console.error(
-            "Invalid activities data format:",
-            activitiesResponse.data
-          );
-          setActivities([]);
-          setError("Dữ liệu hoạt động không hợp lệ");
-          return;
-        }
-
-        // Log số lượng hoạt động trước khi lọc
-        console.log(
-          "Total activities before filtering:",
-          activitiesResponse.data.activities.length
-        );
-
-        // Lấy 3 hoạt động đầu tiên
-        const topActivities = activitiesResponse.data.activities.slice(0, 3);
-
-        // Log kết quả sau khi lọc
-        console.log("Activities after filtering:", {
-          total: activitiesResponse.data.activities.length,
-          filtered: topActivities.length,
-          filteredActivities: topActivities.map((act) => ({
-            id: act.activityID,
-            name: act.name,
-            status: act.activityStatus,
-          })),
-        });
-
-        setActivities(topActivities);
+        // Lấy danh sách hoạt động đã đăng ký (bao gồm thông tin activity)
+        const response = await axios.get("/student/activities?allStatus=true");
+        const activities = response.data.activities || [];
+        // Chỉ lấy các trạng thái hợp lệ
+        const ALLOWED_STATUSES = ["Chờ duyệt", "Đã duyệt", "Đã tham gia", "Vắng"];
+        const filtered = activities.filter(act => ALLOWED_STATUSES.includes(act.participationStatus));
+        // Sắp xếp theo ưu tiên trạng thái
+        const statusPriority = {
+          "Chờ duyệt": 1,
+          "Đã duyệt": 2,
+          "Đã tham gia": 3,
+          "Vắng": 4
+        };
+        filtered.sort((a, b) => (statusPriority[a.participationStatus] || 99) - (statusPriority[b.participationStatus] || 99));
+        setActivities(filtered.slice(0, 2));
       } catch (error) {
-        console.error("Lỗi khi fetch dữ liệu:", error);
-        console.error("Error details:", {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status,
-        });
-
-        // Kiểm tra cụ thể loại lỗi
-        if (error.response) {
-          // Lỗi từ server
-          setError(
-            error.response.data?.message || "Không thể tải thông tin từ server"
-          );
-        } else if (error.request) {
-          // Không nhận được response
-          setError("Không thể kết nối đến server");
-        } else {
-          // Lỗi khác
-          setError("Có lỗi xảy ra khi tải dữ liệu");
-        }
+        setError("Không thể tải danh sách hoạt động đã đăng ký");
+        setActivities([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -135,6 +85,82 @@ const StudentHome = () => {
       console.error("Error fetching stats:", error);
       setStats({ totalScore: 0, totalActivities: 0 });
     }
+  };
+
+  const isRegistrationOpen = (activity) => {
+    const now = new Date();
+    return now >= new Date(activity.registrationStart) && now <= new Date(activity.registrationEnd);
+  };
+
+  const handleShowDetail = (activity) => {
+    setSelectedActivity(activity);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setSelectedActivity(null);
+    setShowDetailModal(false);
+  };
+
+  const renderActivityCard = (activity) => {
+    const domain = DOMAINS.find(d => d.id === activity.type);
+    const points = domain ? domain.defaultPoint : 3;
+    return (
+      <div
+        key={activity.activityID}
+        className="bg-white rounded-lg shadow-md overflow-hidden"
+      >
+        <div className="w-full h-48 bg-gray-200">
+          <img
+            src={activity.image || "https://via.placeholder.com/300x200"}
+            alt={activity.name}
+            className="w-full h-48 object-cover"
+          />
+        </div>
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{activity.name || 'Chưa cập nhật'}</h3>
+          <div className="flex items-center space-x-2 mb-3">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+              {activity.type || 'Khác'}
+            </span>
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              {activity.trainingPoint || points} điểm
+            </span>
+          </div>
+          <div className="text-sm text-gray-600 mb-2">
+            <p>Thời gian: {activity.eventStart ? new Date(activity.eventStart).toLocaleString() : 'Chưa cập nhật'}</p>
+            <p>Địa điểm: {activity.location || 'Chưa cập nhật'}</p>
+          </div>
+          <div className="flex justify-between items-center mt-2">
+            <div className="text-sm">
+              <span className={`px-2 py-1 rounded ${
+                activity.participationStatus === 'Đã tham gia' ? 'bg-green-100 text-green-800' :
+                activity.participationStatus === 'Vắng' ? 'bg-red-100 text-red-800' :
+                activity.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
+                activity.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
+                activity.participationStatus === 'Từ chối' ? 'bg-gray-100 text-gray-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {activity.participationStatus}
+              </span>
+            </div>
+            {activity.participationStatus === 'Đã tham gia' && (
+              <div className="text-sm font-medium text-green-600">
+                Điểm đã nhận: {activity.trainingPoint || points}
+              </div>
+            )}
+          </div>
+          <div className="mt-4 flex justify-between items-center">
+            <button
+              className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
+              onClick={() => handleShowDetail(activity)}
+            >
+              Xem chi tiết
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -203,9 +229,17 @@ const StudentHome = () => {
 
               {/* Ongoing Activities Section */}
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Các hoạt động đã được đăng tải
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Các hoạt động đã đăng ký
                 </h2>
+                  <button
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    onClick={() => navigate("/student/activities")}
+                  >
+                    Xem tất cả
+                  </button>
+                </div>
                 {loading ? (
                   <div className="flex justify-center items-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -222,131 +256,19 @@ const StudentHome = () => {
                   </div>
                 ) : activities.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
-                    Hiện không có hoạt động nào đang mở đăng ký
+                    Hiện không có hoạt động nào đã đăng ký
                   </p>
                 ) : (
-                  <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                      {activities.slice(0, 2).map((activity) => (
-                        <div
-                          key={activity.activityID}
-                          className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                          onClick={() =>
-                            navigate(
-                              `/student/activities/${activity.activityID}`
-                            )
-                          }
-                        >
-                          <div className="p-4">
-                            <h3 className="font-semibold text-lg mb-2 text-blue-600">
-                              {activity.name}
-                            </h3>
-                            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                              {activity.description}
-                            </p>
-                            <div className="space-y-2 mb-4">
-                              <div className="flex items-center text-sm text-gray-500">
-                                <svg
-                                  className="w-4 h-4 mr-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                  />
-                                </svg>
-                                {new Date(
-                                  activity.eventStart
-                                ).toLocaleDateString()}
-                              </div>
-                              <div className="flex items-center text-sm text-gray-500">
-                                <svg
-                                  className="w-4 h-4 mr-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                  />
-                                </svg>
-                                {activity.location}
-                              </div>
-                              <div className="flex items-center text-sm text-gray-500">
-                                <svg
-                                  className="w-4 h-4 mr-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                                  />
-                                </svg>
-                                {activity.capacity} người
-                              </div>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-500">
-                                Đăng ký đến:{" "}
-                                {new Date(
-                                  activity.registrationEnd
-                                ).toLocaleDateString()}
-                              </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(
-                                    `/student/register?activity=${activity.activityID}&showForm=true`
-                                  );
-                                }}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                              >
-                                Xem chi tiết
-                              </button>
+                    {activities.map(activity => renderActivityCard(activity))}
                   </div>
-                </div>
-              </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => navigate("/student/register")}
-                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center"
-                      >
-                        <span>Xem thêm hoạt động</span>
-                        <svg
-                          className="w-5 h-5 ml-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </>
+                )}
+                {showDetailModal && selectedActivity && (
+                  <StudentActivityDetail
+                    activity={selectedActivity}
+                    onClose={handleCloseDetailModal}
+                    isManagementView={true}
+                  />
                 )}
               </div>
             </div>
