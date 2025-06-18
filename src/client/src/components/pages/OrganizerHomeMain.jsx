@@ -32,6 +32,7 @@ axios.interceptors.request.use(
 
 const OrganizerHome = (props) => {
   const navigate = useNavigate();
+
   const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState({
     totalStudents: 0,

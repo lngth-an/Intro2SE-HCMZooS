@@ -313,6 +313,13 @@ function ActivityForm({
                 type="datetime-local"
                 {...register("eventEnd", {
                   required: "Vui lòng chọn thời gian kết thúc",
+                  validate: (value) => {
+                    const eventStart = document.querySelector('input[name="eventStart"]')?.value;
+                    if (eventStart && value && value <= eventStart) {
+                      return "Thời gian kết thúc phải lớn hơn thời gian bắt đầu!";
+                    }
+                    return true;
+                  }
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -421,6 +428,13 @@ function ActivityForm({
                 type="datetime-local"
                 {...register("registrationEnd", {
                   required: "Vui lòng chọn thời gian kết thúc đăng ký",
+                  validate: (value) => {
+                    const registrationStart = document.querySelector('input[name="registrationStart"]')?.value;
+                    if (registrationStart && value && value <= registrationStart) {
+                      return "Thời gian đăng ký kết thúc phải lớn hơn thời gian đăng ký bắt đầu!";
+                    }
+                    return true;
+                  }
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
@@ -24,6 +25,7 @@ const { TabPane } = Tabs;
 const { Option } = Select;
 
 const OrganizerNotifications = () => {
+  const { logout } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [sentNotifications, setSentNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,7 @@ const OrganizerNotifications = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header user={user} />
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer />
+        <SidebarOrganizer onLogout={logout} />
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
             <div className="container mx-auto px-4 py-8">

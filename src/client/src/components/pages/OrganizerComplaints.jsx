@@ -84,16 +84,34 @@ export default function OrganizerComplaints() {
     }
     setModalLoading(true);
     try {
+      console.log('Sending complaint update:', {
+        complaintID: selectedComplaint.complaintID,
+        status: modalStatus,
+        response: modalResponse
+      });
+      
       // Cập nhật trạng thái và response
       const res1 = await fetch(`/activity/complaint/${selectedComplaint.complaintID}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: modalStatus, response: modalResponse })
       });
+      
+      console.log('Complaint update response status:', res1.status);
       const data1 = await res1.json();
+      console.log('Complaint update response data:', data1);
+      
       if (!res1.ok) throw new Error(data1.message || 'Lỗi cập nhật khiếu nại');
+      
       // Nếu duyệt, cập nhật điểm
       if (modalStatus === 'Đã duyệt') {
+        console.log('Updating training point:', {
+          activityID: selectedComplaint.activityID,
+          participationID: selectedComplaint.participationID,
+          newPoint: modalPoint,
+          reason: modalResponse
+        });
+        
         const res2 = await fetch(`/activity/${selectedComplaint.activityID}/training-point`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -103,12 +121,17 @@ export default function OrganizerComplaints() {
             reason: modalResponse
           })
         });
+        
+        console.log('Training point update response status:', res2.status);
         const data2 = await res2.json();
+        console.log('Training point update response data:', data2);
+        
         if (!res2.ok) throw new Error(data2.message || 'Lỗi cập nhật điểm');
       }
       setModalSuccess('Cập nhật thành công!');
       setTimeout(() => { handleCloseModal(); }, 1200);
     } catch (err) {
+      console.error('Error in handleOrganizerSubmit:', err);
       setModalError(err.message);
     } finally {
       setModalLoading(false);
@@ -116,14 +139,14 @@ export default function OrganizerComplaints() {
   };
 
   console.log('selectedComplaint:', selectedComplaint);
+  console.log('Current auth state:', localStorage.getItem('token'));
 
   return (
     <div className="space-y-6">
       {/* Header Section */}
       <div className="flex items-center justify-between px-4 py-6">
         <div>
-          <h2 className="text-2xl font-bold uppercase">QUẢN LÝ KHIẾU NẠI</h2>
-          <p className="text-gray-600">Xử lý các đơn khiếu nại từ sinh viên</p>
+          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">QUẢN LÝ KHIẾU NẠI</h2>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-gray-700">Lọc theo:</span>
@@ -174,7 +197,7 @@ export default function OrganizerComplaints() {
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                         <div>
                           <span className="font-medium text-gray-700">Sinh viên:</span>
                           <p className="text-gray-600">{c.studentName}</p>
@@ -187,10 +210,6 @@ export default function OrganizerComplaints() {
                           <span className="font-medium text-gray-700">Điểm hiện tại:</span>
                           <p className="text-gray-600">{c.currentPoint ?? 'Chưa có'}</p>
                         </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Ngày gửi:</span>
-                          <p className="text-gray-600">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</p>
-                        </div>
                       </div>
 
                       <div className="mt-3">
@@ -200,13 +219,32 @@ export default function OrganizerComplaints() {
                     </div>
                     
                     <div className="ml-4">
-                      <button 
-                        onClick={() => handleSelectComplaint(c.complaintID)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>Xem chi tiết</span>
-                      </button>
+                      {c.complaintStatus === "Chờ duyệt" ? (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleSelectComplaint(c.complaintID)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>Xem chi tiết</span>
+                          </button>
+                          <button 
+                            onClick={() => handleSelectComplaint(c.complaintID)}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Xác nhận</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => handleSelectComplaint(c.complaintID)}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>Xem chi tiết</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -222,7 +260,11 @@ export default function OrganizerComplaints() {
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">Xử lý khiếu nại điểm rèn luyện</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {selectedComplaint.complaintStatus === "Chờ duyệt" 
+                    ? "Xử lý khiếu nại điểm rèn luyện" 
+                    : "Chi tiết khiếu nại"}
+                </h2>
                 <button 
                   onClick={handleCloseModal}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -231,96 +273,120 @@ export default function OrganizerComplaints() {
                 </button>
               </div>
 
-              <form onSubmit={handleOrganizerSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Sinh viên</label>
-                    <p className="text-gray-900">{selectedComplaint.studentName}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mã số sinh viên</label>
-                    <p className="text-gray-900">{selectedComplaint.studentID}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Điểm hiện tại</label>
-                    <p className="text-gray-900 font-semibold">{selectedComplaint.currentPoint ?? 'Chưa có'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Hoạt động</label>
-                    <p className="text-gray-900">{selectedComplaint.activityName}</p>
-                  </div>
-                </div>
-
+              {/* Thông tin cơ bản */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lý do khiếu nại</label>
-                  <p className="text-gray-900 bg-gray-50 p-3 rounded-md">{selectedComplaint.description}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sinh viên</label>
+                  <p className="text-gray-900">{selectedComplaint.studentName}</p>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái hiện tại</label>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[selectedComplaint.complaintStatus] || 'bg-gray-100 text-gray-800'}`}>
-                    {selectedComplaint.complaintStatus}
-                  </span>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mã số sinh viên</label>
+                  <p className="text-gray-900">{selectedComplaint.studentID}</p>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái xử lý</label>
-                  <select 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={modalStatus} 
-                    onChange={e => setModalStatus(e.target.value)}
-                  >
-                    <option value="Chờ duyệt">Chờ xử lý</option>
-                    <option value="Đã duyệt">Duyệt</option>
-                    <option value="Từ chối">Từ chối</option>
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Điểm hiện tại</label>
+                  <p className="text-gray-900 font-semibold">{selectedComplaint.currentPoint ?? 'Chưa có'}</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hoạt động</label>
+                  <p className="text-gray-900">{selectedComplaint.activityName}</p>
+                </div>
+              </div>
 
-                {modalStatus === 'Đã duyệt' && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Lý do khiếu nại</label>
+                <p className="text-gray-900 bg-gray-50 p-3 rounded-md">{selectedComplaint.description}</p>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái hiện tại</label>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[selectedComplaint.complaintStatus] || 'bg-gray-100 text-gray-800'}`}>
+                  {selectedComplaint.complaintStatus}
+                </span>
+              </div>
+
+              {/* Hiển thị phản hồi nếu đã xử lý */}
+              {(selectedComplaint.complaintStatus === "Đã duyệt" || selectedComplaint.complaintStatus === "Từ chối") && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phản hồi</label>
+                  <p className="text-gray-900 bg-blue-50 p-3 rounded-md">
+                    {selectedComplaint.response || "Không có phản hồi"}
+                  </p>
+                </div>
+              )}
+
+              {/* Form xử lý chỉ hiển thị cho khiếu nại chờ duyệt */}
+              {selectedComplaint.complaintStatus === "Chờ duyệt" ? (
+                <form onSubmit={handleOrganizerSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Điểm mới</label>
-                    <input 
-                      type="number" 
-                      min={0} 
-                      max={100} 
-                      className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={modalPoint} 
-                      onChange={e => setModalPoint(e.target.value)} 
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái xử lý</label>
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={modalStatus} 
+                      onChange={e => setModalStatus(e.target.value)}
+                    >
+                      <option value="Chờ duyệt">Chờ xử lý</option>
+                      <option value="Đã duyệt">Duyệt</option>
+                      <option value="Từ chối">Từ chối</option>
+                    </select>
+                  </div>
+
+                  {modalStatus === 'Đã duyệt' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Điểm mới</label>
+                      <input 
+                        type="number" 
+                        min={0} 
+                        max={100} 
+                        className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={modalPoint} 
+                        onChange={e => setModalPoint(e.target.value)} 
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Lý do cập nhật (phản hồi)</label>
+                    <textarea 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows="3"
+                      value={modalResponse} 
+                      onChange={e => setModalResponse(e.target.value)}
+                      placeholder="Nhập lý do cập nhật..."
                     />
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Lý do cập nhật (phản hồi)</label>
-                  <textarea 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows="3"
-                    value={modalResponse} 
-                    onChange={e => setModalResponse(e.target.value)}
-                    placeholder="Nhập lý do cập nhật..."
-                  />
-                </div>
+                  {modalError && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <p className="text-red-600">{modalError}</p>
+                    </div>
+                  )}
 
-                {modalError && (
-                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                    <p className="text-red-600">{modalError}</p>
+                  {modalSuccess && (
+                    <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                      <p className="text-green-600">{modalSuccess}</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-4">
+                    <button 
+                      type="submit" 
+                      disabled={modalLoading}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {modalLoading ? 'Đang lưu...' : 'Xác nhận'}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleCloseModal}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Đóng
+                    </button>
                   </div>
-                )}
-
-                {modalSuccess && (
-                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                    <p className="text-green-600">{modalSuccess}</p>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 pt-4">
-                  <button 
-                    type="submit" 
-                    disabled={modalLoading}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {modalLoading ? 'Đang lưu...' : 'Xác nhận'}
-                  </button>
+                </form>
+              ) : (
+                <div className="flex justify-end pt-4">
                   <button 
                     type="button" 
                     onClick={handleCloseModal}
@@ -329,7 +395,7 @@ export default function OrganizerComplaints() {
                     Đóng
                   </button>
                 </div>
-              </form>
+              )}
             </div>
           </div>
         </div>
