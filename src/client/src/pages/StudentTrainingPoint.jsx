@@ -14,7 +14,7 @@ export default function StudentTrainingPoint() {
         // Giả sử API trả về mảng activities/participations
         // Lọc các participation đã có điểm rèn luyện hoặc trạng thái approved
         const list = (data.activities || data.participations || []).filter(p =>
-          p.trainingPoint > 0 || p.participationStatus === 'approved'
+          p.trainingPoint > 0 || p.participationStatus === 'Đã duyệt'
         ).map(p => ({
           participationID: p.participationID,
           activityName: p.name || p.activityName,

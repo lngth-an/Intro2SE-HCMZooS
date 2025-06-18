@@ -4,6 +4,8 @@ import Header from '../components/common/Header';
 import SidebarStudent from '../components/common/SidebarStudent';
 import Footer from '../components/common/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -18,6 +20,8 @@ export default function ProfilePage() {
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -108,6 +112,20 @@ export default function ProfilePage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await axios.post('/auth/logout');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userID');
+      localStorage.removeItem('user');
+      message.success('Đăng xuất thành công');
+      navigate('/login');
+    } catch (error) {
+      message.error('Có lỗi xảy ra khi đăng xuất');
+    }
+  };
+
   if (!user) return <div className="p-8 text-center">Vui lòng đăng nhập để tiếp tục.</div>;
   if (!profile) return <div className="p-8 text-center">Đang tải hồ sơ...</div>;
 
@@ -115,7 +133,7 @@ export default function ProfilePage() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1">
-        <SidebarStudent />
+        <SidebarStudent onLogout={handleLogout} />
 
         <main className="flex-1 ml-60 px-6 md:px-10 pt-24">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">HỒ SƠ CÁ NHÂN</h1>

@@ -23,11 +23,20 @@ export default function StudentActivitiesContent() {
   const [participationID, setParticipationID] = useState(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [error, setError] = useState("");
-  const [availableActivities, setAvailableActivities] = useState([]);
+
+  const ALL_TYPES = [
+    'Học thuật',
+    'Tình nguyện',
+    'Thể thao',
+    'Kỹ năng',
+    'Nghệ thuật',
+    'Hội thảo',
+    'Khác',
+  ];
+  const uniqueTypes = ALL_TYPES;
 
   useEffect(() => {
     fetchActivities();
-    fetchAvailableActivities();
   }, []);
 
   const fetchActivities = async () => {
@@ -48,23 +57,11 @@ export default function StudentActivitiesContent() {
     }
   };
 
-  const fetchAvailableActivities = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${API_BASE_URL}/activity/available-for-student`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      setAvailableActivities(response.data.activities || []);
-    } catch (error) {
-      console.error('Error fetching available activities:', error);
-      toast.error('Không thể tải hoạt động mở đăng ký');
-    }
-  };
-
   useEffect(() => {
     let filtered = [...activities];
+
+    // Loại bỏ các hoạt động đã hủy
+    filtered = filtered.filter(act => act.participationStatus !== 'Đã hủy');
 
     if (selectedType) {
       filtered = filtered.filter(act => act.type === selectedType);
@@ -78,8 +75,6 @@ export default function StudentActivitiesContent() {
 
     setFilteredActivities(filtered);
   }, [selectedType, activities, sortOrder]);
-
-  const uniqueTypes = [...new Set(activities.map(act => act.type))];
 
   const toggleSort = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -139,7 +134,7 @@ export default function StudentActivitiesContent() {
         if (activity.participationID === participationID) {
           return {
             ...activity,
-            participationStatus: 'cancelled'
+            participationStatus: 'Đã hủy'
           };
         }
         return activity;
@@ -243,11 +238,6 @@ export default function StudentActivitiesContent() {
 
   const handleTypeChange = (type) => {
     setSelectedType(type);
-    if (type === '') {
-      setFilteredActivities(activities);
-    } else {
-      setFilteredActivities(activities.filter(act => act.type === type));
-    }
   };
 
   if (loading) {
@@ -265,40 +255,8 @@ export default function StudentActivitiesContent() {
         <p className="text-xl text-gray-700 font-medium">Xem và quản lý các hoạt động bạn đã đăng ký tham gia.</p>
       </div>
 
-      {/* Danh sách hoạt động chưa đăng ký */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-blue-700 mb-4">Hoạt động đang mở đăng ký</h2>
-        {availableActivities.length === 0 ? (
-          <div>Không có hoạt động nào đang mở đăng ký.</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {availableActivities.map(act => (
-              <div key={act.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                </div>
-                <div className="p-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{act.name}</h3>
-                  <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Loại:</span> {act.type}</p>
-                  <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Thời gian:</span> {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}</p>
-                  <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Địa điểm:</span> {act.location}</p>
-                  <div className="mt-4 flex justify-between items-center">
-                    <button
-                      className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
-                      onClick={() => handleShowDetail(act)}
-                    >
-                      Xem chi tiết & Đăng ký
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
       {/* Danh sách hoạt động đã đăng ký/tham gia */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold text-green-700 mb-4">Hoạt động đã đăng ký/tham gia</h2>
         {/* Filter and Sort Section */}
         <div className="flex items-center justify-end gap-6 mt-6 mb-6">
           <div className="flex items-center gap-2">
@@ -357,7 +315,11 @@ export default function StudentActivitiesContent() {
             {filteredActivities.map(act => (
               <div key={act.participationID || act.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  {act.image ? (
+                    <img src={act.image} alt={act.name} className="object-cover w-full h-full" />
+                  ) : (
+                    <img src="https://via.placeholder.com/400x200?text=No+Image" alt="No Image" className="object-cover w-full h-full" />
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{act.name}</h3>
@@ -366,16 +328,16 @@ export default function StudentActivitiesContent() {
                   <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Địa điểm:</span> {act.location}</p>
                   <div className="mt-2">
                     <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
-                      act.participationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        act.participationStatus === 'approved' ? 'bg-blue-100 text-blue-800' :
+                      act.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
+                        act.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
                           act.participationStatus === 'present' ? 'bg-green-100 text-green-800' :
-                            act.participationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                            act.participationStatus === 'Từ chối' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-700'
                     }`}>
-                      {act.participationStatus === 'pending' ? 'Chờ duyệt' :
-                        act.participationStatus === 'approved' ? 'Đã duyệt' :
+                      {act.participationStatus === 'Chờ duyệt' ? 'Chờ duyệt' :
+                        act.participationStatus === 'Đã duyệt' ? 'Đã duyệt' :
                           act.participationStatus === 'present' ? 'Đã tham gia' :
-                            act.participationStatus === 'rejected' ? 'Bị từ chối' :
+                            act.participationStatus === 'Từ chối' ? 'Bị từ chối' :
                               act.participationStatus}
                   </span>
                   </div>
@@ -386,10 +348,8 @@ export default function StudentActivitiesContent() {
                     >
                       Xem chi tiết
                     </button>
-                    {act.participationStatus !== 'present' && 
-                     act.participationStatus !== 'cancelled' && 
-                     act.participationStatus !== 'approved' && (
-                      <button 
+                    {act.participationStatus === 'Chờ duyệt' && (
+                      <button
                         className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
                         onClick={() => handleCancelRegistration(act.participationID)}
                       >

@@ -64,7 +64,7 @@ export default function OrganizerComplaints() {
     setModalError(''); setModalSuccess('');
     if (!modalStatus) { setModalError('Vui lòng chọn trạng thái khiếu nại'); return; }
     if (!modalResponse.trim()) { setModalError('Vui lòng nhập lý do cập nhật (phản hồi)'); return; }
-    if (modalStatus === 'approved') {
+    if (modalStatus === 'Đã duyệt') {
       if (isNaN(modalPoint) || modalPoint < 0 || modalPoint > 100) {
         setModalError('Điểm phải từ 0 đến 100'); return;
       }
@@ -80,7 +80,7 @@ export default function OrganizerComplaints() {
       const data1 = await res1.json();
       if (!res1.ok) throw new Error(data1.message || 'Lỗi cập nhật khiếu nại');
       // Nếu duyệt, cập nhật điểm
-      if (modalStatus === 'approved') {
+      if (modalStatus === 'Đã duyệt') {
         const res2 = await fetch(`/activity/${selectedComplaint.activityID}/training-point`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -117,9 +117,9 @@ export default function OrganizerComplaints() {
         </select>
         <select value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">-- Tất cả trạng thái --</option>
-          <option value="pending">Chờ xử lý</option>
-          <option value="approved">Đã duyệt</option>
-          <option value="rejected">Đã từ chối</option>
+          <option value="Chờ duyệt">Chờ xử lý</option>
+          <option value="Đã duyệt">Đã duyệt</option>
+          <option value="Từ chối">Đã từ chối</option>
         </select>
       </div>
       {/* Complaint list */}
@@ -174,12 +174,12 @@ export default function OrganizerComplaints() {
               <div className="mb-3">
                 <label className="block mb-1 font-medium">Trạng thái xử lý</label>
                 <select className="w-full border rounded px-2 py-1" value={modalStatus} onChange={e=>setModalStatus(e.target.value)}>
-                  <option value="pending">Chờ xử lý</option>
-                  <option value="approved">Duyệt</option>
-                  <option value="rejected">Từ chối</option>
+                  <option value="Chờ duyệt">Chờ xử lý</option>
+                  <option value="Đã duyệt">Duyệt</option>
+                  <option value="Từ chốichối">Từ chối</option>
                 </select>
               </div>
-              {modalStatus === 'approved' && (
+              {modalStatus === 'Đã duyệt' && (
                 <div className="mb-3">
                   <label className="block mb-1 font-medium">Điểm mới</label>
                   <input type="number" min={0} max={100} className="w-32 border rounded px-2 py-1" value={modalPoint} onChange={e=>setModalPoint(e.target.value)} />

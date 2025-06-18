@@ -8,7 +8,7 @@ const ParticipationModel = {
         studentID, 
         activityID, 
         participationStatus: { 
-          [Op.notIn]: ['cancelled', 'rejected'] 
+          [Op.notIn]: ['Đã hủy', 'Từ chối'] 
         } 
       }
     });
@@ -28,7 +28,7 @@ const ParticipationModel = {
     });
     return activities.filter(a => {
       const count = a.participations?.filter(p => 
-        !['cancelled', 'rejected'].includes(p.participationStatus)
+        !['Đã hủy', 'Từ chối'].includes(p.participationStatus)
       ).length || 0;
       return !a.capacity || count < a.capacity;
     });
@@ -43,14 +43,14 @@ const ParticipationModel = {
         studentID, 
         activityID, 
         participationStatus: { 
-          [Op.notIn]: ['cancelled', 'rejected'] 
+          [Op.notIn]: ['Đã hủy', 'từ chối'] 
         } 
       } 
     });
     if (existed) {
       return { 
         eligible: false, 
-        reason: existed.participationStatus === 'cancelled' 
+        reason: existed.participationStatus === 'Đã hủy' 
           ? 'Bạn đã hủy đăng ký hoạt động này trước đó.' 
           : 'Bạn đã đăng ký hoạt động này.'
       };

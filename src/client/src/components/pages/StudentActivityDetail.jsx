@@ -29,7 +29,14 @@ function StudentActivityDetail({
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-h-[90vh] flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full relative">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
             {/* Poster */}
             <div className="space-y-4">
@@ -54,7 +61,7 @@ function StudentActivityDetail({
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{activity.name}</h1>
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    {activity.type}
+                    <span className="font-semibold">Lĩnh vực:</span> {activity.type || "Chưa cập nhật"}
                   </span>
                   {isRegistered && (
                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">

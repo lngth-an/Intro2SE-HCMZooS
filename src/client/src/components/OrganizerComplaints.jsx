@@ -58,7 +58,7 @@ const OrganizerComplaints = () => {
       setComplaints(prevComplaints =>
         prevComplaints.map(complaint =>
           complaint.id === complaintId
-            ? { ...complaint, response, status: 'responded' }
+            ? { ...complaint, response, status: 'Đã duyệt' }
             : complaint
         )
       );
@@ -112,18 +112,18 @@ const OrganizerComplaints = () => {
                 </div>
                 <div className="text-sm">
                   <span className={`px-2 py-1 rounded ${
-                    complaint.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    complaint.status === 'responded' ? 'bg-green-100 text-green-800' :
+                    complaint.status === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
+                    complaint.status === 'Đã duyệt' ? 'bg-green-100 text-green-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {complaint.status === 'pending' ? 'Chờ phản hồi' :
-                     complaint.status === 'responded' ? 'Đã phản hồi' :
+                    {complaint.status === 'Chờ duyệt' ? 'Chờ phản hồi' :
+                     complaint.status === 'Đã duyệt' ? 'Đã phản hồi' :
                      'Đã đóng'}
                   </span>
                 </div>
               </div>
 
-              {complaint.status === 'pending' && (
+              {complaint.status === 'Chờ duyệt' && (
                 <div className="mt-4">
                   <textarea
                     className="w-full p-2 border rounded"

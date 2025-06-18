@@ -72,9 +72,9 @@ const ACTIVITY_TYPES = [
 ];
 
 const ACTIVITY_STATUSES = [
-  { value: "draft", label: "Bản nháp" },
-  { value: "published", label: "Đã đăng tải" },
-  { value: "completed", label: "Đã hoàn thành" },
+  { value: "Bản nháp", label: "Bản nháp" },
+  { value: "Đã đăng tải", label: "Đang diễn ra" },
+  { value: "Đã hoàn thành", label: "Đã kết thúc" },
 ];
 
 function ActivityManager() {
@@ -368,35 +368,38 @@ function ActivityManager() {
           >
             Xem
           </Button>
-
+          <Button
+            type="default"
+            icon={<EditOutlined />}
+            onClick={() => {
+              console.log(
+                "Navigating to edit page for activity:",
+                record.activityID
+              );
+              navigate(`/organizer/activities/${record.activityID}/edit`, {
+                replace: false,
+              });
+            }}
+          >
+            Sửa
+          </Button>
+          <Popconfirm
+            title="Bạn có chắc chắn muốn xóa hoạt động này?"
+            onConfirm={() => handleDelete(record.activityID)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button type="default" danger icon={<DeleteOutlined />}>
+              Xóa
+            </Button>
+          </Popconfirm>
           {record.activityStatus === "Bản nháp" && (
-            <>
-              <Button
-                type="default"
-                icon={<EditOutlined />}
-                onClick={() =>
-                  navigate(`/organizer/activities/${record.activityID}/edit`)
-                }
-              >
-                Sửa
-              </Button>
-              <Button
-                type="primary"
-                onClick={() => handlePublish(record.activityID)}
-              >
-                Xuất bản
-              </Button>
-              <Popconfirm
-                title="Bạn có chắc chắn muốn xóa hoạt động này?"
-                onConfirm={() => handleDelete(record.activityID)}
-                okText="Có"
-                cancelText="Không"
-              >
-                <Button type="default" danger icon={<DeleteOutlined />}>
-                  Xóa
-                </Button>
-              </Popconfirm>
-            </>
+            <Button
+              type="primary"
+              onClick={() => handlePublish(record.activityID)}
+            >
+              Xuất bản
+            </Button>
           )}
         </Space>
       ),

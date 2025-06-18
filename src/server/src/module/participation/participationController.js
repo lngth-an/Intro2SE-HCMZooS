@@ -31,7 +31,7 @@ class ParticipationController {
       const eligible = await ParticipationModel.checkEligibility(studentID, activityID);
       if (!eligible.eligible) return res.status(400).json({ error: eligible.reason });
       const participation = await ParticipationModel.createParticipation({
-        studentID, activityID, participationStatus: 'draft', note
+        studentID, activityID, participationStatus: 'Bản nháp', note
       });
       res.json({ participation });
     } catch (err) {
@@ -44,10 +44,10 @@ class ParticipationController {
       const studentID = req.user.studentID;
       const { participationID } = req.body;
       const participation = await ParticipationModel.getParticipationById(participationID, studentID);
-      if (!participation || participation.participationStatus !== 'draft') {
+      if (!participation || participation.participationStatus !== 'Bản nháp') {
         return res.status(400).json({ error: 'Đăng ký không hợp lệ.' });
       }
-      await ParticipationModel.updateParticipationStatus(participationID, 'submitted');
+      await ParticipationModel.updateParticipationStatus(participationID, 'Chờ duyệt');
       res.json({ message: 'Đăng ký đã được gửi xét duyệt.' });
     } catch (err) {
       res.status(500).json({ error: 'Lỗi xác nhận đăng ký' });
@@ -76,22 +76,22 @@ class ParticipationController {
       }
 
       // Kiểm tra trạng thái đăng ký
-      if (participation.participationStatus === 'approved') {
+      if (participation.participationStatus === 'Đã duyệt') {
         return res.status(400).json({ error: 'Không thể hủy đăng ký đã được duyệt.' });
       }
 
-      if (participation.participationStatus === 'cancelled') {
+      if (participation.participationStatus === 'Đã hủy') {
         return res.status(400).json({ error: 'Đăng ký này đã bị hủy trước đó.' });
       }
 
       // Cập nhật trạng thái đăng ký thành 'cancelled'
-      await ParticipationModel.updateParticipationStatus(participationID, 'cancelled');
+      await ParticipationModel.updateParticipationStatus(participationID, 'Đã hủy');
       
       res.json({ 
         message: 'Hủy đăng ký thành công.',
         participation: {
           ...participation,
-          participationStatus: 'cancelled'
+          participationStatus: 'Đã hủy'
         }
       });
     } catch (err) {
@@ -110,7 +110,7 @@ class ParticipationController {
           studentID,
           activityID,
           participationStatus: {
-            [db.Sequelize.Op.notIn]: ['canceled', 'rejected']
+            [db.Sequelize.Op.notIn]: ['canceled', 'Từ chối']
           }
         }
       });
