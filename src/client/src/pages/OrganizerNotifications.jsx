@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
@@ -44,6 +45,7 @@ const OrganizerNotifications = () => {
     const [selectedActivity, setSelectedActivity] = useState('');
     const [activityStudents, setActivityStudents] = useState([]);
     const [sendTarget, setSendTarget] = useState('all'); // 'all' hoặc 'specific'
+    const navigate = useNavigate();
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -167,8 +169,7 @@ const OrganizerNotifications = () => {
             toast.error('Lỗi khi xóa thông báo');
         }
     };
-    fetchData();
-  }, []);
+
     const handleSendNotification = async () => {
         try {
             let toUserIDs = undefined;
@@ -210,441 +211,257 @@ const OrganizerNotifications = () => {
         setActivityStudents([]);
     };
 
-  const handleSendNotification = async () => {
-    try {
-      await axios.post("/notifications/send", {
-        fromUserID: user.userID,
-        toUserIDs:
-          sendTarget === "specific"
-            ? selectedStudents.map((s) => s.userID)
-            : undefined,
-        notificationTitle: newNotification.title,
-        notificationMessage: newNotification.message,
-        activityID: selectedActivity || undefined,
-      });
-      toast.success("Gửi thông báo thành công");
-      setOpenDialog(false);
-      // Refresh notifications
-      const notiRes = await axios.get(`/notifications?userID=${user.userID}`);
-      setNotifications(notiRes.data.notifications || []);
-      const sentRes = await axios.get(
-        `/notifications/sent?userID=${user.userID}`
-      );
-      setSentNotifications(sentRes.data.notifications || []);
-    } catch (err) {
-      toast.error("Lỗi khi gửi thông báo");
-    }
-  };
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setNewNotification({
+            title: '',
+            message: '',
+            targetType: 'all_students'
+        });
+        setSelectedStudents([]);
+        setSelectedActivity('');
+        setSendTarget('all');
+        setActivityStudents([]);
+    };
 
-  const handleTabChange = (key) => {
-    setActiveTab(key);
-  };
+    const handleTabChange = (key) => {
+        setActiveTab(key);
+    };
 
-  // Search students for specific send
-  const handleSearchStudents = async (value) => {
-    if (!value) return;
-    try {
-      const res = await axios.get(`/notifications/search?query=${value}`);
-      setStudents(res.data.students || []);
-    } catch (err) {
-      toast.error("Lỗi khi tìm kiếm sinh viên");
-    }
-  };
+    // Search students for specific send
+    const handleSearchStudents = async (value) => {
+        if (!value) return;
+        try {
+            const res = await axios.get(`/notifications/search?query=${value}`);
+            setStudents(res.data.students || []);
+        } catch (err) {
+            toast.error("Lỗi khi tìm kiếm sinh viên");
+        }
+    };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header user={user} />
-      <div className="flex flex-1 pt-16">
-        <SidebarOrganizer onLogout={logout} />
-        <div className="flex-1 flex flex-col ml-64">
-          <main className="flex-1 p-6">
-            <div className="container mx-auto px-4 py-8">
-              <div className="bg-white shadow rounded-lg p-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-0">
-                    THÔNG BÁO
-                  </h1>
-                  <Button
-                    type="primary"
-                    icon={<SendOutlined />}
-                    onClick={handleOpenDialog}
-                    className="h-12 px-6 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white normal-case"
-                  >
-                    Gửi thông báo mới
-                  </Button>
-                </div>
-                <div className="mb-6">
-                  <span className="text-lg text-gray-600 font-medium">
-                    {
-                      notifications.filter(
-                        (n) => n.notificationStatus === "unread"
-                      ).length
-                    }{" "}
-                    thông báo chưa đọc
-                  </span>
+    const handleLogout = async () => {
+        try {
+            await axios.post("/auth/logout");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("role");
+            toast.success("Đăng xuất thành công");
+            navigate("/login");
+        } catch (error) {
+            toast.error("Có lỗi xảy ra khi đăng xuất");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <Header user={user} />
+                <div className="flex flex-1 pt-16">
+                    <SidebarOrganizer onLogout={handleLogout} />
+                    <div className="flex-1 flex justify-center items-center">
+                        <Spin size="large" />
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header />
-            <div className="flex flex-1">
-                <SidebarOrganizer />
-                <div className="flex-1">
-                    <div className="p-6 ml-64 mt-16">
-                        <div className="max-w-4xl mx-auto">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-gray-900">Thông báo</h1>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        {notifications.filter(n => n.notificationStatus === 'unread').length} thông báo chưa đọc
-                                    </p>
-                                </div>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<Send />}
-                                    onClick={handleOpenDialog}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                >
-                                    Gửi thông báo mới
-                                </Button>
-                            </div>
-
-                            <Paper elevation={3} className="rounded-lg overflow-hidden">
-                                <Tabs value={activeTab} onChange={handleTabChange} className="border-b border-gray-200">
-                                    <Tab label="Thông báo nhận được" />
-                                    <Tab label="Thông báo đã gửi" />
-                                </Tabs>
-
-                                {activeTab === 0 ? (
-                                    notifications.length === 0 ? (
-                                        <div className="p-8 text-center">
-                                            <NotificationsOff className="text-gray-400 text-6xl mb-4" />
-                                            <Typography color="textSecondary" variant="h6">
-                                                Không có thông báo nào
-                                            </Typography>
-                                        </div>
-                                    ) : (
-                                        <div className="divide-y divide-gray-200">
-                                            {notifications.map((notification) => (
-                                                <div 
-                                                    key={notification.notificationID}
-                                                    className={`p-4 hover:bg-gray-50 transition-colors ${
-                                                        notification.notificationStatus === 'unread' ? 'bg-blue-50' : ''
-                                                    }`}
-                                                >
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="flex-1">
-                                                            <Typography variant="subtitle1" className="font-medium text-gray-900">
-                                                                {notification.notificationTitle}
-                                                            </Typography>
-                                                            <Typography variant="body2" className="text-gray-600 mt-1">
-                                                                {notification.notificationMessage}
-                                                            </Typography>
-                                                            <Typography variant="caption" className="text-gray-500 block mt-2">
-                                                                {new Date(notification.createdAt).toLocaleString()}
-                                                            </Typography>
-                                                        </div>
-                                                        <Tooltip title="Xóa">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteNotification(notification.notificationID)}
-                                                                className="text-gray-500 hover:text-red-500"
-                                                            >
-                                                                <Delete />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )
-                                ) : (
-                                    <>
-                                        <div className="divide-y divide-gray-200">
-                                            {sentNotifications.map((notification) => (
-                                                <div key={notification.notificationID} className="p-4 hover:bg-gray-50 transition-colors">
-                                                    <Typography variant="subtitle1" className="font-medium text-gray-900">
-                                                        {notification.notificationTitle}
-                                                    </Typography>
-                                                    <Typography variant="body2" className="text-gray-600 mt-1">
-                                                        {notification.notificationMessage}
-                                                    </Typography>
-                                                    <div className="mt-2 space-y-1">
-                                                        <Typography variant="caption" className="text-gray-500 block">
-                                                            Gửi đến: {notification.recipient ? `${notification.recipient.fullName} (${notification.recipient.email})` : 'Không xác định'}
-                                                        </Typography>
-                                                        <Typography variant="caption" className="text-gray-500 block">
-                                                            {notification.sentAt ? new Date(notification.sentAt).toLocaleString() : ''}
-                                                        </Typography>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="flex justify-center p-4 border-t border-gray-200">
-                                            <Pagination
-                                                count={sentNotificationsTotalPages}
-                                                page={sentNotificationsPage}
-                                                onChange={handleSentNotificationsPageChange}
-                                                color="primary"
-                                                className="mt-4"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-                            </Paper>
-
-                            <Dialog 
-                                open={openDialog} 
-                                onClose={handleCloseDialog} 
-                                maxWidth="sm" 
-                                fullWidth
-                                PaperProps={{
-                                    className: "rounded-lg"
-                                }}
-                            >
-                                <DialogTitle className="text-xl font-semibold pb-2">
-                                    Gửi thông báo mới
-                                </DialogTitle>
-                                <DialogContent>
-                                    <div className="space-y-4 mt-2">
-                                        <FormControl fullWidth variant="outlined" className="mb-4">
-                                            <InputLabel>Chọn hoạt động</InputLabel>
-                                            <Select
-                                                value={selectedActivity}
-                                                onChange={e => setSelectedActivity(e.target.value)}
-                                                label="Chọn hoạt động"
-                                            >
-                                                <MenuItem value="">-- Chọn hoạt động --</MenuItem>
-                                                {activities.map(act => (
-                                                    <MenuItem key={act.activityID} value={act.activityID}>{act.name}</MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                        {selectedActivity && (
-                                            <FormControl fullWidth variant="outlined" className="mb-4">
-                                                <InputLabel>Gửi đến</InputLabel>
-                                                <Select
-                                                    value={sendTarget}
-                                                    onChange={e => setSendTarget(e.target.value)}
-                                                    label="Gửi đến"
-                                                >
-                                                    <MenuItem value="all">Tất cả sinh viên tham gia hoạt động</MenuItem>
-                                                    <MenuItem value="specific">Một số sinh viên cụ thể</MenuItem>
-                                                </Select>
-                                            </FormControl>
-                                        )}
-                                        {selectedActivity && sendTarget === 'specific' && (
-                                            <div className="max-h-60 overflow-auto border rounded p-2">
-                                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                                    Chọn sinh viên tham gia hoạt động:
-                                                </Typography>
-                                                <List>
-                                                    {activityStudents.map((student) => (
-                                                        <ListItem
-                                                            key={student.userID}
-                                                            secondaryAction={
-                                                                <Button
-                                                                    size="small"
-                                                                    onClick={() => {
-                                                                        if (!selectedStudents.find(s => s.userID === student.userID)) {
-                                                                            setSelectedStudents([...selectedStudents, student]);
-                                                                        }
-                                                                    }}
-                                                                    disabled={selectedStudents.some(s => s.userID === student.userID)}
-                                                                >
-                                                                    Chọn
-                                                                </Button>
-                                                            }
-                                                        >
-                                                            <ListItemText
-                                                                primary={student.name || 'Không rõ tên'}
-                                                                secondary={`MSSV: ${student.userID}${student.academicYear ? ' | Năm: ' + student.academicYear : ''}${student.faculty ? ' | Khoa: ' + student.faculty : ''}`}
-                                                            />
-                                                        </ListItem>
-                                                    ))}
-                                                </List>
-                                                {selectedStudents.length > 0 && (
-                                                    <div className="mt-4">
-                                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                                            Sinh viên đã chọn:
-                                                        </Typography>
-                                                        <List>
-                                                            {selectedStudents.map((student) => (
-                                                                <ListItem
-                                                                    key={student.userID}
-                                                                    secondaryAction={
-                                                                        <IconButton
-                                                                            edge="end"
-                                                                            onClick={() => {
-                                                                                setSelectedStudents(selectedStudents.filter(s => s.userID !== student.userID));
-                                                                            }}
-                                                                        >
-                                                                            <Delete />
-                                                                        </IconButton>
-                                                                    }
-                                                                >
-                                                                    <ListItemText
-                                                                        primary={student.name || 'Không rõ tên'}
-                                                                        secondary={`MSSV: ${student.userID}`}
-                                                                    />
-                                                                </ListItem>
-                                                            ))}
-                                                        </List>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        <TextField
-                                            fullWidth
-                                            label="Tiêu đề"
-                                            value={newNotification.title}
-                                            onChange={(e) => setNewNotification({ ...newNotification, title: e.target.value })}
-                                            variant="outlined"
-                                            className="mb-4"
-                                        />
-                                        <TextField
-                                            fullWidth
-                                            label="Nội dung"
-                                            multiline
-                                            rows={4}
-                                            value={newNotification.message}
-                                            onChange={(e) => setNewNotification({ ...newNotification, message: e.target.value })}
-                                            variant="outlined"
-                                            className="mb-4"
-                                        />
-                                    </div>
-                                </DialogContent>
-                                <DialogActions className="p-4 border-t border-gray-200">
-                                    <Button 
-                                        onClick={handleCloseDialog}
-                                        className="text-gray-600 hover:text-gray-800"
-                                    >
-                                        Hủy
-                                    </Button>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            <Header user={user} />
+            <div className="flex flex-1 pt-16">
+                <SidebarOrganizer onLogout={handleLogout} />
+                <div className="flex-1 flex flex-col ml-64">
+                    <main className="flex-1 p-6">
+                        <div className="container mx-auto px-4 py-8">
+                            <div className="bg-white shadow rounded-lg p-6">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-0">
+                                        THÔNG BÁO
+                                    </h1>
                                     <Button
-                                        onClick={handleSendNotification}
-                                        variant="contained"
-                                        color="primary"
-                                        disabled={!newNotification.title || !newNotification.message || 
-                                            (newNotification.targetType === 'specific_students' && selectedStudents.length === 0)}
-                                        className="bg-blue-600 hover:bg-blue-700"
+                                        type="primary"
+                                        icon={<SendOutlined />}
+                                        onClick={handleOpenDialog}
+                                        className="h-12 px-6 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white normal-case"
                                     >
-                                        Gửi
+                                        Gửi thông báo mới
                                     </Button>
-                                </DialogActions>
-                            </Dialog>
+                                </div>
+
+                                <div className="mb-6">
+                                    <span className="text-lg text-gray-600 font-medium">
+                                        {notifications.filter((n) => n.notificationStatus === "unread").length}{" "}
+                                        thông báo chưa đọc
+                                    </span>
+                                </div>
+
+                                <Tabs activeKey={activeTab} onChange={handleTabChange}>
+                                    <TabPane
+                                        tab={
+                                            <span>
+                                                <BellOutlined />
+                                                Thông báo nhận được
+                                            </span>
+                                        }
+                                        key="received"
+                                    >
+                                        <div className="space-y-4">
+                                            {notifications.length === 0 ? (
+                                                <p className="text-gray-500">Không có thông báo nào</p>
+                                            ) : (
+                                                notifications.map((notification) => (
+                                                    <Card
+                                                        key={notification.notificationID}
+                                                        className={`${
+                                                            notification.notificationStatus === "unread"
+                                                                ? "border-l-4 border-blue-500"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <Title level={5}>{notification.notificationTitle}</Title>
+                                                                <Text>{notification.notificationMessage}</Text>
+                                                            </div>
+                                                            {notification.notificationStatus === "unread" && (
+                                                                <Badge status="processing" text="Mới" />
+                                                            )}
+                                                        </div>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </div>
+                                    </TabPane>
+
+                                    <TabPane
+                                        tab={
+                                            <span>
+                                                <SendOutlined />
+                                                Thông báo đã gửi
+                                            </span>
+                                        }
+                                        key="sent"
+                                    >
+                                        <div className="space-y-4">
+                                            {sentNotifications.length === 0 ? (
+                                                <p className="text-gray-500">Chưa gửi thông báo nào</p>
+                                            ) : (
+                                                sentNotifications.map((notification) => (
+                                                    <Card key={notification.notificationID}>
+                                                        <div>
+                                                            <Title level={5}>{notification.notificationTitle}</Title>
+                                                            <Text>{notification.notificationMessage}</Text>
+                                                        </div>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </div>
+                                    </TabPane>
+                                </Tabs>
+                            </div>
                         </div>
-                    </div>
-                    <div className="ml-64">
-                        <Footer />
-                    </div>
+                    </main>
+                    <Footer />
                 </div>
             </div>
-          </main>
-          <Footer />
-        </div>
-      </div>
-      <Modal
-        title={
-          <span className="text-xl font-semibold normal-case">
-            Gửi thông báo mới
-          </span>
-        }
-        open={openDialog}
-        onCancel={handleCloseDialog}
-        onOk={handleSendNotification}
-        okText="Gửi"
-        cancelText="Hủy"
-        okButtonProps={{
-          className:
-            "bg-blue-600 hover:bg-blue-700 text-white normal-case font-semibold",
-        }}
-        cancelButtonProps={{
-          className: "normal-case font-semibold",
-        }}
-      >
-        <div className="space-y-4 mt-2">
-          <Select
-            showSearch
-            placeholder="Chọn hoạt động (không bắt buộc)"
-            value={selectedActivity}
-            onChange={setSelectedActivity}
-            className="w-full"
-            optionFilterProp="children"
-            filterOption={(input, option) =>
-              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
-          >
-            <Option value="">-- Chọn hoạt động --</Option>
-            {activities.map((act) => (
-              <Option key={act.activityID} value={act.activityID}>
-                {act.name}
-              </Option>
-            ))}
-          </Select>
-          <Select
-            value={sendTarget}
-            onChange={setSendTarget}
-            className="w-full"
-          >
-            <Option value="all">Tất cả sinh viên tham gia hoạt động</Option>
-            <Option value="specific">Một số sinh viên cụ thể</Option>
-          </Select>
-          {sendTarget === "specific" && (
-            <Select
-              mode="multiple"
-              showSearch
-              placeholder="Tìm kiếm sinh viên..."
-              value={selectedStudents.map((s) => s.userID)}
-              onSearch={handleSearchStudents}
-              onChange={(values) => {
-                const selected = students.filter((s) =>
-                  values.includes(s.userID)
-                );
-                setSelectedStudents(selected);
-              }}
-              className="w-full"
-              optionLabelProp="label"
+
+            <Modal
+                title={
+                    <span className="text-xl font-semibold normal-case">
+                        Gửi thông báo mới
+                    </span>
+                }
+                open={openDialog}
+                onCancel={handleCloseDialog}
+                onOk={handleSendNotification}
+                okText="Gửi"
+                cancelText="Hủy"
+                okButtonProps={{
+                    className:
+                        "bg-blue-600 hover:bg-blue-700 text-white normal-case font-semibold",
+                }}
+                cancelButtonProps={{
+                    className: "normal-case font-semibold",
+                }}
             >
-              {students.map((student) => (
-                <Option
-                  key={student.userID}
-                  value={student.userID}
-                  label={student.name || student.userID}
-                >
-                  {student.name || student.userID}
-                </Option>
-              ))}
-            </Select>
-          )}
-          <Input
-            placeholder="Tiêu đề thông báo"
-            value={newNotification.title}
-            onChange={(e) =>
-              setNewNotification({ ...newNotification, title: e.target.value })
-            }
-            className="normal-case"
-          />
-          <Input.TextArea
-            placeholder="Nội dung thông báo"
-            rows={4}
-            value={newNotification.message}
-            onChange={(e) =>
-              setNewNotification({
-                ...newNotification,
-                message: e.target.value,
-              })
-            }
-            className="normal-case"
-          />
+                <div className="space-y-4 mt-2">
+                    <Select
+                        showSearch
+                        placeholder="Chọn hoạt động (không bắt buộc)"
+                        value={selectedActivity}
+                        onChange={setSelectedActivity}
+                        className="w-full"
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                        }
+                    >
+                        <Option value="">-- Chọn hoạt động --</Option>
+                        {activities.map((act) => (
+                            <Option key={act.activityID} value={act.activityID}>
+                                {act.name}
+                            </Option>
+                        ))}
+                    </Select>
+                    <Select
+                        value={sendTarget}
+                        onChange={setSendTarget}
+                        className="w-full"
+                    >
+                        <Option value="all">Tất cả sinh viên tham gia hoạt động</Option>
+                        <Option value="specific">Một số sinh viên cụ thể</Option>
+                    </Select>
+                    {sendTarget === "specific" && (
+                        <Select
+                            mode="multiple"
+                            showSearch
+                            placeholder="Tìm kiếm sinh viên..."
+                            value={selectedStudents.map((s) => s.userID)}
+                            onSearch={handleSearchStudents}
+                            onChange={(values) => {
+                                const selected = students.filter((s) =>
+                                    values.includes(s.userID)
+                                );
+                                setSelectedStudents(selected);
+                            }}
+                            className="w-full"
+                            optionLabelProp="label"
+                        >
+                            {students.map((student) => (
+                                <Option
+                                    key={student.userID}
+                                    value={student.userID}
+                                    label={student.name || student.userID}
+                                >
+                                    {student.name || student.userID}
+                                </Option>
+                            ))}
+                        </Select>
+                    )}
+                    <Input
+                        placeholder="Tiêu đề thông báo"
+                        value={newNotification.title}
+                        onChange={(e) =>
+                            setNewNotification({ ...newNotification, title: e.target.value })
+                        }
+                        className="normal-case"
+                    />
+                    <Input.TextArea
+                        placeholder="Nội dung thông báo"
+                        rows={4}
+                        value={newNotification.message}
+                        onChange={(e) =>
+                            setNewNotification({
+                                ...newNotification,
+                                message: e.target.value,
+                            })
+                        }
+                        className="normal-case"
+                    />
+                </div>
+            </Modal>
         </div>
-      </Modal>
-    </div>
-  );
+    );
 };
 
 export default OrganizerNotifications;

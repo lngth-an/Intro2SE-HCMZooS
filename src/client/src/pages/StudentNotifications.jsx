@@ -7,6 +7,7 @@ import SidebarStudent from "../components/common/SidebarStudent";
 import Footer from "../components/common/Footer";
 import { Box, CircularProgress } from '@mui/material';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 axios.defaults.baseURL = 'http://localhost:3001';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
@@ -15,6 +16,7 @@ const StudentNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -65,6 +67,18 @@ const StudentNotifications = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await axios.post("/auth/logout");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("role");
+      toast.success("Đăng xuất thành công");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi đăng xuất");
+    }
+  };
+
   if (loading) {
     return (
       <Box className="flex justify-center items-center min-h-[70vh]">
@@ -78,7 +92,7 @@ const StudentNotifications = () => {
       <Header user={user} />
       
       <div className="flex flex-1 pt-16">
-        <SidebarStudent />
+        <SidebarStudent onLogout={handleLogout} />
 
         <main className="flex-1 flex flex-col ml-64 px-6 py-8 max-w-3xl mx-auto w-full">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">

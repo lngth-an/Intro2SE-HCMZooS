@@ -118,7 +118,7 @@ const StudentHome = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get("/student/stats");
+      const response = await axios.get("/student/score");
       setStats(response.data);
     } catch (error) {
       console.error("Error fetching stats:", error);

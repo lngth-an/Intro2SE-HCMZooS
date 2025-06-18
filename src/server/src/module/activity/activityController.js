@@ -596,6 +596,14 @@ class ActivityController {
             }
     
             // Tìm sinh viên trong danh sách đã đăng ký hoặc đã tham gia của hoạt động
+            console.log('Searching for student:', {
+                studentID,
+                activityID,
+                conditions: {
+                    participationStatus: ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã hoàn thành', 'Vắng']
+                }
+            });
+
             const student = await Student.findOne({
                 where: { studentID },
                 include: [
@@ -610,7 +618,7 @@ class ActivityController {
                         where: {
                             activityID,
                             participationStatus: {
-                                [Op.in]: ['Chờ duyệt', 'Đã duyệt']
+                                [Op.in]: ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã hoàn thành', 'Vắng']
                             }
                         },
                         required: true,
@@ -626,7 +634,13 @@ class ActivityController {
                 ],
                 attributes: ['studentID', 'userID', 'sex', 'dateOfBirth', 'academicYear', 'falculty', 'point']
             });
-    
+
+            console.log('Student search result:', student ? {
+                studentID: student.studentID,
+                hasParticipations: student.participations?.length > 0,
+                participationStatus: student.participations?.[0]?.participationStatus
+            } : 'Not found');
+
             if (!student) {
                 return res.status(404).json({ 
                     message: 'Không tìm thấy sinh viên có mã số này trong danh sách đăng ký/tham gia của hoạt động.',
@@ -657,7 +671,15 @@ class ActivityController {
                     },
                     participationStatusText: p.participationStatus === 'Đã duyệt'
                         ? 'Đã tham gia'
-                        : 'Đang chờ duyệt'
+                        : p.participationStatus === 'Chờ duyệt'
+                        ? 'Đang chờ duyệt'
+                        : p.participationStatus === 'Từ chối'
+                        ? 'Đã từ chối'
+                        : p.participationStatus === 'Đã hoàn thành'
+                        ? 'Đã hoàn thành'
+                        : p.participationStatus === 'Vắng'
+                        ? 'Vắng mặt'
+                        : p.participationStatus
                 }
             };
     
