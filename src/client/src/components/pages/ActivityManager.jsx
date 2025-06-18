@@ -346,6 +346,7 @@ function ActivityManager() {
       title: "Tên hoạt động",
       dataIndex: "name",
       key: "name",
+      width: "25%",
       render: (text, record) => (
         <div>
           <div className="font-medium text-gray-900">{text}</div>
@@ -357,6 +358,7 @@ function ActivityManager() {
       title: "Loại hoạt động",
       dataIndex: "type",
       key: "type",
+      width: "20%",
       render: (type) => {
         const domain = DOMAINS.find(d => d.id === type);
         return (
@@ -370,6 +372,7 @@ function ActivityManager() {
       title: "Điểm rèn luyện",
       dataIndex: "type",
       key: "points",
+      width: "15%",
       render: (type) => {
         const domain = DOMAINS.find(d => d.id === type);
         return (
@@ -383,6 +386,7 @@ function ActivityManager() {
       title: "Trạng thái",
       dataIndex: "activityStatus",
       key: "activityStatus",
+      width: "20%",
       render: (status) => (
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
           {statusLabels[status] || status}
@@ -392,6 +396,7 @@ function ActivityManager() {
     {
       title: "Thao tác",
       key: "action",
+      width: "50%",
       render: (_, record) => (
         <Space size="middle">
           <Button

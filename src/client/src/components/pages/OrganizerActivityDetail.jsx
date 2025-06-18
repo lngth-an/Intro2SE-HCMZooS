@@ -450,12 +450,12 @@ export default function OrganizerActivityDetail() {
             </div>
 
             <div className="flex justify-end space-x-4">
-              {/* <Link
+              <Link
                 to={`/organizer/activities/${activityId}/edit`}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 Chỉnh sửa
-              </Link> */}
+              </Link>
             </div>
           </div>
         </div>
@@ -525,8 +525,8 @@ export default function OrganizerActivityDetail() {
             <form onSubmit={handleSearchRegStudent} className="flex gap-2 items-center">
               <input
                 type="text"
-                placeholder="Tìm kiếm sinh viên theo MSSV..."
-                className="border rounded px-3 py-1 w-80"
+                placeholder="Nhập MSSV..."
+                className="border rounded px-3 py-1"
                 value={searchRegStudentCode}
                 onChange={(e) => setSearchRegStudentCode(e.target.value)}
               />
@@ -696,7 +696,7 @@ export default function OrganizerActivityDetail() {
                     <select
                       value={attendanceFilter}
                       onChange={(e) => setAttendanceFilter(e.target.value)}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                     >
                       <option value="all">Tất cả</option>
                       <option value="Chưa điểm danh">Chưa điểm danh</option>
@@ -711,14 +711,14 @@ export default function OrganizerActivityDetail() {
                       value={searchAttStudentCode}
                       onChange={(e) => setSearchAttStudentCode(e.target.value)}
                       placeholder="Nhập MSSV..."
-                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                      className="block w-full pl-3 pr-10 py-2 text-base border border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                     />
                     <button
                       onClick={handleSearchAttStudent}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="px-3 py-2 block w-full bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       Tìm kiếm
-              </button>
+                    </button>
             </div>
           </div>
 
