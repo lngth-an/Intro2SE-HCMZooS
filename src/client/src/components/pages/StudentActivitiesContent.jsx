@@ -35,6 +35,16 @@ export default function StudentActivitiesContent() {
   ];
   const uniqueTypes = ALL_TYPES;
 
+  const TYPE_LABELS = {
+    'học thuật': 'Học thuật',
+    'tình nguyện': 'Tình nguyện',
+    'thể thao': 'Thể thao',
+    'kỹ năng': 'Kỹ năng',
+    'nghệ thuật': 'Nghệ thuật',
+    'hội thảo': 'Hội thảo',
+    'khác': 'Khác',
+  };
+
   useEffect(() => {
     fetchActivities();
   }, []);
@@ -67,10 +77,18 @@ export default function StudentActivitiesContent() {
       filtered = filtered.filter(act => act.type === selectedType);
     }
 
+    // Sắp xếp theo eventStart gần nhất (tương lai gần nhất lên đầu)
     filtered.sort((a, b) => {
+      const now = new Date();
       const dateA = new Date(a.eventStart);
       const dateB = new Date(b.eventStart);
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      // Sự kiện đã qua sẽ đẩy xuống cuối
+      const isPastA = dateA < now;
+      const isPastB = dateB < now;
+      if (isPastA && !isPastB) return 1;
+      if (!isPastA && isPastB) return -1;
+      // Cả hai đều tương lai hoặc đều đã qua, sắp xếp tăng dần
+      return dateA - dateB;
     });
 
     setFilteredActivities(filtered);
@@ -308,61 +326,63 @@ export default function StudentActivitiesContent() {
             </button>
           </div>
         </div>
-        {filteredActivities.length === 0 ? (
-          <div>Chưa có hoạt động nào.</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {filteredActivities.map(act => (
-              <div key={act.participationID || act.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                  {act.image ? (
-                    <img src={act.image} alt={act.name} className="object-cover w-full h-full" />
-                  ) : (
-                    <img src="https://via.placeholder.com/400x200?text=No+Image" alt="No Image" className="object-cover w-full h-full" />
+      </div>
+
+      {filteredActivities.length === 0 ? (
+        <div>Chưa có hoạt động nào.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {filteredActivities.map(act => (
+            <div key={act.participationID || act.activityID} className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="w-full h-48 bg-gray-200">
+                <img
+                  src={act.image || "https://via.placeholder.com/300x200"}
+                  alt={act.name}
+                  className="w-full h-48 object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{act.name}</h3>
+                <span className="inline-block mb-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">
+                  {TYPE_LABELS[(act.type || '').trim().toLowerCase()] || act.type || 'Chưa phân loại'}
+                </span>
+                <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Thời gian:</span> {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}</p>
+                <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Địa điểm:</span> {act.location}</p>
+                <div className="mt-2">
+                  <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
+                    act.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
+                      act.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
+                        act.participationStatus === 'Từ chối' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-700'
+                  }`}>
+                    {act.participationStatus === 'Chờ duyệt' ? 'Chờ duyệt' :
+                      act.participationStatus === 'Đã duyệt' ? 'Đã duyệt' :
+                        act.participationStatus === 'Từ chối' ? 'Bị từ chối' :
+                          act.participationStatus}
+                  </span>
+                </div>
+                <div className="mt-4 flex justify-between items-center">
+                  <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
+                    onClick={() => handleShowDetail(act)}
+                  >
+                    Xem chi tiết
+                  </button>
+                  {act.participationStatus !== 'Đã hủy' && 
+                   act.participationStatus !== 'Đã duyệt' && (
+                    <button 
+                      className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
+                      onClick={() => handleCancelRegistration(act.participationID)}
+                    >
+                      Hủy đăng ký
+                    </button>
                   )}
                 </div>
-                <div className="p-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{act.name}</h3>
-                  <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Loại:</span> {act.type}</p>
-                  <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Thời gian:</span> {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}</p>
-                  <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Địa điểm:</span> {act.location}</p>
-                  <div className="mt-2">
-                    <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
-                      act.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
-                        act.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
-                          act.participationStatus === 'present' ? 'bg-green-100 text-green-800' :
-                            act.participationStatus === 'Từ chối' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-700'
-                    }`}>
-                      {act.participationStatus === 'Chờ duyệt' ? 'Chờ duyệt' :
-                        act.participationStatus === 'Đã duyệt' ? 'Đã duyệt' :
-                          act.participationStatus === 'present' ? 'Đã tham gia' :
-                            act.participationStatus === 'Từ chối' ? 'Bị từ chối' :
-                              act.participationStatus}
-                  </span>
-                  </div>
-                  <div className="mt-4 flex justify-between items-center">
-                    <button
-                      className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
-                      onClick={() => handleShowDetail(act)}
-                    >
-                      Xem chi tiết
-                    </button>
-                    {act.participationStatus === 'Chờ duyệt' && (
-                      <button
-                        className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
-                        onClick={() => handleCancelRegistration(act.participationID)}
-                      >
-                        Hủy đăng ký
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
       {showDetail && selected && (
         <StudentActivityDetail
           activity={selected}

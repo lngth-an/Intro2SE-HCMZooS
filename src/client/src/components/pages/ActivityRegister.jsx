@@ -15,8 +15,8 @@ const DOMAINS = [
     { id: "Thể thao", label: "Thể thao" },
     { id: "Kỹ năng", label: "Kỹ năng" },
     { id: "Nghệ thuật", label: "Nghệ thuật" },
-    { id: "Khác", label: "Khác" },
     { id: "Hội thảo", label: "Hội thảo" },
+    { id: "Khác", label: "Khác" },
 ];
 
 function ActivityRegister() {

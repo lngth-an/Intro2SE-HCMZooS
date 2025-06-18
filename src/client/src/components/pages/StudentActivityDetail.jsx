@@ -63,7 +63,7 @@ function StudentActivityDetail({
                   <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                     <span className="font-semibold">Lĩnh vực:</span> {activity.type || "Chưa cập nhật"}
                   </span>
-                  {isRegistered && (
+                  {isRegistered && !isManagementView && (
                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                       Đã đăng ký
                     </span>

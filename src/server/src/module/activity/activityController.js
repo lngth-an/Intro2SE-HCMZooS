@@ -610,11 +610,18 @@ class ActivityController {
                         where: {
                             activityID,
                             participationStatus: {
-                                [Op.in]: ['Chờ duyệt', 'Đã duyệt'] // ✅ chỉ lấy các trạng thái đã đăng ký hoặc đã tham gia
+                                [Op.in]: ['Chờ duyệt', 'Đã duyệt']
                             }
                         },
-                        required: true, // ✅ chỉ lấy khi có participation hợp lệ
-                        attributes: ['participationID', 'participationStatus', 'trainingPoint']
+                        required: true,
+                        attributes: ['participationID', 'participationStatus', 'trainingPoint'],
+                        include: [
+                            {
+                                model: Activity,
+                                as: 'activity',
+                                attributes: ['type']
+                            }
+                        ]
                     }
                 ],
                 attributes: ['studentID', 'userID', 'sex', 'dateOfBirth', 'academicYear', 'falculty', 'point']
@@ -627,7 +634,7 @@ class ActivityController {
                 });
             }
     
-            const p = student.participations[0]; // Vì required:true nên chắc chắn có ít nhất 1
+            const p = student.participations[0]; // chắc chắn có ít nhất 1 vì required: true
     
             const response = {
                 found: true,
@@ -645,7 +652,8 @@ class ActivityController {
                     participation: {
                         participationID: p.participationID,
                         status: p.participationStatus,
-                        trainingPoint: p.trainingPoint
+                        trainingPoint: p.trainingPoint,
+                        type: p.activity?.type || null // lấy loại hoạt động
                     },
                     participationStatusText: p.participationStatus === 'Đã duyệt'
                         ? 'Đã tham gia'

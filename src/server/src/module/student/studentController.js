@@ -77,7 +77,8 @@ class StudentController {
           'registrationEnd',
           'location',
           'image',
-          'activityStatus'
+          'activityStatus',
+          'type'
         ]
       }];
       if (semesterID) {
@@ -100,7 +101,8 @@ class StudentController {
         registrationEnd: p.activity?.registrationEnd,
         location: p.activity?.location,
         image: p.activity?.image || null,
-        activityStatus: p.activity?.activityStatus
+        activityStatus: p.activity?.activityStatus,
+        type: p.activity?.type || ''
       }));
       res.json({ activities });
     } catch (err) {
