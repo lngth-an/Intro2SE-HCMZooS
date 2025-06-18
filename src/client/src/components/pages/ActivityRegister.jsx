@@ -272,50 +272,6 @@ function ActivityRegister() {
     );
   };
 
-  const renderActivityCard = (activity) => {
-    const domain = DOMAINS.find(d => d.id === activity.type);
-    const points = domain ? domain.defaultPoint : 3;
-
-    return (
-      <div
-        key={activity.activityID}
-        className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-        onClick={() => handleShowDetail(activity)}
-      >
-        <div className="relative">
-          <img
-            src={activity.image || "https://via.placeholder.com/400x200"}
-            alt={activity.name}
-            className="w-full h-48 object-cover"
-          />
-        </div>
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{activity.name}</h3>
-          <div className="flex items-center space-x-2 mb-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
-              {activity.type}
-            </span>
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-              {points} điểm
-            </span>
-          </div>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>Đơn vị tổ chức: {activity.organizerName}</p>
-            <p>Thời gian: {new Date(activity.eventStart).toLocaleString()}</p>
-            <p>Địa điểm: {activity.location}</p>
-            {activity.maxParticipants && (
-              <p>Số lượng: {activity.maxParticipants} người</p>
-            )}
-          </div>
-          <div className="mt-4 text-sm">
-            <span className="text-blue-600 hover:text-blue-800">
-              Xem chi tiết →
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
