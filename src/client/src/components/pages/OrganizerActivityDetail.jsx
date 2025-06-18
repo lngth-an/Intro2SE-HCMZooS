@@ -72,6 +72,16 @@ export default function OrganizerActivityDetail() {
   const [reloadFlag, setReloadFlag] = useState(0);
   const [showUpdate, setShowUpdate] = useState(null);
 
+  const [searchRegStudentCode, setSearchRegStudentCode] = useState('');
+  const [searchRegResult, setSearchRegResult] = useState(null);
+  const [searchRegLoading, setSearchRegLoading] = useState(false);
+  const [searchRegError, setSearchRegError] = useState('');
+
+  const [searchAttStudentCode, setSearchAttStudentCode] = useState('');
+  const [searchAttResult, setSearchAttResult] = useState(null);
+  const [searchAttLoading, setSearchAttLoading] = useState(false);
+  const [searchAttError, setSearchAttError] = useState('');
+
   useEffect(() => {
     const fetchDetail = async () => {
       try {
@@ -95,7 +105,7 @@ export default function OrganizerActivityDetail() {
         .then(data => setRegistrations(data.registrations || []));
     }
     if (tab === 'attendance') {
-      fetch(`${API_URL}/${activityId}/registrations?status=approved`)
+      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt`)
         .then(res => res.json())
         .then(data => setAttendance(data.registrations || []));
     }
@@ -104,10 +114,10 @@ export default function OrganizerActivityDetail() {
   const handleBulkApprove = async (action) => {
     setLoading(true);
     let ids = [];
-    if (action === 'approve') {
-      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status !== 'approved').map(r => r.participationID);
-    } else if (action === 'pending') {
-      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status === 'approved').map(r => r.participationID);
+    if (action === 'Đã duyệt') {
+      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status !== 'Đã duyệt').map(r => r.participationID);
+    } else if (action === 'Chờ duyệt') {
+      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status === 'Chờ duyệt').map(r => r.participationID);
     } else {
       ids = selectedRegs;
     }
@@ -138,6 +148,56 @@ export default function OrganizerActivityDetail() {
     setSelectedAtts([]);
     setLoading(false);
     setReloadFlag(f => f + 1);
+  };
+
+  const handleSearchRegStudent = async (e) => {
+    e.preventDefault();
+    if (!searchRegStudentCode.trim()) {
+      setSearchRegError('Vui lòng nhập mã số sinh viên');
+      return;
+    }
+    setSearchRegLoading(true);
+    setSearchRegError('');
+    try {
+      const res = await fetch(`${API_URL}/${activityId}/search-student?studentID=${searchRegStudentCode}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setSearchRegError(data.message || 'Không tìm thấy sinh viên trong danh sách đăng ký');
+        setSearchRegResult(null);
+      } else {
+        setSearchRegResult(data);
+      }
+    } catch (err) {
+      setSearchRegError('Lỗi khi tìm kiếm sinh viên đăng ký');
+      setSearchRegResult(null);
+    } finally {
+      setSearchRegLoading(false);
+    }
+  };
+
+  const handleSearchAttStudent = async (e) => {
+    e.preventDefault();
+    if (!searchAttStudentCode.trim()) {
+      setSearchAttError('Vui lòng nhập mã số sinh viên');
+      return;
+    }
+    setSearchAttLoading(true);
+    setSearchAttError('');
+    try {
+      const res = await fetch(`${API_URL}/${activityId}/search-student?studentID=${searchAttStudentCode}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setSearchAttError(data.message || 'Không tìm thấy sinh viên trong danh sách tham gia');
+        setSearchAttResult(null);
+      } else {
+        setSearchAttResult(data);
+      }
+    } catch (err) {
+      setSearchAttError('Lỗi khi tìm kiếm sinh viên tham gia');
+      setSearchAttResult(null);
+    } finally {
+      setSearchAttLoading(false);
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -172,9 +232,9 @@ export default function OrganizerActivityDetail() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-500">Trạng thái hoạt động</h3>
               <p className="mt-1 text-sm font-medium">
-                {activity.activityStatus === 'published' && <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-500">Đã công khai</span>}
-                {activity.activityStatus === 'draft' && <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-500">Bản nháp</span>}
-                {activity.activityStatus === 'completed' && <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-500">Đã kết thúc</span>}
+                {activity.activityStatus === 'Đã đăng tải' && <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-500">Đã công khai</span>}
+                {activity.activityStatus === 'Bản nháp' && <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-500">Bản nháp</span>}
+                {activity.activityStatus === 'Đã hoàn thành' && <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-500">Đã kết thúc</span>}
               </p>
             </div>
           </div>
@@ -238,26 +298,53 @@ export default function OrganizerActivityDetail() {
       {/*Danh sách đăng ký*/}
       {tab === 'registrations' && (
         <div>
+          <div className="mb-4">
+            <form onSubmit={handleSearchRegStudent} className="flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Tìm kiếm sinh viên theo MSSV..."
+                className="border rounded px-3 py-1"
+                value={searchRegStudentCode}
+                onChange={(e) => setSearchRegStudentCode(e.target.value)}
+              />
+              <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded" disabled={searchRegLoading}>
+                {searchRegLoading ? 'Đang tìm...' : 'Tìm kiếm'}
+              </button>
+            </form>
+            {searchRegError && <div className="text-red-600 mt-2">{searchRegError}</div>}
+            {searchRegResult && (
+              <div className="mt-2 p-3 bg-blue-50 rounded">
+                <h4 className="font-bold">Kết quả tìm kiếm:</h4>
+                <p>MSSV: {searchRegResult.student.studentID}</p>
+                <p>Họ tên: {searchRegResult.student.name}</p>
+                <p>Email: {searchRegResult.student.email}</p>
+                <p>Trạng thái: {searchRegResult.student.participationStatusText}</p>
+                {searchRegResult.student.participation?.trainingPoint !== null && (
+                  <p>Điểm rèn luyện: {searchRegResult.student.participation?.trainingPoint}</p>
+                )}
+              </div>
+            )}
+          </div>
           <div className="mb-4 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-800">Danh sách đăng ký</h2>
             <div className="flex gap-2">
               <button 
                 disabled={selectedRegs.length===0 || loading} 
-                onClick={()=>handleBulkApprove('approve')} 
+                onClick={()=>handleBulkApprove('Đã duyệt')} 
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Duyệt
               </button>
               <button 
                 disabled={selectedRegs.length===0 || loading} 
-                onClick={()=>handleBulkApprove('pending')} 
+                onClick={()=>handleBulkApprove('Chờ duyệt')} 
                 className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Chuyển về chờ duyệt
               </button>
               <button 
                 disabled={selectedRegs.length===0 || loading} 
-                onClick={()=>handleBulkApprove('reject')} 
+                onClick={()=>handleBulkApprove('Từ chối')} 
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Từ chối
@@ -310,11 +397,11 @@ export default function OrganizerActivityDetail() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.faculty}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${r.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                          r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                        ${r.status === 'Đã duyệt' ? 'bg-green-100 text-green-800' : 
+                          r.status === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' : 
                           'bg-red-100 text-red-800'}`}>
-                        {r.status === 'approved' ? 'Đã duyệt' : 
-                         r.status === 'pending' ? 'Chờ duyệt' : 
+                        {r.status === 'Đã duyệt' ? 'Đã duyệt' : 
+                         r.status === 'Chờ duyệt' ? 'Chờ duyệt' : 
                          'Từ chối'}
                       </span>
                     </td>
@@ -351,6 +438,33 @@ export default function OrganizerActivityDetail() {
       {/*Danh sách tham gia*/}
       {tab === 'attendance' && (
         <div>
+          <div className="mb-4">
+            <form onSubmit={handleSearchAttStudent} className="flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Tìm kiếm sinh viên theo MSSV..."
+                className="border rounded px-3 py-1"
+                value={searchAttStudentCode}
+                onChange={(e) => setSearchAttStudentCode(e.target.value)}
+              />
+              <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded" disabled={searchAttLoading}>
+                {searchAttLoading ? 'Đang tìm...' : 'Tìm kiếm'}
+              </button>
+            </form>
+            {searchAttError && <div className="text-red-600 mt-2">{searchAttError}</div>}
+            {searchAttResult && (
+              <div className="mt-2 p-3 bg-blue-50 rounded">
+                <h4 className="font-bold">Kết quả tìm kiếm:</h4>
+                <p>MSSV: {searchAttResult.student.studentID}</p>
+                <p>Họ tên: {searchAttResult.student.name}</p>
+                <p>Email: {searchAttResult.student.email}</p>
+                <p>Trạng thái: {searchAttResult.student.participationStatusText}</p>
+                {searchAttResult.student.participation?.trainingPoint !== null && (
+                  <p>Điểm rèn luyện: {searchAttResult.student.participation?.trainingPoint}</p>
+                )}
+              </div>
+            )}
+          </div>
           <div className="mb-4 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-800">Danh sách tham gia</h2>
             <div className="flex gap-2">

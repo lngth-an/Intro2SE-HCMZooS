@@ -82,9 +82,9 @@ const ACTIVITY_TYPES = [
 ];
 
 const ACTIVITY_STATUSES = [
-  { value: "draft", label: "Bản nháp" },
-  { value: "published", label: "Đang diễn ra" },
-  { value: "completed", label: "Đã kết thúc" },
+  { value: "Bản nháp", label: "Bản nháp" },
+  { value: "Đã đăng tải", label: "Đang diễn ra" },
+  { value: "Đã hoàn thành", label: "Đã kết thúc" },
 ];
 
 function ActivityManager() {
@@ -412,7 +412,7 @@ function ActivityManager() {
               Xóa
             </Button>
           </Popconfirm>
-          {record.activityStatus === "draft" && (
+          {record.activityStatus === "Bản nháp" && (
             <Button
               type="primary"
               onClick={() => handlePublish(record.activityID)}

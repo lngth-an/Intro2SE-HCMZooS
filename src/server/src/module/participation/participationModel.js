@@ -8,7 +8,7 @@ const ParticipationModel = {
         studentID, 
         activityID, 
         participationStatus: { 
-          [Op.notIn]: ['cancelled', 'rejected'] 
+          [Op.notIn]: ['Đã hủy', 'Từ chối'] 
         } 
       }
     });
@@ -19,7 +19,7 @@ const ParticipationModel = {
   async getOpenActivities(domain) {
     const now = new Date();
     const where = {
-      activityStatus: 'published',
+      activityStatus: 'Đã đăng tải',
       registrationEnd: { [Op.gt]: now },
     };
     if (domain) where.type = domain;
@@ -29,14 +29,14 @@ const ParticipationModel = {
     });
     return activities.filter(a => {
       const count = a.participations?.filter(p => 
-        !['cancelled', 'rejected'].includes(p.participationStatus)
+        !['Đã hủy', 'Từ chối'].includes(p.participationStatus)
       ).length || 0;
       return !a.capacity || count < a.capacity;
     });
   },
   async checkEligibility(studentID, activityID) {
     const activity = await db.Activity.findByPk(activityID);
-    if (!activity || activity.activityStatus !== 'published' || new Date(activity.registrationEnd) < new Date()) {
+    if (!activity || activity.activityStatus !== 'Đã đăng tải' || new Date(activity.registrationEnd) < new Date()) {
       return { eligible: false, reason: 'Hoạt động không hợp lệ hoặc đã hết hạn đăng ký.' };
     }
     const existed = await db.Participation.findOne({ 
@@ -44,14 +44,14 @@ const ParticipationModel = {
         studentID, 
         activityID, 
         participationStatus: { 
-          [Op.notIn]: ['cancelled', 'rejected'] 
+          [Op.notIn]: ['Đã hủy', 'từ chối'] 
         } 
       } 
     });
     if (existed) {
       return { 
         eligible: false, 
-        reason: existed.participationStatus === 'cancelled' 
+        reason: existed.participationStatus === 'Đã hủy' 
           ? 'Bạn đã hủy đăng ký hoạt động này trước đó.' 
           : 'Bạn đã đăng ký hoạt động này.'
       };
@@ -70,7 +70,7 @@ const ParticipationModel = {
   async suggestActivities(domain) {
     const now = new Date();
     const where = {
-      activityStatus: 'published',
+      activityStatus: 'Đã đăng tải',
       registrationEnd: { [Op.gt]: now },
       type: domain,
     };
