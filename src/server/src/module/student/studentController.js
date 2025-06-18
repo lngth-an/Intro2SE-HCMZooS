@@ -198,7 +198,7 @@ class StudentController {
       }
 
       if (organizerName) {
-        whereConditions['$organizer.department$'] = {
+        whereConditions['$organizer.user.name$'] = {
           [Op.iLike]: `%${organizerName}%`
         };
       }
@@ -242,7 +242,7 @@ class StudentController {
           {
             model: Organizer,
             as: 'organizer',
-            attributes: ['department'],
+            attributes: ['organizerID'],
             include: [
               {
                 model: User,
@@ -281,7 +281,7 @@ class StudentController {
           {
             model: Organizer,
             as: 'organizer',
-            attributes: ['department'],
+            attributes: ['organizerID'],
             include: [
               {
                 model: User,
@@ -310,10 +310,10 @@ class StudentController {
         subQuery: false
       });
 
-      // Map kết quả để trả về department thay vì name
+      // Map kết quả để trả về name thay vì department
       const mappedActivities = activities.map(activity => ({
         ...activity.toJSON(),
-        organizerName: activity.organizer ? activity.organizer.department : 'Đang cập nhật'
+        organizerName: activity.organizer?.user?.name || 'Đang cập nhật'
       }));
 
       res.json({
