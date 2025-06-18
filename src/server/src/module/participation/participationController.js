@@ -1,4 +1,5 @@
 const ParticipationModel = require('./participationModel');
+const db = require('../../models');
 
 class ParticipationController {
   static async getOpenActivities(req, res) {
@@ -96,6 +97,28 @@ class ParticipationController {
     } catch (err) {
       console.error('Error cancelling registration:', err);
       res.status(500).json({ error: 'Lỗi khi hủy đăng ký.' });
+    }
+  }
+
+  static async checkRegistration(req, res) {
+    try {
+      const studentID = req.user.studentID;
+      const { activityID } = req.params;
+      
+      const participation = await db.Participation.findOne({
+        where: {
+          studentID,
+          activityID,
+          participationStatus: {
+            [db.Sequelize.Op.notIn]: ['canceled', 'rejected']
+          }
+        }
+      });
+
+      res.json({ isRegistered: !!participation });
+    } catch (err) {
+      console.error('Error checking registration:', err);
+      res.status(500).json({ error: 'Lỗi kiểm tra trạng thái đăng ký' });
     }
   }
 }

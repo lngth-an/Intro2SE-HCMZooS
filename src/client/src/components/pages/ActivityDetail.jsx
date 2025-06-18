@@ -71,6 +71,10 @@ export default function ActivityDetail() {
   const [message, setMessage] = useState('');
   const [reloadFlag, setReloadFlag] = useState(0);
   const [showUpdate, setShowUpdate] = useState(null);
+  const [searchStudentCode, setSearchStudentCode] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -140,6 +144,31 @@ export default function ActivityDetail() {
     setReloadFlag(f => f + 1);
   };
 
+  const handleSearchStudent = async (e) => {
+    e.preventDefault();
+    if (!searchStudentCode.trim()) {
+      setSearchError('Vui lòng nhập mã số sinh viên');
+      return;
+    }
+    setSearchLoading(true);
+    setSearchError('');
+    try {
+      const res = await fetch(`${API_URL}/${activityId}/search-student?studentID=${searchStudentCode}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setSearchError(data.message || 'Không tìm thấy sinh viên');
+        setSearchResult(null);
+      } else {
+        setSearchResult(data);
+      }
+    } catch (err) {
+      setSearchError('Lỗi khi tìm kiếm sinh viên');
+      setSearchResult(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (!activity) return <div>Activity not found.</div>;
 
@@ -162,6 +191,33 @@ export default function ActivityDetail() {
       )}
       {tab === 'registrations' && (
         <div>
+          <div className="mb-4">
+            <form onSubmit={handleSearchStudent} className="flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Nhập mã số sinh viên..."
+                className="border rounded px-3 py-1"
+                value={searchStudentCode}
+                onChange={(e) => setSearchStudentCode(e.target.value)}
+              />
+              <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded" disabled={searchLoading}>
+                {searchLoading ? 'Đang tìm...' : 'Tìm kiếm'}
+              </button>
+            </form>
+            {searchError && <div className="text-red-600 mt-2">{searchError}</div>}
+            {searchResult && (
+              <div className="mt-2 p-3 bg-blue-50 rounded">
+                <h4 className="font-bold">Kết quả tìm kiếm:</h4>
+                <p>MSSV: {searchResult.student.studentID}</p>
+                <p>Họ tên: {searchResult.student.name}</p>
+                <p>Email: {searchResult.student.email}</p>
+                <p>Trạng thái: {searchResult.student.participationStatusText}</p>
+                {searchResult.student.participation.trainingPoint !== null && (
+                  <p>Điểm rèn luyện: {searchResult.student.participation.trainingPoint}</p>
+                )}
+              </div>
+            )}
+          </div>
           <div className="mb-2 flex gap-2">
             <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('approve')} className="bg-blue-600 text-white px-3 py-1 rounded">Duyệt</button>
             <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('pending')} className="bg-yellow-500 text-white px-3 py-1 rounded">Chuyển về chờ duyệt</button>
@@ -216,6 +272,30 @@ export default function ActivityDetail() {
       )}
       {tab === 'attendance' && (
         <div>
+          <div className="mb-4">
+            <form onSubmit={handleSearchStudent} className="flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Nhập mã số sinh viên..."
+                className="border rounded px-3 py-1"
+                value={searchStudentCode}
+                onChange={(e) => setSearchStudentCode(e.target.value)}
+              />
+              <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded" disabled={searchLoading}>
+                {searchLoading ? 'Đang tìm...' : 'Tìm kiếm'}
+              </button>
+            </form>
+            {searchError && <div className="text-red-600 mt-2">{searchError}</div>}
+            {searchResult && (
+              <div className="mt-2 p-3 bg-blue-50 rounded">
+                <h4 className="font-bold">Kết quả tìm kiếm:</h4>
+                <p>MSSV: {searchResult.student.studentCode}</p>
+                <p>Họ tên: {searchResult.student.name}</p>
+                <p>Email: {searchResult.student.email}</p>
+                <p>Trạng thái: {searchResult.student.participation?.participationStatus || 'Chưa đăng ký'}</p>
+              </div>
+            )}
+          </div>
           <div className="mb-2 flex gap-2">
             <button disabled={selectedAtts.length===0 || loading} onClick={()=>handleBulkConfirm('present')} className="bg-green-600 text-white px-3 py-1 rounded">Xác nhận tham gia</button>
             <button disabled={selectedAtts.length===0 || loading} onClick={()=>handleBulkConfirm('absent')} className="bg-gray-600 text-white px-3 py-1 rounded">Đánh dấu vắng</button>

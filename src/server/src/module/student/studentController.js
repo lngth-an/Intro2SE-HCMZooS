@@ -64,7 +64,23 @@ class StudentController {
       if (!allStatus) {
         where.participationStatus = 'present';
       }
-      const include = [{ model: db.Activity, as: 'activity' }];
+      const include = [{ 
+        model: db.Activity, 
+        as: 'activity',
+        attributes: [
+          'activityID',
+          'name',
+          'description',
+          'type',
+          'eventStart',
+          'eventEnd',
+          'registrationStart',
+          'registrationEnd',
+          'location',
+          'image',
+          'activityStatus'
+        ]
+      }];
       if (semesterID) {
         include[0].where = { semesterID };
       }
@@ -76,12 +92,17 @@ class StudentController {
         participationID: p.participationID,
         activityID: p.activityID,
         name: p.activity?.name,
+        description: p.activity?.description,
         type: p.activity?.type,
         trainingPoint: p.trainingPoint || 0,
         participationStatus: p.participationStatus,
         eventStart: p.activity?.eventStart,
+        eventEnd: p.activity?.eventEnd,
+        registrationStart: p.activity?.registrationStart,
+        registrationEnd: p.activity?.registrationEnd,
         location: p.activity?.location,
-        image: p.activity?.image || null
+        image: p.activity?.image || null,
+        activityStatus: p.activity?.activityStatus
       }));
       res.json({ activities });
     } catch (err) {
