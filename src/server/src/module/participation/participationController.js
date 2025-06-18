@@ -121,6 +121,33 @@ class ParticipationController {
       res.status(500).json({ error: 'Lỗi kiểm tra trạng thái đăng ký' });
     }
   }
+
+  // Trong ParticipationController
+static async deleteDraft(req, res) {
+  try {
+    const studentID = req.user.studentID;
+    const { participationID } = req.body;
+
+    const participation = await db.Participation.findOne({
+      where: {
+        participationID,
+        studentID,
+        participationStatus: 'Bản nháp'
+      }
+    });
+
+    if (!participation) {
+      return res.status(400).json({ error: 'Không tìm thấy bản nháp hợp lệ để xóa.' });
+    }
+
+    await participation.destroy();
+    res.json({ message: 'Đã hủy bản đăng ký.' });
+  } catch (err) {
+    console.error('deleteDraft error:', err);
+    res.status(500).json({ error: 'Lỗi khi hủy bản đăng ký.' });
+  }
+}
+
 }
 
 module.exports = ParticipationController; 
