@@ -150,19 +150,23 @@ class ComplaintController {
         return res.status(403).json({ message: 'Chỉ organizer mới được cập nhật khiếu nại.' });
       }
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, response } = req.body;
       if (!['Đã duyệt', 'Từ chối', 'Chờ duyệt'].includes(status)) {
         return res.status(400).json({ message: 'Trạng thái không hợp lệ.' });
       }
       const complaint = await db.Complaint.findByPk(id);
       if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
+      
+      // Cập nhật cả status và response
       complaint.complaintStatus = status;
+      complaint.response = response;
       await complaint.save();
+      
       // TODO: Gửi notification cho student
-      res.json({ message: 'Cập nhật trạng thái khiếu nại thành công.' });
+      res.json({ message: 'Cập nhật khiếu nại thành công.' });
     } catch (err) {
       console.error('Error updateComplaintStatus:', err);
-      res.status(500).json({ message: 'Lỗi cập nhật trạng thái khiếu nại.' });
+      res.status(500).json({ message: 'Lỗi cập nhật khiếu nại.' });
     }
   }
 }
