@@ -4,6 +4,7 @@ const router = express.Router();
 const ActivityController = require('../module/activity/activityController');
 const OrganizerController = require('../module/organizerController');
 const ComplaintController = require('../module/complaint/complaintController');
+const { authenticateToken } = require('../module/auth/authMiddleware');
 
 // UC502: List activities (with filters, pagination, summary)
 router.get('/', ActivityController.listActivities);
@@ -35,7 +36,7 @@ router.patch('/:activityID/attendance/confirm', ActivityController.confirmAttend
 router.get('/organizer/me', OrganizerController.getMe);
 
 // Các route quản lý khiếu nại
-router.post('/complaint', ComplaintController.submitComplaint);
+//router.post('/complaint', authenticateToken, ComplaintController.submitComplaint);
 router.get('/complaint/organizer', ComplaintController.getComplaintsByOrganizer);
 router.get('/complaint/:id', ComplaintController.getComplaintDetail);
 router.patch('/complaint/:id', ComplaintController.updateComplaintStatus);

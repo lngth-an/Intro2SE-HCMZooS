@@ -25,8 +25,8 @@ const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ message: 'Người dùng không tồn tại' });
     }
 
-    // Thêm studentID vào user object nếu là sinh viên
-    if (user.role === 'student' && user.student) {
+    // Thêm studentID vào user object nếu có
+    if (user.student) {
       user.studentID = user.student.studentID;
     }
 
