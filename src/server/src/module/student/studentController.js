@@ -373,6 +373,8 @@ class StudentController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
+
+
 }
 
 module.exports = StudentController;

@@ -1,8 +1,52 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
 
 const StudentHomeMain = () => {
+  const [score, setScore] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentSemester, setCurrentSemester] = useState(null);
+
+  useEffect(() => {
+    const fetchCurrentSemesterScore = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Lấy học kỳ hiện tại
+        const semesterRes = await fetch('/semester/current');
+        if (!semesterRes.ok) throw new Error('Failed to fetch current semester');
+        const semesterData = await semesterRes.json();
+        
+        console.log('Current semester:', semesterData);
+        if (!semesterData) {
+          console.log('No current semester found');
+          setScore(0);
+          return;
+        }
+        
+        setCurrentSemester(semesterData);
+
+        // Lấy điểm của học kỳ hiện tại
+        const scoreRes = await fetch(`/student/score?semesterID=${semesterData.semesterID}`);
+        if (!scoreRes.ok) throw new Error('Failed to fetch score');
+        const scoreData = await scoreRes.json();
+        
+        console.log('Score response:', scoreData);
+        setScore(scoreData.score || 0);
+      } catch (error) {
+        console.error('Error fetching score:', error);
+        setError(error.message);
+        setScore(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentSemesterScore();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Top Section */}
@@ -13,15 +57,25 @@ const StudentHomeMain = () => {
             Điểm rèn luyện
           </h2>
           <div className="flex justify-between items-center">
-            <span className="text-3xl font-bold text-blue-600">85</span>
+            {loading ? (
+              <div className="text-3xl font-bold text-gray-400">...</div>
+            ) : error ? (
+              <div className="text-sm text-red-500">{error}</div>
+            ) : (
+              <span className="text-3xl font-bold text-blue-600">{score}</span>
+            )}
             <Link
-              to="/student/points"
-              // to="/student/score"
+              to="/student/score"
               className="text-blue-600 hover:text-blue-800"
             >
               <FaArrowRight />
             </Link>
           </div>
+          {!loading && !error && currentSemester && (
+            <div className="mt-2 text-sm text-gray-500">
+              {currentSemester.semesterName}
+            </div>
+          )}
         </div>
 
         {/* Activities Card */}
@@ -72,4 +126,5 @@ const StudentHomeMain = () => {
     </div>
   );
 };
+
 export default StudentHomeMain;

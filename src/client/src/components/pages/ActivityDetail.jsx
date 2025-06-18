@@ -103,7 +103,7 @@ export default function ActivityDetail() {
         .then(data => setRegistrations(data.registrations || []));
     }
     if (tab === 'attendance') {
-      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Vắng&status=Đã hoàn thành`)
+      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Vắng&status=Đã tham gia`)
         .then(res => res.json())
         .then(data => setAttendance(data.registrations || []));
     }
@@ -340,7 +340,7 @@ export default function ActivityDetail() {
           <div className="mb-2 flex gap-2">
             <button 
               disabled={selectedAtts.length===0 || loading} 
-              onClick={()=>handleBulkConfirm('Đã hoàn thành')} 
+              onClick={()=>handleBulkConfirm('Đã tham gia')} 
               className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
             >
               Xác nhận hoàn thành
@@ -378,7 +378,7 @@ export default function ActivityDetail() {
                   <td>{r.faculty}</td>
                   <td>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      r.status === 'Đã hoàn thành' ? 'bg-green-100 text-green-800' :
+                      r.status === 'Đã tham gia' ? 'bg-green-100 text-green-800' :
                       r.status === 'Vắng' ? 'bg-red-100 text-red-800' :
                       'bg-blue-100 text-blue-800'
                     }`}>

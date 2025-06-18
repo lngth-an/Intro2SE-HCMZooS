@@ -118,10 +118,22 @@ const StudentHome = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get("/student/stats");
-      setStats(response.data);
+      // Lấy học kỳ hiện tại
+      const semesterRes = await axios.get('/semester/current');
+      if (!semesterRes.data) {
+        setStats({ totalScore: 0, totalActivities: 0 });
+        return;
+      }
+
+      // Lấy điểm của học kỳ hiện tại
+      const scoreRes = await axios.get(`/student/score?semesterID=${semesterRes.data.semesterID}`);
+      setStats({
+        totalScore: scoreRes.data.score || 0,
+        totalActivities: 0, // Giữ nguyên giá trị này vì không cần thay đổi
+      });
     } catch (error) {
       console.error("Error fetching stats:", error);
+      setStats({ totalScore: 0, totalActivities: 0 });
     }
   };
 

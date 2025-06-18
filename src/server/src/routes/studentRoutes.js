@@ -19,4 +19,6 @@ router.get('/activities', StudentController.getActivities);
 router.get('/stats', authenticateToken, StudentController.getStats);
 
 router.get('/activities/search', authenticateToken, StudentController.searchActivities);
+
+
 module.exports = router; 
