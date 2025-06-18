@@ -6,7 +6,7 @@ import Footer from "../components/common/Footer";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function ProfileOrganizer() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [formError, setFormError] = useState("");
@@ -128,7 +128,7 @@ export default function ProfileOrganizer() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1">
-        <SidebarOrganizer />
+        <SidebarOrganizer onLogout={logout} />
 
         <main className="flex-1 ml-60 px-6 md:px-10 pt-24">
           <div className="bg-white shadow rounded-lg p-6">

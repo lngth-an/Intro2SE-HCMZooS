@@ -54,7 +54,7 @@ exports.login = async (req, res) => {
     console.log('Found user:', user ? 'Yes' : 'No');
     
     if (!user) {
-      return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
+      return res.status(401).json({ message: 'Tài khoản hoặc mật khẩu không chính xác!' });
     }
 
     console.log('Checking password...');
@@ -77,7 +77,7 @@ exports.login = async (req, res) => {
     console.log('Password match:', isMatch);
 
     if (!isMatch) {
-      return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
+      return res.status(401).json({ message: 'Tài khoản hoặc mật khẩu không chính xác!' });
     }
 
     const token = jwt.sign(

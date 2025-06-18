@@ -89,6 +89,7 @@ class ComplaintController {
           complaintID: c.complaintID,
           description: c.description,
           complaintStatus: c.complaintStatus,
+          response: c.response,
           studentName: c.participation?.student?.user?.name,
           studentID: c.participation?.student?.studentID,
           activityName: c.participation?.activity?.name,
@@ -127,6 +128,7 @@ class ComplaintController {
           complaintID: complaint.complaintID,
           description: complaint.description,
           complaintStatus: complaint.complaintStatus,
+          response: complaint.response,
           studentName: complaint.participation?.student?.user?.name,
           studentID: complaint.participation?.student?.studentID,
           studentEmail: complaint.participation?.student?.user?.email,
@@ -159,7 +161,10 @@ class ComplaintController {
       
       // Cập nhật cả status và response
       complaint.complaintStatus = status;
-      complaint.response = response;
+
+      if (response) {
+        complaint.response = response;
+      }
       await complaint.save();
       
       // TODO: Gửi notification cho student

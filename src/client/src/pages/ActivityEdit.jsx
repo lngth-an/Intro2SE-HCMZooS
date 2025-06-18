@@ -2,66 +2,17 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
 import ActivityForm from "../components/pages/ActivityForm";
-
-const DOMAINS = [
-  {
-    id: "Workshop",
-    label: "Workshop",
-    type: "workshop",
-    color: "bg-blue-100 text-blue-800",
-    selectedColor: "bg-blue-600 text-white",
-  },
-  {
-    id: "Tình nguyện",
-    label: "Tình nguyện",
-    type: "volunteer",
-    color: "bg-green-100 text-green-800",
-    selectedColor: "bg-green-600 text-white",
-  },
-  {
-    id: "Học thuật",
-    label: "Học thuật",
-    type: "academic",
-    color: "bg-yellow-100 text-yellow-800",
-    selectedColor: "bg-yellow-600 text-white",
-  },
-  {
-    id: "Hội thảo",
-    label: "Hội thảo",
-    type: "seminar",
-    color: "bg-purple-100 text-purple-800",
-    selectedColor: "bg-purple-600 text-white",
-  },
-  {
-    id: "Cuộc thi",
-    label: "Cuộc thi",
-    type: "competition",
-    color: "bg-pink-100 text-pink-800",
-    selectedColor: "bg-pink-600 text-white",
-  },
-  {
-    id: "Chuyên đề",
-    label: "Chuyên đề",
-    type: "specialized",
-    color: "bg-indigo-100 text-indigo-800",
-    selectedColor: "bg-indigo-600 text-white",
-  },
-  {
-    id: "Khác",
-    label: "Khác",
-    type: "other",
-    color: "bg-gray-100 text-gray-800",
-    selectedColor: "bg-gray-600 text-white",
-  },
-];
+import { DOMAINS } from '../constants/activityTypes';
 
 const ActivityEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { logout } = useAuth();
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,7 +133,7 @@ const ActivityEdit = () => {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
         <div className="flex flex-1 pt-16">
-          <SidebarOrganizer />
+          <SidebarOrganizer onLogout={logout} />
           <div className="flex-1 flex flex-col ml-64">
             <main className="flex-1 p-6">
               <div className="text-center">Đang tải...</div>
@@ -198,7 +149,7 @@ const ActivityEdit = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer />
+        <SidebarOrganizer onLogout={logout} />
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
             <h1 className="text-2xl font-bold mb-6">Chỉnh sửa hoạt động</h1>

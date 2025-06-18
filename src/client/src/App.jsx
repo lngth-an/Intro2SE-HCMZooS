@@ -119,8 +119,17 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-center" reverseOrder={false} />
-        <ToastContainer />
+        <ToastContainer 
+          position="top-right"
+          autoClose={false}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick={true}
+          rtl={false}
+          pauseOnFocusLoss={true}
+          draggable={true}
+          pauseOnHover={true}
+        />
         <Routes>
           {/* Public routes */}
           <Route

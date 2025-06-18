@@ -353,21 +353,56 @@ class ActivityController {
     static async confirmAttendance(req, res) {
         try {
             const { activityID } = req.params;
-            const { participationIDs, status } = req.body; // status: 'present' | 'absent'
+            const { participationIDs, status } = req.body; // status: 'Đã tham gia' | 'Vắng'
+            
             // Kiểm tra quyền sở hữu
             const activity = await db.Activity.findByPk(activityID);
             if (!activity) return res.status(404).json({ message: 'Activity not found' });
             if (req.user.role !== 'organizer' || activity.organizerID !== await ActivityController.getOrganizerID(req.user.userID)) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
+
+            // Cập nhật trạng thái tham gia
+            const newStatus = status === 'Đã tham gia' ? 'Đã tham gia' : 'Vắng';
+
+            // Lấy điểm mặc định dựa trên loại hoạt động
+            let defaultPoint = 3; // Điểm mặc định cho loại "Khác"
+            switch (activity.type) {
+                case 'Học thuật':
+                    defaultPoint = 10;
+                    break;
+                case 'Tình nguyện':
+                    defaultPoint = 8;
+                    break;
+                case 'Thể thao':
+                case 'Nghệ thuật':
+                case 'Hội thảo':
+                    defaultPoint = 5;
+                    break;
+                case 'Kỹ năng':
+                    defaultPoint = 10;
+                    break;
+                default:
+                    defaultPoint = 3; // Loại "Khác"
+                    break;
+            }
+
             await db.Participation.update(
-                { participationStatus: status },
+                { 
+                    participationStatus: newStatus,
+                    // Nếu có mặt, cập nhật điểm rèn luyện theo loại hoạt động, nếu vắng thì 0
+                    trainingPoint: status === 'Đã tham gia' ? defaultPoint : 0
+                },
                 { where: { activityID, participationID: participationIDs } }
             );
-            // TODO: Cập nhật điểm rèn luyện nếu cần
-            res.json({ success: true });
+
+            res.json({ 
+                success: true,
+                message: `Đã cập nhật ${participationIDs.length} sinh viên thành ${newStatus}`,
+                defaultPoint
+            });
         } catch (err) {
-            console.error(err);
+            console.error('Error in confirmAttendance:', err);
             res.status(500).json({ message: 'Error confirming attendance' });
         }
     }

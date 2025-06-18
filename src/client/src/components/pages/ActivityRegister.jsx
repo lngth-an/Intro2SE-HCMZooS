@@ -6,18 +6,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
-
-// You might want to define a more comprehensive list of domains, maybe from your backend
-const DOMAINS = [
-    { id: "Học thuật", label: "Học thuật" },
-    { id: "Tình nguyện", label: "Tình nguyện" },
-   // { id: "Hội thảo", label: "Hội thảo" },
-    { id: "Thể thao", label: "Thể thao" },
-    { id: "Kỹ năng", label: "Kỹ năng" },
-    { id: "Nghệ thuật", label: "Nghệ thuật" },
-    { id: "Hội thảo", label: "Hội thảo" },
-    { id: "Khác", label: "Khác" },
-];
+import { Link } from 'react-router-dom';
+import { FaSearch, FaFilter } from 'react-icons/fa';
+import { DOMAINS } from '../../constants/activityTypes';
 
 function ActivityRegister() {
   const [activities, setActivities] = useState([]);

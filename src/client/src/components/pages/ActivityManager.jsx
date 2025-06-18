@@ -14,72 +14,37 @@ import {
   Space,
   Popconfirm,
 } from "antd";
+
 import {
   SearchOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
+  ExclamationCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { FileWarning, Eye, Edit, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
+import { DOMAINS } from '../../constants/activityTypes';
 
 const API_BASE_URL = "http://localhost:3001";
 const ACTIVITIES_API_URL = `${API_BASE_URL}/activity/manage`;
-
-// Static data for domains
-const DOMAINS = [
-  { id: "Học thuật", label: "Học thuật", color: "bg-blue-100 text-blue-800" },
-  {
-    id: "Tình nguyện",
-    label: "Tình nguyện",
-    color: "bg-green-100 text-green-800",
-  },
-  {
-    id: "Văn hóa",
-    label: "Văn hóa",
-    color: "bg-orange-100 text-orange-800",
-  },
-  {
-    id: "Thể thao",
-    label: "Thể thao",
-    color: "bg-red-100 text-red-800",
-  },
-  {
-    id: "Kỹ năng",
-    label: "Kỹ năng",
-    color: "bg-purple-100 text-purple-800",
-  },
-  {
-    id: "Nghệ thuật",
-    label: "Nghệ thuật",
-    color: "bg-pink-100 text-pink-800",
-  },
-  {
-    id: "Hội thảo",
-    label: "Hội thảo",
-    color: "bg-indigo-100 text-indigo-800",
-  },
-  {
-    id: "Khác",
-    label: "Khác",
-    color: "bg-gray-100 text-gray-800",
-  },
-];
-
 
 // Map activityStatus to display colors
 const statusColors = {
   draft: "bg-gray-200 text-gray-800",
   published: "bg-teal-100 text-teal-800",
-  completed: "bg-green-100 text-green-800",
+  absent: "bg-red-100 text-red-800",
+  completed: "bg-green-100 text-green-800"
 };
 
 // Map activityStatus to Vietnamese labels
 const statusLabels = {
   draft: "Bản nháp",
   published: "Đã đăng tải",
-  completed: "Đã hoàn thành",
+  absent: "Vắng",
+  completed: "Đã hoàn thành"
 };
 
 const DEFAULT_IMAGE =
@@ -103,6 +68,7 @@ const ACTIVITY_STATUSES = [
   { value: "Bản nháp", label: "Bản nháp" },
   { value: "Đã đăng tải", label: "Đang diễn ra" },
   { value: "Đã hoàn thành", label: "Đã kết thúc" },
+  { value: "Vắng", label: "Vắng" }
 ];
 
 function ActivityManager() {
@@ -261,6 +227,26 @@ function ActivityManager() {
     }
   };
 
+  const handleComplete = async (id) => {
+    const token = localStorage.getItem("accessToken");
+    try {
+      await axios.patch(
+        `${API_BASE_URL}/activity/${id}/complete`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      toast.success("Hoạt động đã được đánh dấu hoàn thành!");
+      fetchActivities();
+    } catch (error) {
+      console.error("Complete error:", error);
+      toast.error(
+        error.response?.data?.message || "Không thể đánh dấu hoàn thành"
+      );
+    }
+  };
+
   const handleSubmit = async (values) => {
     setLoading(true);
     const token = localStorage.getItem("accessToken");
@@ -415,21 +401,56 @@ function ActivityManager() {
               </Button>
               <Popconfirm
                 title="Bạn có chắc chắn muốn xóa hoạt động này?"
+                description="Hành động này không thể hoàn tác."
+                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                 onConfirm={() => handleDelete(record.activityID)}
-                okText="Có"
-                cancelText="Không"
+                okText="Có, xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+                cancelButtonProps={{ type: 'default' }}
               >
                 <Button type="default" danger icon={<DeleteOutlined />}>
                   Xóa
                 </Button>
               </Popconfirm>
+              <Popconfirm
+                title="Xác nhận xuất bản hoạt động"
+                description="Bạn có chắc chắn muốn xuất bản hoạt động này không? Hoạt động đã xuất bản sẽ không thể chỉnh sửa!"
+                icon={<ExclamationCircleOutlined style={{ color: 'orange' }} />}
+                onConfirm={() => handlePublish(record.activityID)}
+                okText="Có, xuất bản"
+                cancelText="Hủy"
+                okButtonProps={{ type: 'primary' }}
+                cancelButtonProps={{ type: 'default' }}
+              >
+                <Button
+                  type="primary"
+                >
+                  Xuất bản
+                </Button>
+              </Popconfirm>
+            </>
+          )}
+          {record.activityStatus === "Đã đăng tải" && (
+            <Popconfirm
+              title="Xác nhận hoàn thành hoạt động"
+              description="Bạn có chắc chắn muốn đánh dấu hoạt động này đã hoàn thành? Hành động này sẽ cập nhật trạng thái hoạt động."
+              icon={<CheckCircleOutlined style={{ color: 'green' }} />}
+              onConfirm={() => handleComplete(record.activityID)}
+              okText="Có, hoàn thành"
+              cancelText="Hủy"
+              okButtonProps={{ 
+                style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+              }}
+              cancelButtonProps={{ type: 'default' }}
+            >
               <Button
                 type="primary"
-                onClick={() => handlePublish(record.activityID)}
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
               >
-                Xuất bản
+                Hoàn thành
               </Button>
-            </>
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -568,7 +589,22 @@ function ActivityManager() {
           <Form.Item
             name="endDate"
             label="Ngày kết thúc"
-            rules={[{ required: true, message: "Vui lòng chọn ngày kết thúc" }]}
+            dependencies={['startDate']}
+            rules={[
+              { required: true, message: "Vui lòng chọn ngày kết thúc" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || !getFieldValue('startDate')) {
+                    return Promise.resolve();
+                  }
+                  const startDate = getFieldValue('startDate');
+                  if (value && startDate && value.isSameOrBefore(startDate)) {
+                    return Promise.reject(new Error('Ngày kết thúc phải lớn hơn ngày bắt đầu!'));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
           >
             <DatePicker className="w-full" />
           </Form.Item>
