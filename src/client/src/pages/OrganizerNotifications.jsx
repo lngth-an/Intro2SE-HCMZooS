@@ -64,6 +64,10 @@ const OrganizerNotifications = () => {
     const [sentNotificationsPage, setSentNotificationsPage] = useState(1);
     const [sentNotificationsTotalPages, setSentNotificationsTotalPages] = useState(1);
     const { user, token } = useAuth();
+    const [activities, setActivities] = useState([]);
+    const [selectedActivity, setSelectedActivity] = useState('');
+    const [activityStudents, setActivityStudents] = useState([]);
+    const [sendTarget, setSendTarget] = useState('all'); // 'all' hoặc 'specific'
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -104,11 +108,23 @@ const OrganizerNotifications = () => {
         }
     }, [token]);
 
+    const fetchActivities = useCallback(async () => {
+        try {
+            const response = await axios.get('/activity/organizer', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setActivities(response.data.activities || []);
+        } catch (error) {
+            console.error('Error fetching activities:', error);
+        }
+    }, [token]);
+
     useEffect(() => {
         if (user) {
             fetchNotifications();
             fetchStudents('');
             fetchSentNotifications(1);
+            fetchActivities();
 
             // Subscribe to realtime notifications
             socket.on('new_notification', (data) => {
@@ -122,7 +138,28 @@ const OrganizerNotifications = () => {
                 socket.off('new_notification');
             };
         }
-    }, [user, fetchNotifications, fetchStudents, fetchSentNotifications, sentNotificationsPage]);
+    }, [user, fetchNotifications, fetchStudents, fetchSentNotifications, sentNotificationsPage, fetchActivities]);
+
+    useEffect(() => {
+        if (selectedActivity) {
+            axios.get(`/activity/${selectedActivity}/registrations`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(res => {
+                setActivityStudents(res.data.registrations.map(r => ({
+                    userID: r.studentID,
+                    name: r.studentName || '',
+                    academicYear: r.academicYear,
+                    faculty: r.faculty
+                })));
+            }).catch(() => setActivityStudents([]));
+            setSendTarget('all');
+            setSelectedStudents([]);
+        } else {
+            setActivityStudents([]);
+            setSendTarget('all');
+            setSelectedStudents([]);
+        }
+    }, [selectedActivity, token]);
 
     const handleNotificationClick = async (notification) => {
         if (notification.notificationStatus === 'unread') {
@@ -157,19 +194,23 @@ const OrganizerNotifications = () => {
 
     const handleSendNotification = async () => {
         try {
-            const toUserIDs = newNotification.targetType === 'all_students' 
-                ? 'all_students'
-                : selectedStudents.map(student => student.userID);
-
+            let toUserIDs = undefined;
+            let activityID = undefined;
+            if (selectedActivity) {
+                activityID = selectedActivity;
+                if (sendTarget === 'specific') {
+                    toUserIDs = selectedStudents.map(student => student.userID);
+                }
+            }
             await axios.post('/notifications/send', {
                 fromUserID: user.userID,
                 toUserIDs,
                 notificationTitle: newNotification.title,
-                notificationMessage: newNotification.message
+                notificationMessage: newNotification.message,
+                activityID
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
             handleCloseDialog();
             fetchNotifications();
             toast.success('Gửi thông báo thành công');
@@ -187,6 +228,9 @@ const OrganizerNotifications = () => {
             targetType: 'all_students'
         });
         setSelectedStudents([]);
+        setSelectedActivity('');
+        setSendTarget('all');
+        setActivityStudents([]);
     };
 
     const handleCloseDialog = () => {
@@ -313,10 +357,10 @@ const OrganizerNotifications = () => {
                                                     </Typography>
                                                     <div className="mt-2 space-y-1">
                                                         <Typography variant="caption" className="text-gray-500 block">
-                                                            Gửi đến: {notification.toUserID === 'all_students' ? 'Tất cả sinh viên' : notification.toUserName}
+                                                            Gửi đến: {notification.recipient ? `${notification.recipient.fullName} (${notification.recipient.email})` : 'Không xác định'}
                                                         </Typography>
                                                         <Typography variant="caption" className="text-gray-500 block">
-                                                            {new Date(notification.createdAt).toLocaleString()}
+                                                            {notification.sentAt ? new Date(notification.sentAt).toLocaleString() : ''}
                                                         </Typography>
                                                     </div>
                                                 </div>
@@ -349,6 +393,93 @@ const OrganizerNotifications = () => {
                                 </DialogTitle>
                                 <DialogContent>
                                     <div className="space-y-4 mt-2">
+                                        <FormControl fullWidth variant="outlined" className="mb-4">
+                                            <InputLabel>Chọn hoạt động</InputLabel>
+                                            <Select
+                                                value={selectedActivity}
+                                                onChange={e => setSelectedActivity(e.target.value)}
+                                                label="Chọn hoạt động"
+                                            >
+                                                <MenuItem value="">-- Chọn hoạt động --</MenuItem>
+                                                {activities.map(act => (
+                                                    <MenuItem key={act.activityID} value={act.activityID}>{act.name}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                        {selectedActivity && (
+                                            <FormControl fullWidth variant="outlined" className="mb-4">
+                                                <InputLabel>Gửi đến</InputLabel>
+                                                <Select
+                                                    value={sendTarget}
+                                                    onChange={e => setSendTarget(e.target.value)}
+                                                    label="Gửi đến"
+                                                >
+                                                    <MenuItem value="all">Tất cả sinh viên tham gia hoạt động</MenuItem>
+                                                    <MenuItem value="specific">Một số sinh viên cụ thể</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        )}
+                                        {selectedActivity && sendTarget === 'specific' && (
+                                            <div className="max-h-60 overflow-auto border rounded p-2">
+                                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                                    Chọn sinh viên tham gia hoạt động:
+                                                </Typography>
+                                                <List>
+                                                    {activityStudents.map((student) => (
+                                                        <ListItem
+                                                            key={student.userID}
+                                                            secondaryAction={
+                                                                <Button
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        if (!selectedStudents.find(s => s.userID === student.userID)) {
+                                                                            setSelectedStudents([...selectedStudents, student]);
+                                                                        }
+                                                                    }}
+                                                                    disabled={selectedStudents.some(s => s.userID === student.userID)}
+                                                                >
+                                                                    Chọn
+                                                                </Button>
+                                                            }
+                                                        >
+                                                            <ListItemText
+                                                                primary={student.name || 'Không rõ tên'}
+                                                                secondary={`MSSV: ${student.userID}${student.academicYear ? ' | Năm: ' + student.academicYear : ''}${student.faculty ? ' | Khoa: ' + student.faculty : ''}`}
+                                                            />
+                                                        </ListItem>
+                                                    ))}
+                                                </List>
+                                                {selectedStudents.length > 0 && (
+                                                    <div className="mt-4">
+                                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                                            Sinh viên đã chọn:
+                                                        </Typography>
+                                                        <List>
+                                                            {selectedStudents.map((student) => (
+                                                                <ListItem
+                                                                    key={student.userID}
+                                                                    secondaryAction={
+                                                                        <IconButton
+                                                                            edge="end"
+                                                                            onClick={() => {
+                                                                                setSelectedStudents(selectedStudents.filter(s => s.userID !== student.userID));
+                                                                            }}
+                                                                        >
+                                                                            <Delete />
+                                                                        </IconButton>
+                                                                    }
+                                                                >
+                                                                    <ListItemText
+                                                                        primary={student.name || 'Không rõ tên'}
+                                                                        secondary={`MSSV: ${student.userID}`}
+                                                                    />
+                                                                </ListItem>
+                                                            ))}
+                                                        </List>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                         <TextField
                                             fullWidth
                                             label="Tiêu đề"
@@ -367,98 +498,6 @@ const OrganizerNotifications = () => {
                                             variant="outlined"
                                             className="mb-4"
                                         />
-                                        <FormControl fullWidth variant="outlined" className="mb-4">
-                                            <InputLabel>Gửi đến</InputLabel>
-                                            <Select
-                                                value={newNotification.targetType}
-                                                onChange={(e) => setNewNotification({ ...newNotification, targetType: e.target.value })}
-                                                label="Gửi đến"
-                                            >
-                                                <MenuItem value="all_students">Tất cả sinh viên</MenuItem>
-                                                <MenuItem value="specific_students">Sinh viên cụ thể</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                        {newNotification.targetType === 'specific_students' && (
-                                            <div className="space-y-4">
-                                                <div className="mb-2">
-                                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                                        Tìm kiếm sinh viên theo mã số
-                                                    </Typography>
-                                                    <TextField
-                                                        fullWidth
-                                                        placeholder="Nhập mã số sinh viên"
-                                                        onChange={(e) => {
-                                                            const studentID = e.target.value;
-                                                            if (studentID) {
-                                                                fetchStudents(studentID);
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div className="max-h-60 overflow-auto">
-                                                    {students.length > 0 ? (
-                                                        <List>
-                                                            {students.map((student) => (
-                                                                <ListItem
-                                                                    key={student.studentID}
-                                                                    secondaryAction={
-                                                                        <Button
-                                                                            size="small"
-                                                                            onClick={() => {
-                                                                                if (!selectedStudents.find(s => s.studentID === student.studentID)) {
-                                                                                    setSelectedStudents([...selectedStudents, student]);
-                                                                                }
-                                                                            }}
-                                                                            disabled={selectedStudents.some(s => s.studentID === student.studentID)}
-                                                                        >
-                                                                            Chọn
-                                                                        </Button>
-                                                                    }
-                                                                >
-                                                                    <ListItemText
-                                                                        primary={student.user?.name || 'Không rõ tên'}
-                                                                        secondary={`Mã số: ${student.studentID}`}
-                                                                    />
-                                                                </ListItem>
-                                                            ))}
-                                                        </List>
-                                                    ) : (
-                                                        <Typography variant="body2" color="text.secondary" align="center">
-                                                            Không tìm thấy sinh viên
-                                                        </Typography>
-                                                    )}
-                                                </div>
-                                                {selectedStudents.length > 0 && (
-                                                    <div className="mt-4">
-                                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                                            Sinh viên đã chọn:
-                                                        </Typography>
-                                                        <List>
-                                                            {selectedStudents.map((student) => (
-                                                                <ListItem
-                                                                    key={student.studentID}
-                                                                    secondaryAction={
-                                                                        <IconButton
-                                                                            edge="end"
-                                                                            onClick={() => {
-                                                                                setSelectedStudents(selectedStudents.filter(s => s.studentID !== student.studentID));
-                                                                            }}
-                                                                        >
-                                                                            <Delete />
-                                                                        </IconButton>
-                                                                    }
-                                                                >
-                                                                    <ListItemText
-                                                                        primary={student.user?.name || 'Không rõ tên'}
-                                                                        secondary={`Mã số: ${student.studentID}`}
-                                                                    />
-                                                                </ListItem>
-                                                            ))}
-                                                        </List>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
                                     </div>
                                 </DialogContent>
                                 <DialogActions className="p-4 border-t border-gray-200">

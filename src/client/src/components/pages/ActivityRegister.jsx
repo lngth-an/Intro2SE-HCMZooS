@@ -61,7 +61,11 @@ function ActivityRegister() {
       
       const queryString = query.length > 0 ? `?${query.join("&")}` : "";
       
-      axios.get(`/participation/open${queryString}`)
+      axios.get(`/activity/available-for-student${queryString}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      })
         .then((response) => {
           let filteredActivities = response.data.activities || [];
           // Apply sorting

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 
 const API_URL = '/activity';
 
@@ -61,6 +61,8 @@ function UpdatePointModal({ open, onClose, student, activityId, reload }) {
 
 export default function OrganizerActivityDetail() {
   const { activityId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('info');
   const [activity, setActivity] = useState(null);
   const [registrations, setRegistrations] = useState([]);
@@ -145,6 +147,16 @@ export default function OrganizerActivityDetail() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow">
+      <button
+        className="mb-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-800 font-medium"
+        onClick={() => {
+          if (location.state?.from === 'home') navigate('/');
+          else if (location.state?.from === 'manager') navigate('/organizer/activities');
+          else navigate(-1);
+        }}
+      >
+        ← Quay lại
+      </button>
       <div className="mb-4 flex gap-4 border-b">
         <button className={tab==='info' ? 'font-bold border-b-2 border-blue-600 px-4 py-2' : 'px-4 py-2'} onClick={()=>setTab('info')}>Thông tin</button>
         <button className={tab==='registrations' ? 'font-bold border-b-2 border-blue-600 px-4 py-2' : 'px-4 py-2'} onClick={()=>setTab('registrations')}>Danh sách đăng ký</button>

@@ -48,24 +48,13 @@ const DOMAINS = [
 // Map activityStatus to display colors
 const statusColors = {
   draft: "bg-gray-200 text-gray-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-blue-100 text-blue-800",
-  rejected: "bg-red-100 text-red-800",
-  finished: "bg-green-100 text-green-800",
-  upcoming: "bg-indigo-100 text-indigo-800",
-  cancelled: "bg-red-200 text-red-900",
   published: "bg-teal-100 text-teal-800",
+  completed: "bg-green-100 text-green-800",
 };
 
 // Map activityStatus to Vietnamese labels
 const statusLabels = {
   draft: "Bản nháp",
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Bị từ chối",
-  finished: "Đã hoàn thành",
-  upcoming: "Sắp diễn ra",
-  cancelled: "Đã hủy",
   published: "Đã đăng tải",
   completed: "Đã hoàn thành",
 };
@@ -84,8 +73,8 @@ const ACTIVITY_TYPES = [
 
 const ACTIVITY_STATUSES = [
   { value: "draft", label: "Bản nháp" },
-  { value: "published", label: "Đang diễn ra" },
-  { value: "completed", label: "Đã kết thúc" },
+  { value: "published", label: "Đã đăng tải" },
+  { value: "completed", label: "Đã hoàn thành" },
 ];
 
 function ActivityManager() {
@@ -351,13 +340,7 @@ function ActivityManager() {
       dataIndex: "activityStatus",
       key: "activityStatus",
       render: (status) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[status] || "bg-gray-200 text-gray-800"
-          }`}
-        >
-          {statusLabels[status] || status}
-        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-300 text-gray-800'}`}>{statusLabels[status] || status}</span>
       ),
     },
     {
@@ -380,7 +363,7 @@ function ActivityManager() {
             type="primary"
             icon={<EyeOutlined />}
             onClick={() =>
-              navigate(`/organizer/activities/${record.activityID}`)
+              navigate(`/organizer/activities/${record.activityID}`, { state: { from: 'manager' } })
             }
           >
             Xem
@@ -401,7 +384,7 @@ function ActivityManager() {
                 type="primary"
                 onClick={() => handlePublish(record.activityID)}
               >
-                Đăng tải
+                Xuất bản
               </Button>
               <Popconfirm
                 title="Bạn có chắc chắn muốn xóa hoạt động này?"

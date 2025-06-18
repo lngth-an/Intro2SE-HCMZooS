@@ -78,16 +78,18 @@ const OrganizerHome = () => {
         const activities = response.data.activities;
         setActivities(activities);
 
+        // Lọc các hoạt động đã đăng tải nhưng chưa hoàn thành, chỉ lấy tối đa 2
+        const published = activities.filter(
+          (activity) =>
+            activity.activityStatus === "Đã đăng tải" &&
+            activity.activityStatus !== "Đã hoàn thành"
+        ).slice(0, 2);
+        setPublishedActivities(published);
+
         // Lọc các hoạt động đã hoàn thành
         const completedActivities = activities.filter(
           (activity) => activity.activityStatus === "Đã hoàn thành"
         ).length;
-
-        // Lọc các hoạt động đã đăng tải
-        const published = activities
-          .filter((activity) => activity.activityStatus === "Đã đăng tải")
-          .slice(0, 2);
-        setPublishedActivities(published);
 
         // Cập nhật stats
         setStats((prev) => ({
@@ -207,7 +209,7 @@ const OrganizerHome = () => {
                     <Col xs={24} md={12} key={activity.activityID}>
                       <Card
                         hoverable
-                        className="h-full"
+                        className="h-full cursor-pointer"
                         cover={
                           <div className="h-48 overflow-hidden">
                             <img
@@ -220,6 +222,7 @@ const OrganizerHome = () => {
                             />
                           </div>
                         }
+                        onClick={() => navigate(`/organizer/activities/${activity.activityID}`, { state: { from: 'home' } })}
                       >
                         <div className="flex items-center mb-4">
                           <CalendarOutlined className="text-2xl text-green-500 mr-3" />
@@ -231,10 +234,7 @@ const OrganizerHome = () => {
                           <div className="flex items-center">
                             <CalendarOutlined className="text-gray-400 mr-2" />
                             <Text className="text-gray-600">
-                              Ngày mở đơn:{" "}
-                              {new Date(
-                                activity.registrationStart
-                              ).toLocaleDateString()}
+                              Ngày mở đơn: {new Date(activity.registrationStart).toLocaleDateString()}
                             </Text>
                           </div>
                           <div className="flex items-center">
@@ -248,6 +248,24 @@ const OrganizerHome = () => {
                     </Col>
                   ))}
                 </Row>
+              </div>
+
+              {/* Nút điều hướng đến trang Quản lý hoạt động */}
+              <div className="flex justify-center items-center mb-8">
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                  className="h-12 px-8 text-base flex items-center shadow-md hover:shadow-lg transition-all duration-300"
+                  style={{
+                    background: "linear-gradient(45deg, #1890ff, #096dd9)",
+                    border: "none",
+                    minWidth: "220px",
+                  }}
+                  onClick={() => navigate("/organizer/activities")}
+                >
+                  <span className="ml-2 font-semibold">Xem thêm</span>
+                </Button>
               </div>
 
               {/* Create Activity Button */}

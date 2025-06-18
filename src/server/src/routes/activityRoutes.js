@@ -44,4 +44,7 @@ router.patch('/complaint/:id', ComplaintController.updateComplaintStatus);
 router.patch('/:activityID/training-point', ActivityController.updateTrainingPoint);
 router.get('/:activityID/search-student',  ActivityController.searchStudentInActivity);
 
+// Route lấy hoạt động chưa đăng ký cho student
+router.get('/available-for-student', ActivityController.getAvailableActivitiesForStudent);
+
 module.exports = router;

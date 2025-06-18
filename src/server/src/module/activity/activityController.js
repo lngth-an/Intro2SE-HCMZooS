@@ -54,7 +54,7 @@ class ActivityController {
             const activity = await ActivityModel.createActivity({
                 ...req.body,
                 organizerID,
-                activityStatus: 'draft',
+                activityStatus: 'Bản nháp',
             });
 
             console.log('✅ Activity vừa tạo:', activity);
@@ -78,8 +78,8 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'draft') {
-                return res.status(400).json({ message: 'Only draft activities can be edited.' });
+            if (activity.activityStatus !== 'Bản nháp') {
+                return res.status(400).json({ message: 'Chỉ có thể chỉnh sửa hoạt động ở trạng thái Bản nháp.' });
             }
             const { name, eventStart, location } = req.body;
             if (!name || !eventStart || !location) {
@@ -106,8 +106,8 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'draft') {
-                return res.status(400).json({ message: 'Only draft activities can be deleted.' });
+            if (activity.activityStatus !== 'Bản nháp') {
+                return res.status(400).json({ message: 'Chỉ có thể xóa hoạt động ở trạng thái Bản nháp.' });
             }
             await ActivityModel.deleteActivity(id, organizerID);
             res.status(200).json({ message: 'Activity deleted successfully.' });
@@ -129,8 +129,8 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'draft') {
-                return res.status(400).json({ message: 'Only draft activities can be published.' });
+            if (activity.activityStatus !== 'Bản nháp') {
+                return res.status(400).json({ message: 'Chỉ có thể đăng tải hoạt động ở trạng thái Bản nháp.' });
             }
             await ActivityModel.publishActivity(id, organizerID);
             const published = await ActivityModel.getActivityById(id, organizerID);
@@ -157,8 +157,8 @@ class ActivityController {
             const pagination = { page, limit };
             const { rows, count } = await ActivityModel.listActivities(organizerID, filters, pagination);
             // Summary metrics
-            const draftCount = await ActivityModel.countByStatus(organizerID, 'draft');
-            const publishedCount = await ActivityModel.countByStatus(organizerID, 'published');
+            const draftCount = await ActivityModel.countByStatus(organizerID, 'Bản nháp');
+            const publishedCount = await ActivityModel.countByStatus(organizerID, 'Đã đăng tải');
             if (rows.length === 0) {
                 return res.status(200).json({ message: 'Không có hoạt động nào', total: 0, draftCount, publishedCount, activities: [] });
             }
@@ -205,10 +205,10 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'published') {
-                return res.status(400).json({ message: 'Only published activities can be completed.' });
+            if (activity.activityStatus !== 'Đã đăng tải') {
+                return res.status(400).json({ message: 'Chỉ những hoạt động đã đăng tải mới có thể hoàn thành.' });
             }
-            activity.activityStatus = 'completed';
+            activity.activityStatus = 'Đã hoàn thành';
             await activity.save();
             res.status(200).json(activity);
         } catch (error) {
@@ -229,7 +229,7 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'completed') {
+            if (activity.activityStatus !== 'Đã hoàn thành') {
                 return res.status(400).json({ message: 'Only completed activities can be uncompleted.' });
             }
             activity.activityStatus = 'published';
@@ -585,7 +585,7 @@ class ActivityController {
                             }
                         },
                         required: true, // ✅ chỉ lấy khi có participation hợp lệ
-                        attributes: ['participationID', 'participationStatus', 'trainingPoint', 'type']
+                        attributes: ['participationID', 'participationStatus', 'trainingPoint']
                     }
                 ],
                 attributes: ['studentID', 'userID', 'sex', 'dateOfBirth', 'academicYear', 'falculty', 'point']
@@ -616,8 +616,7 @@ class ActivityController {
                     participation: {
                         participationID: p.participationID,
                         status: p.participationStatus,
-                        trainingPoint: p.trainingPoint,
-                        type: p.type
+                        trainingPoint: p.trainingPoint
                     },
                     participationStatusText: p.participationStatus === 'approved'
                         ? 'Đã tham gia'
@@ -631,6 +630,47 @@ class ActivityController {
             res.status(500).json({ message: 'Lỗi khi tìm kiếm sinh viên.' });
         }
     }    
+
+    // GET /activity/available-for-student
+    static async getAvailableActivitiesForStudent(req, res) {
+        try {
+            if (!req.user || req.user.role !== 'student') {
+                return res.status(403).json({ message: 'Forbidden: Only students can view available activities.' });
+            }
+            const studentID = req.user.studentID;
+            // Lấy tất cả hoạt động đã đăng tải, còn hạn đăng ký
+            const now = new Date();
+            const activities = await db.Activity.findAll({
+                where: {
+                    activityStatus: 'Đã đăng tải',
+                    registrationEnd: { [db.Sequelize.Op.gt]: now }
+                },
+                include: [{
+                    model: db.Participation,
+                    as: 'participations',
+                    required: false
+                }]
+            });
+            // Log dữ liệu để debug
+            console.log('activities:', activities.map(a => ({
+                id: a.activityID,
+                status: a.activityStatus,
+                regEnd: a.registrationEnd,
+                capacity: a.capacity,
+                participations: a.participations.map(p => p.studentID)
+            })));
+            // Lọc các hoạt động chưa đủ số lượng và sinh viên chưa đăng ký
+            const available = activities.filter(act => {
+                const registeredCount = act.participations.length;
+                const hasRegistered = act.participations.some(p => String(p.studentID) === String(studentID));
+                return Number(registeredCount) < Number(act.capacity) && !hasRegistered;
+            });
+            res.json({ activities: available });
+        } catch (error) {
+            console.error('Error fetching available activities for student:', error);
+            res.status(500).json({ message: 'Error fetching available activities.' });
+        }
+    }
 
 }
 

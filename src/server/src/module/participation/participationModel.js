@@ -19,10 +19,9 @@ const ParticipationModel = {
   async getOpenActivities(domain) {
     const now = new Date();
     const where = {
-      activityStatus: 'published',
+      activityStatus: 'Đã đăng tải',
       registrationEnd: { [Op.gt]: now },
     };
-    if (domain) where.type = domain;
     const activities = await db.Activity.findAll({
       where,
       include: [{ model: db.Participation, as: 'participations', required: false }],
@@ -36,7 +35,7 @@ const ParticipationModel = {
   },
   async checkEligibility(studentID, activityID) {
     const activity = await db.Activity.findByPk(activityID);
-    if (!activity || activity.activityStatus !== 'published' || new Date(activity.registrationEnd) < new Date()) {
+    if (!activity || activity.activityStatus !== 'Đã đăng tải' || new Date(activity.registrationEnd) < new Date()) {
       return { eligible: false, reason: 'Hoạt động không hợp lệ hoặc đã hết hạn đăng ký.' };
     }
     const existed = await db.Participation.findOne({ 
@@ -70,9 +69,8 @@ const ParticipationModel = {
   async suggestActivities(domain) {
     const now = new Date();
     const where = {
-      activityStatus: 'published',
+      activityStatus: 'Đã đăng tải',
       registrationEnd: { [Op.gt]: now },
-      type: domain,
     };
     return db.Activity.findAll({ where });
   },
