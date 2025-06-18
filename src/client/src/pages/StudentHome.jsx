@@ -34,26 +34,44 @@ const StudentHome = () => {
     }
   };
 
+  // Fetch student information
+  useEffect(() => {
+    const fetchStudentInfo = async () => {
+      try {
+        const response = await axios.get("/student/me");
+        setStudentInfo(response.data);
+      } catch (error) {
+        console.error("Error fetching student info:", error);
+        setError("Không thể tải thông tin sinh viên");
+      }
+    };
+    fetchStudentInfo();
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Lấy danh sách hoạt động đã đăng ký (bao gồm thông tin activity)
-        const response = await axios.get("/student/activities?allStatus=true");
-        const activities = response.data.activities || [];
-        // Chỉ lấy các trạng thái hợp lệ
-        const ALLOWED_STATUSES = ["Chờ duyệt", "Đã duyệt", "Đã tham gia", "Vắng"];
-        const filtered = activities.filter(act => ALLOWED_STATUSES.includes(act.participationStatus));
-        // Sắp xếp theo ưu tiên trạng thái
-        const statusPriority = {
-          "Chờ duyệt": 1,
-          "Đã duyệt": 2,
-          "Đã tham gia": 3,
-          "Vắng": 4
-        };
-        filtered.sort((a, b) => (statusPriority[a.participationStatus] || 99) - (statusPriority[b.participationStatus] || 99));
-        setActivities(filtered.slice(0, 2));
+        // Lấy danh sách hoạt động đang mở đăng ký
+        const response = await axios.get("/student/activities/search");
+        const allActivities = response.data.activities || [];
+
+        // Lọc các hoạt động đang mở đăng ký (thời gian hiện tại nằm trong khoảng registrationStart và registrationEnd)
+        const now = new Date();
+        const openActivities = allActivities.filter((activity) => {
+          const regStart = new Date(activity.registrationStart);
+          const regEnd = new Date(activity.registrationEnd);
+          return now >= regStart && now <= regEnd;
+        });
+
+        // Sắp xếp theo thời gian bắt đầu sự kiện
+        openActivities.sort(
+          (a, b) => new Date(a.eventStart) - new Date(b.eventStart)
+        );
+
+        // Chỉ lấy 2 hoạt động đầu tiên
+        setActivities(openActivities.slice(0, 2));
       } catch (error) {
-        setError("Không thể tải danh sách hoạt động đã đăng ký");
+        setError("Không thể tải danh sách hoạt động đang mở đăng ký");
         setActivities([]);
       } finally {
         setLoading(false);
@@ -69,14 +87,16 @@ const StudentHome = () => {
   const fetchStats = async () => {
     try {
       // Lấy học kỳ hiện tại
-      const semesterRes = await axios.get('/semester/current');
+      const semesterRes = await axios.get("/semester/current");
       if (!semesterRes.data) {
         setStats({ totalScore: 0, totalActivities: 0 });
         return;
       }
 
       // Lấy điểm của học kỳ hiện tại
-      const scoreRes = await axios.get(`/student/score?semesterID=${semesterRes.data.semesterID}`);
+      const scoreRes = await axios.get(
+        `/student/score?semesterID=${semesterRes.data.semesterID}`
+      );
       setStats({
         totalScore: scoreRes.data.score || 0,
         totalActivities: 0, // Giữ nguyên giá trị này vì không cần thay đổi
@@ -89,7 +109,10 @@ const StudentHome = () => {
 
   const isRegistrationOpen = (activity) => {
     const now = new Date();
-    return now >= new Date(activity.registrationStart) && now <= new Date(activity.registrationEnd);
+    return (
+      now >= new Date(activity.registrationStart) &&
+      now <= new Date(activity.registrationEnd)
+    );
   };
 
   const handleShowDetail = (activity) => {
@@ -103,7 +126,7 @@ const StudentHome = () => {
   };
 
   const renderActivityCard = (activity) => {
-    const domain = DOMAINS.find(d => d.id === activity.type);
+    const domain = DOMAINS.find((d) => d.id === activity.type);
     const points = domain ? domain.defaultPoint : 3;
     return (
       <div
@@ -118,37 +141,35 @@ const StudentHome = () => {
           />
         </div>
         <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{activity.name || 'Chưa cập nhật'}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            {activity.name || "Chưa cập nhật"}
+          </h3>
           <div className="flex items-center space-x-2 mb-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
-              {activity.type || 'Khác'}
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                domain?.color || "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {activity.type || "Khác"}
             </span>
             <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
               {activity.trainingPoint || points} điểm
             </span>
           </div>
           <div className="text-sm text-gray-600 mb-2">
-            <p>Thời gian: {activity.eventStart ? new Date(activity.eventStart).toLocaleString() : 'Chưa cập nhật'}</p>
-            <p>Địa điểm: {activity.location || 'Chưa cập nhật'}</p>
-          </div>
-          <div className="flex justify-between items-center mt-2">
-            <div className="text-sm">
-              <span className={`px-2 py-1 rounded ${
-                activity.participationStatus === 'Đã tham gia' ? 'bg-green-100 text-green-800' :
-                activity.participationStatus === 'Vắng' ? 'bg-red-100 text-red-800' :
-                activity.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
-                activity.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
-                activity.participationStatus === 'Từ chối' ? 'bg-gray-100 text-gray-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {activity.participationStatus}
-              </span>
-            </div>
-            {activity.participationStatus === 'Đã tham gia' && (
-              <div className="text-sm font-medium text-green-600">
-                Điểm đã nhận: {activity.trainingPoint || points}
-              </div>
-            )}
+            <p>
+              Thời gian:{" "}
+              {activity.eventStart
+                ? new Date(activity.eventStart).toLocaleString()
+                : "Chưa cập nhật"}
+            </p>
+            <p>Địa điểm: {activity.location || "Chưa cập nhật"}</p>
+            <p>
+              Đăng ký đến:{" "}
+              {activity.registrationEnd
+                ? new Date(activity.registrationEnd).toLocaleString()
+                : "Chưa cập nhật"}
+            </p>
           </div>
           <div className="mt-4 flex justify-between items-center">
             <button
@@ -211,18 +232,18 @@ const StudentHome = () => {
                     onClick={stat.onClick}
                   >
                     <div className="flex items-center justify-between">
-                  <div>
+                      <div>
                         <h2 className="text-xl font-semibold mb-2 text-gray-800">
                           {stat.title}
                         </h2>
                         <p className="text-gray-600">{stat.value}</p>
-                  </div>
+                      </div>
                       <div
                         className={`p-3 rounded-full ${stat.color} text-white`}
                       >
                         <stat.icon className="w-6 h-6" />
-                  </div>
-                  </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -231,13 +252,13 @@ const StudentHome = () => {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Các hoạt động đã đăng ký
-                </h2>
+                    Các hoạt động đang mở đăng ký
+                  </h2>
                   <button
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    onClick={() => navigate("/student/activities")}
+                    onClick={() => navigate("/student/register")}
                   >
-                    Xem tất cả
+                    Xem thêm
                   </button>
                 </div>
                 {loading ? (
@@ -256,11 +277,11 @@ const StudentHome = () => {
                   </div>
                 ) : activities.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
-                    Hiện không có hoạt động nào đã đăng ký
+                    Hiện không có hoạt động nào đang mở đăng ký
                   </p>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    {activities.map(activity => renderActivityCard(activity))}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    {activities.map((activity) => renderActivityCard(activity))}
                   </div>
                 )}
                 {showDetailModal && selectedActivity && (
