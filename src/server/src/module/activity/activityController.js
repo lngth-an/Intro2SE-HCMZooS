@@ -600,7 +600,7 @@ class ActivityController {
                 studentID,
                 activityID,
                 conditions: {
-                    participationStatus: ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã hoàn thành', 'Vắng']
+                    participationStatus: ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã tham gia', 'Vắng']
                 }
             });
 
@@ -618,7 +618,7 @@ class ActivityController {
                         where: {
                             activityID,
                             participationStatus: {
-                                [Op.in]: ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã hoàn thành', 'Vắng']
+                                [Op.in]: ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã tham gia', 'Vắng']
                             }
                         },
                         required: true,
@@ -675,8 +675,8 @@ class ActivityController {
                         ? 'Đang chờ duyệt'
                         : p.participationStatus === 'Từ chối'
                         ? 'Đã từ chối'
-                        : p.participationStatus === 'Đã hoàn thành'
-                        ? 'Đã hoàn thành'
+                        : p.participationStatus === 'Đã tham gia'
+                        ? 'Đã tham gia'
                         : p.participationStatus === 'Vắng'
                         ? 'Vắng mặt'
                         : p.participationStatus

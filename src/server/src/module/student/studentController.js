@@ -42,7 +42,7 @@ class StudentController {
       const semesterID = req.query.semesterID;
       if (!studentID || !semesterID) return res.status(400).json({ message: 'Missing studentID or semesterID' });
       const participations = await db.Participation.findAll({
-        where: { studentID, participationStatus: 'Đã hoàn thành' },
+        where: { studentID, participationStatus: 'Đã tham gia' },
         include: [{ model: db.Activity, as: 'activity', where: { semesterID } }]
       });
       const score = participations.reduce((sum, p) => sum + (p.trainingPoint || 0), 0);
@@ -62,7 +62,7 @@ class StudentController {
       if (!studentID) return res.status(400).json({ message: 'Missing studentID' });
       const where = { studentID };
       if (!allStatus) {
-        where.participationStatus = 'Đã hoàn thành';
+        where.participationStatus = 'Đã tham gia';
       }
       const include = [{ 
         model: db.Activity, 

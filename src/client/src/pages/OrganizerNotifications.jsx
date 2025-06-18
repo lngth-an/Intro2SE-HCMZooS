@@ -103,20 +103,8 @@ const OrganizerNotifications = () => {
             fetchStudents('');
             fetchSentNotifications(1);
             fetchActivities();
-
-            // Subscribe to realtime notifications
-            socket.on('new_notification', (data) => {
-                if (data.notifications.some(n => n.fromUserID === user.userID)) {
-                    fetchNotifications();
-                    fetchSentNotifications(sentNotificationsPage);
-                }
-            });
-
-            return () => {
-                socket.off('new_notification');
-            };
         }
-    }, [user, fetchNotifications, fetchStudents, fetchSentNotifications, sentNotificationsPage, fetchActivities]);
+    }, [user, fetchNotifications, fetchStudents, fetchSentNotifications, fetchActivities]);
 
     useEffect(() => {
         if (selectedActivity) {
