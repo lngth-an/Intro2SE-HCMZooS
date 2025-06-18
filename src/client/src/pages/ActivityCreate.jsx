@@ -93,7 +93,12 @@ const ActivityCreate = () => {
         {/* Main content area + Footer */}
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
-            <ActivityForm onSubmit={handleSubmit} domains={DOMAINS} />
+            <div className="bg-white shadow rounded-lg p-6">
+              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-6">
+                TẠO HOẠT ĐỘNG
+              </h1>
+              <ActivityForm onSubmit={handleSubmit} domains={DOMAINS} />
+            </div>
           </main>
           <Footer />
         </div>

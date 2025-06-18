@@ -79,11 +79,10 @@ const ActivityEdit = () => {
 
         // Map the activity type to the corresponding domain
         const activityData = response.data;
-        const domain = DOMAINS.find(
-          (d) => d.type === activityData.domains?.[0]
-        );
+        // Map type string to id for UI selection
+        const domain = DOMAINS.find((d) => d.type === activityData.type);
         if (domain) {
-          activityData.domains = [domain.id];
+          activityData.type = domain.id;
         }
 
         setActivity(activityData);
@@ -100,6 +99,7 @@ const ActivityEdit = () => {
   }, [id, navigate]);
 
   const handleSubmit = async (formData) => {
+    console.log("handleSubmit called", formData);
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -109,10 +109,10 @@ const ActivityEdit = () => {
         throw new Error("Không tìm thấy token xác thực");
       }
 
-      // Map the domain id back to type before sending to server
-      const domain = DOMAINS.find((d) => d.id === formData.domains[0]);
+      // Map type id (from UI) to type string before sending to server
+      const domain = DOMAINS.find((d) => d.id === formData.type);
       if (domain) {
-        formData.domains = [domain.type];
+        formData.type = domain.type;
       }
 
       // Format dates if they exist
@@ -150,14 +150,11 @@ const ActivityEdit = () => {
       console.log("Server response:", response.data);
 
       if (response.data) {
-        // Update local state with new data
         setActivity(response.data);
         toast.success("Cập nhật hoạt động thành công!");
-
-        // Wait for the toast to be visible before redirecting
         setTimeout(() => {
           navigate("/organizer/activities");
-        }, 1000);
+        }, 2000);
       } else {
         throw new Error("Cập nhật không thành công");
       }

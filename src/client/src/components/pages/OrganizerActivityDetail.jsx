@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 
 const API_URL = '/activity';
 
@@ -61,6 +61,8 @@ function UpdatePointModal({ open, onClose, student, activityId, reload }) {
 
 export default function OrganizerActivityDetail() {
   const { activityId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('info');
   const [activity, setActivity] = useState(null);
   const [registrations, setRegistrations] = useState([]);
@@ -205,6 +207,16 @@ export default function OrganizerActivityDetail() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow">
+      <button
+        className="mb-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-800 font-medium"
+        onClick={() => {
+          if (location.state?.from === 'home') navigate('/');
+          else if (location.state?.from === 'manager') navigate('/organizer/activities');
+          else navigate(-1);
+        }}
+      >
+        ← Quay lại
+      </button>
       <div className="mb-4 flex gap-4 border-b">
         <button className={tab==='info' ? 'font-bold border-b-2 border-blue-600 px-4 py-2' : 'px-4 py-2'} onClick={()=>setTab('info')}>Thông tin</button>
         <button className={tab==='registrations' ? 'font-bold border-b-2 border-blue-600 px-4 py-2' : 'px-4 py-2'} onClick={()=>setTab('registrations')}>Danh sách đăng ký</button>
@@ -232,9 +244,9 @@ export default function OrganizerActivityDetail() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-500">Trạng thái hoạt động</h3>
               <p className="mt-1 text-sm font-medium">
-                {activity.activityStatus === 'Đã đăng tải' && <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-500">Đã công khai</span>}
-                {activity.activityStatus === 'Bản nháp' && <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-500">Bản nháp</span>}
-                {activity.activityStatus === 'Đã hoàn thành' && <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-500">Đã kết thúc</span>}
+                <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800">
+                  {activity.activityStatus}
+                </span>
               </p>
             </div>
           </div>

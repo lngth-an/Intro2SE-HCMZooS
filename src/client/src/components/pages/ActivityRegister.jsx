@@ -15,22 +15,22 @@ const DOMAINS = [
     { id: "Thể thao", label: "Thể thao" },
     { id: "Kỹ năng", label: "Kỹ năng" },
     { id: "Nghệ thuật", label: "Nghệ thuật" },
-    { id: "Khác", label: "Khác" },
     { id: "Hội thảo", label: "Hội thảo" },
+    { id: "Khác", label: "Khác" },
 ];
 
 function ActivityRegister() {
-    const [activities, setActivities] = useState([]);
+  const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-    // Filter States
-    const [searchTerm, setSearchTerm] = useState("");
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState("");
     const [organizerSearch, setOrganizerSearch] = useState("");
     // XÓA minRegistrations và maxRegistrations ở đây
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
     const [selectedDomain, setSelectedDomain] = useState(""); // Renamed from 'domain' to avoid conflict
 
     // Modal States
@@ -41,14 +41,14 @@ function ActivityRegister() {
     const [suggestedActivities, setSuggestedActivities] = useState([]);
     const [participationID, setParticipationID] = useState(null); // Used for confirmation step
 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
     // Vẫn giữ lại user, logout vì bạn đã xử lý warning bằng cách sử dụng chúng
     const { user, logout } = useAuth(); 
 
-    // --- Fetch Activities based on filters ---
-    useEffect(() => {
+  // --- Fetch Activities based on filters ---
+  useEffect(() => {
         const fetchActivities = async () => {
-            setLoading(true);
+    setLoading(true);
             setError("");
             setActivities([]); // Clear previous activities
 
@@ -74,23 +74,23 @@ function ActivityRegister() {
         };
 
         // Debounce search/filter inputs to avoid excessive API calls
-        const handler = setTimeout(() => {
-            fetchActivities();
+    const handler = setTimeout(() => {
+      fetchActivities();
         }, 500); // Wait 500ms after user stops typing
 
-        return () => {
-            clearTimeout(handler);
-        };
+    return () => {
+      clearTimeout(handler);
+    };
     }, [searchTerm, organizerSearch, /* XÓA minRegistrations, maxRegistrations ở đây */ startDate, endDate, selectedDomain]);
 
-    // --- Handlers for Activity Details and Registration ---
+  // --- Handlers for Activity Details and Registration ---
 
-    const handleShowDetail = (activity) => {
+  const handleShowDetail = (activity) => {
         setSelectedActivity(activity);
         setShowDetailModal(true);
         setShowRegisterForm(false);
-        setError("");
-        setSuccess("");
+    setError("");
+    setSuccess("");
         setSuggestedActivities([]);
         setRegistrationNote(""); // Clear note when opening new detail
     };
@@ -99,8 +99,8 @@ function ActivityRegister() {
         setShowDetailModal(false);
         setSelectedActivity(null);
         setShowRegisterForm(false);
-        setError("");
-        setSuccess("");
+    setError("");
+    setSuccess("");
         setSuggestedActivities([]);
     };
 
@@ -114,9 +114,9 @@ function ActivityRegister() {
             const response = await axios.get(`/participation/check-eligibility/${selectedActivity.activityID}`);
             const data = response.data;
 
-            if (data.eligible) {
+        if (data.eligible) {
                 setShowRegisterForm(true);
-            } else {
+        } else {
                 setError(data.reason || "Bạn không đủ điều kiện đăng ký hoạt động này.");
                 // Suggest similar activities
                 const suggestResponse = await axios.get(`/participation/suggest?domain=${selectedActivity.type}`);
@@ -126,31 +126,31 @@ function ActivityRegister() {
             console.error("Error checking eligibility:", err);
             setError("Có lỗi xảy ra khi kiểm tra điều kiện. Vui lòng thử lại.");
         }
-    };
+  };
 
-    const handleRegistrationSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setSuccess("");
+  const handleRegistrationSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
 
-        try {
-            const response = await axios.post("/participation/register", {
+    try {
+      const response = await axios.post("/participation/register", {
                 activityID: selectedActivity.activityID,
                 note: registrationNote,
-            });
+      });
 
-            const data = response.data;
-            if (data.error) {
-                setError(data.error);
-            } else {
-                setParticipationID(data.participation.participationID);
-                setSuccess("Đơn đăng ký đã được tạo. Vui lòng xác nhận.");
-            }
-        } catch (err) {
-            console.error("Error registering:", err);
-            setError("Có lỗi xảy ra khi gửi đăng ký. Vui lòng thử lại.");
-        }
-    };
+      const data = response.data;
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setParticipationID(data.participation.participationID);
+        setSuccess("Đơn đăng ký đã được tạo. Vui lòng xác nhận.");
+      }
+    } catch (err) {
+      console.error("Error registering:", err);
+      setError("Có lỗi xảy ra khi gửi đăng ký. Vui lòng thử lại.");
+    }
+  };
 
     const handleConfirmRegistration = async () => {
         setError("");
@@ -168,9 +168,9 @@ function ActivityRegister() {
             if (data.error) {
                 setError(data.error);
             } else {
-                setSuccess("Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức.");
+          setSuccess("Đăng ký thành công! Đơn đăng ký đã gửi tới đơn vị tổ chức.");
                 setShowRegisterForm(false);
-                setParticipationID(null);
+          setParticipationID(null);
             }
         } catch (err) {
             console.error("Error confirming registration:", err);
@@ -182,56 +182,56 @@ function ActivityRegister() {
         new Date() >= new Date(selectedActivity.registrationStart) &&
         new Date() <= new Date(selectedActivity.registrationEnd);
 
-    const handleLogout = async () => {
-        try {
-            await axios.post('/auth/logout');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('role');
-            localStorage.removeItem('userID');
-            localStorage.removeItem('user');
-            toast.success('Đăng xuất thành công');
-            navigate('/login');
-        } catch (error) {
-            toast.error('Có lỗi xảy ra khi đăng xuất');
-        }
-    };
+  const handleLogout = async () => {
+    try {
+      await axios.post('/auth/logout');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userID');
+      localStorage.removeItem('user');
+      toast.success('Đăng xuất thành công');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi đăng xuất');
+    }
+  };
 
-    return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            <Header onLogout={handleLogout} />
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header onLogout={handleLogout} />
 
-            <div className="flex flex-1 pt-16">
-                <SidebarStudent onLogout={handleLogout} />
+      <div className="flex flex-1 pt-16">
+        <SidebarStudent onLogout={handleLogout} />
 
-                <div className="flex-1 flex flex-col ml-64">
-                    <main className="flex-1 p-6">
-                        <div className="max-w-7xl mx-auto">
-                            {/* Page Header */}
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-extrabold text-gray-900">
-                                    Đăng ký hoạt động
-                                </h1>
-                                <p className="mt-2 text-base text-gray-600">
-                                    Tìm kiếm và đăng ký các hoạt động phù hợp với bạn
-                                </p>
-                            </div>
+        <div className="flex-1 flex flex-col ml-64">
+          <main className="flex-1 p-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Page Header */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-extrabold text-gray-900">
+                  Đăng ký hoạt động
+                </h1>
+                <p className="mt-2 text-base text-gray-600">
+                  Tìm kiếm và đăng ký các hoạt động phù hợp với bạn
+                </p>
+              </div>
 
-                            {/* Search and Filter Section */}
-                            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                                <h2 className="text-xl font-semibold text-gray-800 mb-4">Tìm kiếm & Lọc</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                                    {/* Search by Name */}
-                                    <div>
-                                        <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700">Tên hoạt động</label>
-                                        <input
-                                            type="text"
-                                            id="searchTerm"
-                                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                            placeholder="Tìm theo tên hoạt động..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                        />
-                                    </div>
+              {/* Search and Filter Section */}
+              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Tìm kiếm & Lọc</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  {/* Search by Name */}
+                  <div>
+                    <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700">Tên hoạt động</label>
+                    <input
+                      type="text"
+                      id="searchTerm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
+                      placeholder="Tìm theo tên hoạt động..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
                                     {/* Search by Organizer */}
                                     <div>
                                         <label htmlFor="organizerSearch" className="block text-sm font-medium text-gray-700">Đơn vị tổ chức</label>
@@ -242,32 +242,32 @@ function ActivityRegister() {
                                             placeholder="Tìm theo tên đơn vị..."
                                             value={organizerSearch}
                                             onChange={(e) => setOrganizerSearch(e.target.value)}
-                                        />
-                                    </div>
-                                    {/* Filter by Date Range */}
+                    />
+                  </div>
+                  {/* Filter by Date Range */}
                                     {/* Lưu ý: Sau khi xóa phần Registrations, nếu bạn muốn giữ layout 3 cột, bạn có thể cần chỉnh lại col-span hoặc thêm một trường lọc khác vào đây. */}
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-1 grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">Từ ngày</label>
-                                            <input
-                                                type="date"
-                                                id="startDate"
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                                value={startDate}
-                                                onChange={(e) => setStartDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">Đến ngày</label>
-                                            <input
-                                                type="date"
-                                                id="endDate"
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
-                                                value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
+                  <div className="col-span-1 md:col-span-2 lg:col-span-1 grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">Từ ngày</label>
+                      <input
+                        type="date"
+                        id="startDate"
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">Đến ngày</label>
+                      <input
+                        type="date"
+                        id="endDate"
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
                                     {/* XÓA KHỐI DIV DƯỚI ĐÂY: Filter by Registrations (Optional, can be removed if not practical) */}
                                     {/* <div className="col-span-1 md:col-span-2 lg:col-span-1 grid grid-cols-2 gap-4">
                                         <div>
@@ -293,107 +293,110 @@ function ActivityRegister() {
                                             />
                                         </div>
                                     </div> */}
-                                </div>
-
-                                {/* Domain Filter Pills */}
-                                <div className="mb-4">
-                                    <span className="block text-sm font-medium text-gray-700 mb-2">Lọc theo lĩnh vực:</span>
-                                    <div className="flex flex-wrap gap-2">
-                                        <button
-                                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200
-                                                ${!selectedDomain
-                                                    ? "bg-blue-600 text-white shadow"
-                                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                                }`}
-                                            onClick={() => setSelectedDomain("")}
-                                        >
-                                            Tất cả
-                                        </button>
-                                        {DOMAINS.map((d) => (
-                                            <button
-                                                key={d.id}
-                                                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200
-                                                    ${selectedDomain === d.id
-                                                        ? "bg-blue-600 text-white shadow"
-                                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                                    }`}
-                                                onClick={() => setSelectedDomain(d.id)}
-                                            >
-                                                {d.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Activity List */}
-                            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-gray-200">
-                                    <h2 className="text-xl font-semibold text-gray-800">Danh sách hoạt động</h2>
-                                </div>
-                                {loading ? (
-                                    <div className="p-6 text-center text-gray-500">
-                                        Đang tải hoạt động...
-                                    </div>
-                                ) : error ? (
-                                    <div className="p-6 text-center text-red-600">
-                                        {error}
-                                    </div>
-                                ) : activities.length === 0 ? (
-                                    <div className="p-6 text-center text-gray-500">
-                                        Không tìm thấy hoạt động nào phù hợp.
-                                    </div>
-                                ) : (
-                                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {activities.map((a) => (
-                                            <div
-                                                key={a.activityID}
-                                                className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200"
-                                            >
-                                                <div className="p-4">
-                                                    <img
-                                                        src={a.image || "https://via.placeholder.com/300x200"}
-                                                        alt={a.name}
-                                                        className="w-full h-48 object-cover rounded-lg mb-4"
-                                                    />
-                                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                                        {a.name}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600 mb-1">
-                                                        <span className="font-semibold">Đơn vị:</span> {a.organizerName || 'Đang cập nhật'}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600 mb-1">
-                                                        <span className="font-semibold">Thời gian:</span> {a.eventStart ? new Date(a.eventStart).toLocaleString() : ""}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600 mb-1">
-                                                        <span className="font-semibold">Địa điểm:</span> {a.location || 'Chưa xác định'}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                            {DOMAINS.find(d => d.id === a.type)?.label || a.type || 'Chưa phân loại'}
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <div className="p-5 border-t border-gray-200">
-                                                    <button
-                                                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md text-base font-semibold hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                                                        onClick={() => handleShowDetail(a)}
-                                                    >
-                                                        Xem chi tiết
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </main>
-                    <Footer />
                 </div>
-            </div>
 
-            {/* Activity Detail Modal */}
+                {/* Domain Filter Pills */}
+                <div className="mb-4">
+                  <span className="block text-sm font-medium text-gray-700 mb-2">Lọc theo lĩnh vực:</span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200
+                                                ${!selectedDomain
+                          ? "bg-blue-600 text-white shadow"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                                            onClick={() => setSelectedDomain("")}
+                    >
+                      Tất cả
+                    </button>
+                    {DOMAINS.map((d) => (
+                      <button
+                        key={d.id}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200
+                                                    ${selectedDomain === d.id
+                            ? "bg-blue-600 text-white shadow"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                                                onClick={() => setSelectedDomain(d.id)}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity List */}
+              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-800">Danh sách hoạt động</h2>
+                </div>
+                {loading ? (
+                  <div className="p-6 text-center text-gray-500">
+                    Đang tải hoạt động...
+                  </div>
+                ) : error ? (
+                  <div className="p-6 text-center text-red-600">
+                    {error}
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    Không tìm thấy hoạt động nào phù hợp.
+                  </div>
+                ) : (
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {activities
+                      .slice() // copy mảng để không ảnh hưởng state
+                      .sort((a, b) => new Date(a.registrationStart) - new Date(b.registrationStart))
+                      .map((a) => (
+                        <div
+                          key={a.activityID}
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200"
+                        >
+                          <div className="p-4">
+                            <img
+                              src={a.image || "https://via.placeholder.com/300x200"}
+                              alt={a.name}
+                              className="w-full h-48 object-cover rounded-lg mb-4"
+                            />
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              {a.name}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <span className="font-semibold">Đơn vị:</span> {a.organizerName || 'Đang cập nhật'}
+                            </p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <span className="font-semibold">Thời gian:</span> {a.eventStart ? new Date(a.eventStart).toLocaleString() : ""}
+                            </p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <span className="font-semibold">Địa điểm:</span> {a.location || 'Chưa xác định'}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {DOMAINS.find(d => d.id === a.type)?.label || a.type || 'Chưa phân loại'}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="p-5 border-t border-gray-200">
+                            <button
+                              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md text-base font-semibold hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                              onClick={() => handleShowDetail(a)}
+                            >
+                              Xem chi tiết
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      </div>
+
+      {/* Activity Detail Modal */}
             {showDetailModal && selectedActivity && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
@@ -561,9 +564,9 @@ function ActivityRegister() {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
-    );
+      )}
+    </div>
+  );
 }
 
 export default ActivityRegister;

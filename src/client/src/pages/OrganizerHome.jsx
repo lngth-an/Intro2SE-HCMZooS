@@ -14,6 +14,7 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   EnvironmentOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -78,16 +79,20 @@ const OrganizerHome = () => {
         const activities = response.data.activities;
         setActivities(activities);
 
+        // Lọc các hoạt động đã đăng tải nhưng chưa hoàn thành, chỉ lấy tối đa 2
+        const published = activities
+          .filter(
+            (activity) =>
+              activity.activityStatus === "Đã đăng tải" &&
+              activity.activityStatus !== "Đã hoàn thành"
+          )
+          .slice(0, 2);
+        setPublishedActivities(published);
+
         // Lọc các hoạt động đã hoàn thành
         const completedActivities = activities.filter(
           (activity) => activity.activityStatus === "Đã hoàn thành"
         ).length;
-
-        // Lọc các hoạt động đã đăng tải
-        const published = activities
-          .filter((activity) => activity.activityStatus === "Đã đăng tải")
-          .slice(0, 2);
-        setPublishedActivities(published);
 
         // Cập nhật stats
         setStats((prev) => ({
@@ -199,15 +204,25 @@ const OrganizerHome = () => {
 
               {/* Published Activities */}
               <div className="mb-8">
-                <Title level={3} className="mb-6">
-                  Các hoạt động đã đăng tải
-                </Title>
+                <div className="flex justify-between items-center mb-6">
+                  <Title level={3} className="m-0">
+                    Các hoạt động đã đăng tải
+                  </Title>
+                  <Button
+                    type="primary"
+                    icon={<RightOutlined />}
+                    onClick={() => navigate("/organizer/activities")}
+                    className="h-9 px-4 text-sm font-medium"
+                  >
+                    Xem thêm
+                  </Button>
+                </div>
                 <Row gutter={[24, 24]}>
                   {publishedActivities.map((activity) => (
                     <Col xs={24} md={12} key={activity.activityID}>
                       <Card
                         hoverable
-                        className="h-full"
+                        className="h-full cursor-pointer"
                         cover={
                           <div className="h-48 overflow-hidden">
                             <img
@@ -219,6 +234,12 @@ const OrganizerHome = () => {
                               className="w-full h-full object-cover"
                             />
                           </div>
+                        }
+                        onClick={() =>
+                          navigate(
+                            `/organizer/activities/${activity.activityID}`,
+                            { state: { from: "home" } }
+                          )
                         }
                       >
                         <div className="flex items-center mb-4">
@@ -252,23 +273,14 @@ const OrganizerHome = () => {
 
               {/* Create Activity Button */}
               <div className="flex justify-center items-center mb-8">
-                <Link to="/organizer/activity-create">
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<PlusOutlined />}
-                    className="h-12 px-8 text-base flex items-center shadow-md hover:shadow-lg transition-all duration-300"
-                    style={{
-                      background: "linear-gradient(45deg, #1890ff, #096dd9)",
-                      border: "none",
-                      minWidth: "180px",
-                    }}
-                  >
-                    <span className="ml-2 font-semibold">
-                      Tạo hoạt động mới
-                    </span>
-                  </Button>
-                </Link>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate("/organizer/activity-create")}
+                  className="h-12 px-6 text-base font-semibold"
+                >
+                  Tạo hoạt động mới
+                </Button>
               </div>
             </div>
           </main>

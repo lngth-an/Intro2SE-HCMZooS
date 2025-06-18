@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         tableName: 'notifications',
-        timestamps: false,
+        timestamps: true,
     });
 
     Notification.associate = (models) => {

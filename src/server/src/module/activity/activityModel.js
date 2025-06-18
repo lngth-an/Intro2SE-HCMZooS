@@ -25,7 +25,7 @@ class ActivityModel {
 
     static async publishActivity(activityID, organizerID) {
         return db.Activity.update(
-            { activityStatus: 'Đẵ đăng tải' },
+            { activityStatus: 'Đã đăng tải' },
             { where: { activityID, organizerID, activityStatus: 'Bản nháp' } }
         );
     }

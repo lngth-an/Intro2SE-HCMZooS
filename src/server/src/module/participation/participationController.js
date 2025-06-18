@@ -47,7 +47,7 @@ class ParticipationController {
       if (!participation || participation.participationStatus !== 'Bản nháp') {
         return res.status(400).json({ error: 'Đăng ký không hợp lệ.' });
       }
-      await ParticipationModel.updateParticipationStatus(participationID, 'submitted');
+      await ParticipationModel.updateParticipationStatus(participationID, 'Chờ duyệt');
       res.json({ message: 'Đăng ký đã được gửi xét duyệt.' });
     } catch (err) {
       res.status(500).json({ error: 'Lỗi xác nhận đăng ký' });

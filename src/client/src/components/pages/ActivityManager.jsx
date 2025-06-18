@@ -36,37 +36,50 @@ const DOMAINS = [
     color: "bg-green-100 text-green-800",
   },
   {
-    id: "Văn hóa - Thể thao",
-    label: "Văn hóa - Thể thao",
-    color: "bg-yellow-100 text-yellow-800",
+    id: "Văn hóa",
+    label: "Văn hóa",
+    color: "bg-orange-100 text-orange-800",
   },
-  { id: "Kỹ năng", label: "Kỹ năng", color: "bg-purple-100 text-purple-800" },
-  { id: "Nghệ thuật", label: "Nghệ thuật", color: "bg-pink-100 text-pink-800" },
-  { id: "Khác", label: "Khác", color: "bg-gray-100 text-gray-800" },
+  {
+    id: "Thể thao",
+    label: "Thể thao",
+    color: "bg-red-100 text-red-800",
+  },
+  {
+    id: "Kỹ năng",
+    label: "Kỹ năng",
+    color: "bg-purple-100 text-purple-800",
+  },
+  {
+    id: "Nghệ thuật",
+    label: "Nghệ thuật",
+    color: "bg-pink-100 text-pink-800",
+  },
+  {
+    id: "Hội thảo",
+    label: "Hội thảo",
+    color: "bg-indigo-100 text-indigo-800",
+  },
+  {
+    id: "Khác",
+    label: "Khác",
+    color: "bg-gray-100 text-gray-800",
+  },
 ];
+
 
 // Map activityStatus to display colors
 const statusColors = {
   draft: "bg-gray-200 text-gray-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-blue-100 text-blue-800",
-  rejected: "bg-red-100 text-red-800",
-  finished: "bg-green-100 text-green-800",
-  upcoming: "bg-indigo-100 text-indigo-800",
-  cancelled: "bg-red-200 text-red-900",
   published: "bg-teal-100 text-teal-800",
+  completed: "bg-green-100 text-green-800",
 };
 
 // Map activityStatus to Vietnamese labels
 const statusLabels = {
   draft: "Bản nháp",
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Bị từ chối",
-  finished: "Đã hoàn thành",
-  upcoming: "Sắp diễn ra",
-  cancelled: "Đã hủy",
   published: "Đã đăng tải",
+  completed: "Đã hoàn thành",
 };
 
 const DEFAULT_IMAGE =
@@ -76,9 +89,14 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const ACTIVITY_TYPES = [
-  { value: "training", label: "Đào tạo" },
-  { value: "event", label: "Sự kiện" },
-  { value: "competition", label: "Cuộc thi" },
+  { value: "Học thuật", label: "Học thuật" },
+  { value: "Tình nguyện", label: "Tình nguyện" },
+  { value: "Văn hóa", label: "Văn hóa" },
+  { value: "Thể thao", label: "Thể thao" },
+  { value: "Kỹ năng", label: "Kỹ năng" },
+  { value: "Nghệ thuật", label: "Nghệ thuật" },
+  { value: "Hội thảo", label: "Hội thảo" },
+  { value: "Khác", label: "Khác" },
 ];
 
 const ACTIVITY_STATUSES = [
@@ -210,9 +228,6 @@ function ActivityManager() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa hoạt động này?")) {
-      return;
-    }
     const token = localStorage.getItem("accessToken");
     try {
       await axios.delete(`${API_BASE_URL}/activity/${id}`, {
@@ -236,12 +251,12 @@ function ActivityManager() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      toast.success("Đã xuất bản hoạt động thành công!");
+      toast.success("Đã đăng tải hoạt động thành công!");
       fetchActivities();
     } catch (error) {
       console.error("Publish error:", error);
       toast.error(
-        error.response?.data?.message || "Không thể xuất bản hoạt động"
+        error.response?.data?.message || "Không thể đăng tải hoạt động"
       );
     }
   };
@@ -353,13 +368,7 @@ function ActivityManager() {
       dataIndex: "activityStatus",
       key: "activityStatus",
       render: (status) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[status] || "bg-gray-200 text-gray-800"
-          }`}
-        >
-          {statusLabels[status] || status}
-        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-300 text-gray-800'}`}>{statusLabels[status] || status}</span>
       ),
     },
     {
@@ -382,43 +391,45 @@ function ActivityManager() {
             type="primary"
             icon={<EyeOutlined />}
             onClick={() =>
-              navigate(`/organizer/activities/${record.activityID}`)
+              navigate(`/organizer/activities/${record.activityID}`, { state: { from: 'manager' } })
             }
           >
             Xem
           </Button>
-          <Button
-            type="default"
-            icon={<EditOutlined />}
-            onClick={() => {
-              console.log(
-                "Navigating to edit page for activity:",
-                record.activityID
-              );
-              navigate(`/organizer/activities/${record.activityID}/edit`, {
-                replace: false,
-              });
-            }}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa hoạt động này?"
-            onConfirm={() => handleDelete(record.activityID)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="default" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
-          </Popconfirm>
           {record.activityStatus === "Bản nháp" && (
-            <Button
-              type="primary"
-              onClick={() => handlePublish(record.activityID)}
-            >
-              Xuất bản
-            </Button>
+            <>
+              <Button
+                type="default"
+                icon={<EditOutlined />}
+                onClick={() => {
+                  console.log(
+                    "Navigating to edit page for activity:",
+                    record.activityID
+                  );
+                  navigate(`/organizer/activities/${record.activityID}/edit`, {
+                    replace: false,
+                  });
+                }}
+              >
+                Sửa
+              </Button>
+              <Popconfirm
+                title="Bạn có chắc chắn muốn xóa hoạt động này?"
+                onConfirm={() => handleDelete(record.activityID)}
+                okText="Có"
+                cancelText="Không"
+              >
+                <Button type="default" danger icon={<DeleteOutlined />}>
+                  Xóa
+                </Button>
+              </Popconfirm>
+              <Button
+                type="primary"
+                onClick={() => handlePublish(record.activityID)}
+              >
+                Xuất bản
+              </Button>
+            </>
           )}
         </Space>
       ),
@@ -428,13 +439,16 @@ function ActivityManager() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold uppercase">QUẢN LÝ HOẠT ĐỘNG</h1>
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          QUẢN LÝ HOẠT ĐỘNG
+        </h1>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => navigate("/organizer/activity-create")}
+          className="h-12 px-6 text-base font-semibold"
         >
-          Tạo hoạt động mới
+          Tạo hoạt động
         </Button>
       </div>
 

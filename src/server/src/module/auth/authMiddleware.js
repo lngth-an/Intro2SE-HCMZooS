@@ -21,16 +21,17 @@ const authenticateToken = async (req, res, next) => {
       }]
     });
     
+    
     if (!user) {
       return res.status(401).json({ message: 'Người dùng không tồn tại' });
     }
 
-    // Thêm studentID vào user object nếu là sinh viên
-    if (user.role === 'student' && user.student) {
-      user.studentID = user.student.studentID;
+    // Chuyển user thành plain object và gán studentID nếu là sinh viên
+    const plainUser = user.toJSON();
+    if (plainUser.role === 'student' && plainUser.student) {
+      plainUser.studentID = plainUser.student.studentID;
     }
-
-    req.user = user;
+    req.user = plainUser;
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

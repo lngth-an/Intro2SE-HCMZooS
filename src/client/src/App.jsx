@@ -3,6 +3,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 // Auth pages
 import LoginPage from "./pages/auth/LoginPage";
@@ -14,7 +15,7 @@ import StudentActivities from "./pages/StudentActivities";
 import StudentScore from "./pages/StudentScore";
 import ActivityRegister from "./components/pages/ActivityRegister";
 import StudentNotifications from "./pages/StudentNotifications";
-import Profile from "./pages/Profile";
+import Profile from "./pages/ProfileStudent";
 
 // Organizer pages
 import OrganizerHome from "./pages/OrganizerHome";
@@ -24,6 +25,7 @@ import OrganizerNotifications from "./pages/OrganizerNotifications";
 import OrganizerComplaints from "./pages/OrganizerComplaints";
 import ActivityCreate from "./pages/ActivityCreate";
 import ActivityEdit from "./pages/ActivityEdit";
+import ProfileOrganizer from "./pages/ProfileOrganizer";
 
 // Protected Route component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -117,6 +119,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Toaster position="top-center" reverseOrder={false} />
         <ToastContainer />
         <Routes>
           {/* Public routes */}
@@ -248,7 +251,7 @@ function App() {
             path="/organizer/profile"
             element={
               <ProtectedRoute allowedRoles={["organizer"]}>
-                <Profile />
+                <ProfileOrganizer />
               </ProtectedRoute>
             }
           />

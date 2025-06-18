@@ -71,14 +71,14 @@ class StudentController {
           'activityID',
           'name',
           'description',
-          'type',
           'eventStart',
           'eventEnd',
           'registrationStart',
           'registrationEnd',
           'location',
           'image',
-          'activityStatus'
+          'activityStatus',
+          'type'
         ]
       }];
       if (semesterID) {
@@ -93,7 +93,6 @@ class StudentController {
         activityID: p.activityID,
         name: p.activity?.name,
         description: p.activity?.description,
-        type: p.activity?.type,
         trainingPoint: p.trainingPoint || 0,
         participationStatus: p.participationStatus,
         eventStart: p.activity?.eventStart,
@@ -102,7 +101,8 @@ class StudentController {
         registrationEnd: p.activity?.registrationEnd,
         location: p.activity?.location,
         image: p.activity?.image || null,
-        activityStatus: p.activity?.activityStatus
+        activityStatus: p.activity?.activityStatus,
+        type: p.activity?.type || ''
       }));
       res.json({ activities });
     } catch (err) {
