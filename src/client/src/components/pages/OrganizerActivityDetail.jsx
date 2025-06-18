@@ -334,37 +334,27 @@ export default function OrganizerActivityDetail() {
           </div>
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="table-fixed w-full min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedRegs.length === registrations.length && registrations.length > 0}
-                      onChange={e => setSelectedRegs(e.target.checked ? registrations.map(r => r.participationID) : [])}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MSSV</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Niên khóa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khoa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian đăng ký</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Điểm rèn luyện</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  <th className="px-2 py-3 text-left" style={{width: '5%'}}></th>
+                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>MSSV</th>
+                  <th className="px-2 py-3 text-left" style={{width: '30%'}}>Họ tên</th>
+                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Niên khóa</th>
+                  <th className="px-2 py-3 text-left" style={{width: '20%'}}>Khoa</th>
+                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {registrations.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                       Chưa có sinh viên đăng ký hoạt động này.
                     </td>
                   </tr>
                 ) : registrations.map(r => (
                   <tr key={r.participationID} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '5%'}}>
                       <input 
                         type="checkbox" 
                         checked={selectedRegs.includes(r.participationID)}
@@ -372,11 +362,11 @@ export default function OrganizerActivityDetail() {
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{r.studentID}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{r.studentName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.academicYear}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.faculty}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900" style={{width: '15%'}}>{r.studentID}</td>
+                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-900" style={{width: '30%'}}>{r.studentName}</td>
+                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '15%'}}>{r.academicYear}</td>
+                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '20%'}}>{r.faculty}</td>
+                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '15%'}}>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                         ${r.status === 'approved' ? 'bg-green-100 text-green-800' : 
                           r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
@@ -385,29 +375,6 @@ export default function OrganizerActivityDetail() {
                          r.status === 'pending' ? 'Chờ duyệt' : 
                          'Từ chối'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {r.registrationTime ? new Date(r.registrationTime).toLocaleString() : ''}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {r.trainingPoint ?? 'Chưa có'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <button 
-                        onClick={() => setShowUpdate(r)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Cập nhật điểm
-                      </button>
-                      {showUpdate && showUpdate.participationID === r.participationID && (
-                        <UpdatePointModal
-                          open={true}
-                          onClose={() => setShowUpdate(null)}
-                          student={r}
-                          activityId={activityId}
-                          reload={() => setReloadFlag(f => f + 1)}
-                        />
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -440,35 +407,27 @@ export default function OrganizerActivityDetail() {
           </div>
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="table-fixed w-full min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedAtts.length === attendance.length && attendance.length > 0}
-                      onChange={e => setSelectedAtts(e.target.checked ? attendance.map(r => r.participationID) : [])}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MSSV</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Niên khóa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khoa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian đăng ký</th>
+                  <th className="px-2 py-3 text-left" style={{width: '5%'}}></th>
+                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>MSSV</th>
+                  <th className="px-2 py-3 text-left" style={{width: '30%'}}>Họ tên</th>
+                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Niên khóa</th>
+                  <th className="px-2 py-3 text-left" style={{width: '20%'}}>Khoa</th>
+                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {attendance.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                       Chưa có sinh viên tham gia hoạt động này.
                     </td>
                   </tr>
                 ) : attendance.map(r => (
                   <tr key={r.participationID} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '5%'}}>
                       <input 
                         type="checkbox" 
                         checked={selectedAtts.includes(r.participationID)}
@@ -476,11 +435,11 @@ export default function OrganizerActivityDetail() {
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{r.studentID}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{r.studentName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.academicYear}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.faculty}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900" style={{width: '15%'}}>{r.studentID}</td>
+                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-900" style={{width: '30%'}}>{r.studentName}</td>
+                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '15%'}}>{r.academicYear}</td>
+                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '20%'}}>{r.faculty}</td>
+                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '15%'}}>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                         ${r.attendanceStatus === 'present' ? 'bg-green-100 text-green-800' : 
                           r.attendanceStatus === 'absent' ? 'bg-red-100 text-red-800' : 
@@ -489,9 +448,6 @@ export default function OrganizerActivityDetail() {
                          r.attendanceStatus === 'absent' ? 'Vắng mặt' : 
                          'Chưa điểm danh'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {r.registrationTime ? new Date(r.registrationTime).toLocaleString() : ''}
                     </td>
                   </tr>
                 ))}
