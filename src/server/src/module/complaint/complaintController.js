@@ -26,7 +26,7 @@ class ComplaintController {
         where: {
           participationID,
           description,
-          complaintStatus: 'pending',
+          complaintStatus: 'Chờ duyệt',
         }
       });
       if (existed) {
@@ -36,7 +36,7 @@ class ComplaintController {
       const complaint = await db.Complaint.create({
         participationID,
         description,
-        complaintStatus: 'pending',
+        complaintStatus: 'Chờ duyệt',
       });
       // (Tùy chọn) Thông báo cho organizer
       // TODO: Gửi notification cho organizer của activity này
@@ -151,7 +151,7 @@ class ComplaintController {
       }
       const { id } = req.params;
       const { status } = req.body;
-      if (!['approved', 'rejected', 'pending'].includes(status)) {
+      if (!['Đã duyệt', 'Từ chối', 'Chờ duyệt'].includes(status)) {
         return res.status(400).json({ message: 'Trạng thái không hợp lệ.' });
       }
       const complaint = await db.Complaint.findByPk(id);

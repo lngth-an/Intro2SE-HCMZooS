@@ -97,7 +97,7 @@ const OrganizerHome = () => {
 
         // Lấy số lượng khiếu nại chưa xử lý
         const complaintsResponse = await axios.get(
-          "/complaints/organizer/pending"
+          "/activity/complaint/organizer"
         );
         setStats((prev) => ({
           ...prev,
@@ -176,7 +176,7 @@ const OrganizerHome = () => {
                   </Link>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Link to="/organizer/complaints" className="block">
+                  <Link to="/complaint/organizer" className="block">
                     <Card hoverable className="h-full">
                       <div className="flex items-center mb-4">
                         <ExclamationCircleOutlined className="text-2xl text-orange-500 mr-3" />

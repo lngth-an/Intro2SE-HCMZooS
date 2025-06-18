@@ -171,9 +171,9 @@ class StudentController {
         organizerName,
         minRegistrations,
         maxRegistrations,
-        startDate,
-        endDate,
-        domain,
+        eventStart,
+        eventEnd,
+        type,
         sortBy = 'registrationStart',
         sortOrder = 'DESC',
         page = 1,
@@ -187,7 +187,7 @@ class StudentController {
       const havingConditions = {};
 
       const whereConditions = {
-        activityStatus: 'published' 
+        activityStatus: 'Đã đăng tải' 
       };
 
       if (search) {
@@ -216,20 +216,20 @@ class StudentController {
         };
       }
 
-      if (startDate) {
-        whereConditions.startDate = {
-          [Op.gte]: startDate
+      if (eventStart) {
+        whereConditions. eventStart = {
+          [Op.gte]:  eventStart
         };
       }
 
-      if (endDate) {
-        whereConditions.endDate = {
-          [Op.lte]: endDate
+      if (eventEnd) {
+        whereConditions.eventEnd = {
+          [Op.lte]: eventEnd
         };
       }
 
-      if (domain) {
-        whereConditions.domain = domain;
+      if (type) {
+        whereConditions.type = type;
       }
 
       const allowedSortFields = ['registrationStart', 'eventStart', 'eventEnd', 'name'];

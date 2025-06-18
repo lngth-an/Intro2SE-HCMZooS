@@ -54,10 +54,10 @@ class ActivityController {
             const activity = await ActivityModel.createActivity({
                 ...req.body,
                 organizerID,
-                activityStatus: 'draft',
+                activityStatus: 'Bản nháp',
             });
 
-            console.log('✅ Activity vừa tạo:', activity);
+            console.log(' Activity vừa tạo:', activity);
 
             res.status(201).json(activity);
         } catch (error) {
@@ -78,7 +78,7 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'draft') {
+            if (activity.activityStatus !== 'Bản nháp') {
                 return res.status(400).json({ message: 'Only draft activities can be edited.' });
             }
             const { name, eventStart, location } = req.body;
@@ -106,7 +106,7 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'draft') {
+            if (activity.activityStatus !== 'Bản nháp') {
                 return res.status(400).json({ message: 'Only draft activities can be deleted.' });
             }
             await ActivityModel.deleteActivity(id, organizerID);
@@ -129,7 +129,7 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'draft') {
+            if (activity.activityStatus !== 'Bản nháp') {
                 return res.status(400).json({ message: 'Only draft activities can be published.' });
             }
             await ActivityModel.publishActivity(id, organizerID);
@@ -157,8 +157,8 @@ class ActivityController {
             const pagination = { page, limit };
             const { rows, count } = await ActivityModel.listActivities(organizerID, filters, pagination);
             // Summary metrics
-            const draftCount = await ActivityModel.countByStatus(organizerID, 'draft');
-            const publishedCount = await ActivityModel.countByStatus(organizerID, 'published');
+            const draftCount = await ActivityModel.countByStatus(organizerID, 'Bản nháp');
+            const publishedCount = await ActivityModel.countByStatus(organizerID, 'Đã đăng tải');
             if (rows.length === 0) {
                 return res.status(200).json({ message: 'Không có hoạt động nào', total: 0, draftCount, publishedCount, activities: [] });
             }
@@ -205,10 +205,10 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'published') {
+            if (activity.activityStatus !== 'Đã đăng tải') {
                 return res.status(400).json({ message: 'Only published activities can be completed.' });
             }
-            activity.activityStatus = 'completed';
+            activity.activityStatus = 'Đã hoàn thành';
             await activity.save();
             res.status(200).json(activity);
         } catch (error) {
@@ -229,10 +229,10 @@ class ActivityController {
             if (!activity) {
                 return res.status(404).json({ message: 'Activity not found or not owned by user.' });
             }
-            if (activity.activityStatus !== 'completed') {
+            if (activity.activityStatus !== 'Đã hoàn thành') {
                 return res.status(400).json({ message: 'Only completed activities can be uncompleted.' });
             }
-            activity.activityStatus = 'published';
+            activity.activityStatus = 'Đã đăng tải';
             await activity.save();
             res.status(200).json(activity);
         } catch (error) {
@@ -328,16 +328,16 @@ class ActivityController {
                 where: { activityID, participationID: participationIDs }
             });
             let idsToUpdate = [];
-            if (action === 'approve') {
-                idsToUpdate = participations.filter(p => p.participationStatus !== 'approved').map(p => p.participationID);
-            } else if (action === 'pending') {
-                idsToUpdate = participations.filter(p => p.participationStatus === 'approved').map(p => p.participationID);
-            } else if (action === 'reject') {
+            if (action === 'Đã duyệt') {
+                idsToUpdate = participations.filter(p => p.participationStatus !== 'Đã duyệt').map(p => p.participationID);
+            } else if (action === 'Chờ duyệt') {
+                idsToUpdate = participations.filter(p => p.participationStatus === 'Đã duyệt').map(p => p.participationID);
+            } else if (action === 'Từ chối') {
                 idsToUpdate = participationIDs;
             }
             if (idsToUpdate.length > 0) {
                 await db.Participation.update(
-                    { participationStatus: action === 'approve' ? 'approved' : action === 'pending' ? 'pending' : 'rejected' },
+                    { participationStatus: action === 'Đã duyệt' ? 'Đã duyệt' : action === 'Chờ duyệt' ? 'Chờ duyệt' : 'Từ chối' },
                     { where: { activityID, participationID: idsToUpdate } }
                 );
             }
@@ -375,40 +375,69 @@ class ActivityController {
     // PATCH /activity/:activityID/training-point
     static async updateTrainingPoint(req, res) {
         try {
-            if (!req.user || req.user.role !== 'organizer') {
-                return res.status(403).json({ message: 'Forbidden' });
+            // Kiểm tra xác thực và quyền
+            if (!req.user) {
+                return res.status(401).json({ error: 'Chưa đăng nhập' });
             }
-            const { activityID } = req.params;
+    
+            if (req.user.role !== 'organizer') {
+                return res.status(403).json({ error: 'Chỉ ban tổ chức mới có quyền cập nhật điểm' });
+            }
+    
             const { participationID, newPoint, reason } = req.body;
-            console.log('updateTrainingPoint req.body:', req.body);
-            if (!participationID || isNaN(newPoint) || !reason || !reason.trim()) {
-                return res.status(400).json({ message: 'Missing or invalid input.' });
+            const userID = req.user.userID;
+    
+            // Lấy organizerID từ bảng organizers dựa trên userID
+            const organizer = await db.Organizer.findOne({ where: { userID } });
+    
+            if (!organizer) {
+                return res.status(403).json({ error: 'Không tìm thấy thông tin ban tổ chức tương ứng với người dùng.' });
             }
-            if (newPoint < 0 || newPoint > 100) {
-                return res.status(400).json({ message: 'Training point must be between 0 and 100.' });
+    
+            const organizerID = organizer.organizerID;
+    
+            // Tìm participation và activity
+            const participation = await db.Participation.findByPk(participationID, {
+                include: [{
+                    model: db.Activity,
+                    as: 'activity'
+                }]
+            });
+    
+            if (!participation) {
+                return res.status(404).json({ error: 'Không tìm thấy đăng ký.' });
             }
-            // Tìm participation chỉ theo participationID
-            const participation = await db.Participation.findOne({ where: { participationID } });
-            if (!participation) return res.status(404).json({ message: 'Participation not found.' });
-
-            const activity = await db.Activity.findOne({ where: { activityID: participation.activityID, organizerID: req.user.organizerID } });
-            if (!activity) return res.status(403).json({ message: 'You do not manage this activity.' });
-            
-            // Check deadline (eventEnd + 7 days)
-            const deadline = new Date(activity.eventEnd);
-            deadline.setDate(deadline.getDate() + 7);
-            if (new Date() > deadline) {
-                return res.status(400).json({ message: 'Cannot update after deadline.' });
+    
+            // Kiểm tra quyền cập nhật
+            if (participation.activity.organizerID !== organizerID) {
+                return res.status(403).json({
+                    error: 'Bạn không có quyền cập nhật điểm cho đăng ký này.',
+                    details: {
+                        userOrganizerID: organizerID,
+                        activityOrganizerID: participation.activity.organizerID
+                    }
+                });
             }
-            // Cập nhật điểm
-            participation.trainingPoint = newPoint;
-            await participation.save();
-            res.json({ message: 'Training point updated successfully.' });
+    
+            // Cập nhật điểm rèn luyện
+            await participation.update({ trainingPoint: newPoint });
+    
+            // (Tuỳ chọn) Ghi log ra console hoặc frontend gửi lý do nếu cần
+            console.log(`Organizer ${organizerID} updated participation ${participationID} to ${newPoint} điểm. Lý do: ${reason}`);
+    
+            res.json({
+                message: 'Cập nhật điểm rèn luyện thành công',
+                participation: {
+                    ...participation.toJSON(),
+                    trainingPoint: newPoint
+                }
+            });
         } catch (err) {
             console.error('Error in updateTrainingPoint:', err);
-            res.status(500).json({ message: 'Error updating training point.' });
+            res.status(500).json({ error: 'Lỗi khi cập nhật điểm rèn luyện' });
         }
     }
+    
 
     /* ------------------------------------------------------------------
        GET /api/activities/manage  - dành cho organizer
@@ -503,7 +532,7 @@ class ActivityController {
                             'registrationCount'
                         ],
                         [
-                            db.sequelize.literal('COUNT(DISTINCT CASE WHEN "participations"."participationStatus" = \'approved\' THEN "participations"."participationID" END)'),
+                            db.sequelize.literal('COUNT(DISTINCT CASE WHEN "participations"."participationStatus" = \'Đã duyệt\' THEN "participations"."participationID" END)'),
                             'approvedCount'
                         ],
                         [
@@ -581,11 +610,11 @@ class ActivityController {
                         where: {
                             activityID,
                             participationStatus: {
-                                [Op.in]: ['pending', 'approved'] // ✅ chỉ lấy các trạng thái đã đăng ký hoặc đã tham gia
+                                [Op.in]: ['Chờ duyệt', 'Đã duyệt'] // ✅ chỉ lấy các trạng thái đã đăng ký hoặc đã tham gia
                             }
                         },
                         required: true, // ✅ chỉ lấy khi có participation hợp lệ
-                        attributes: ['participationID', 'participationStatus', 'trainingPoint', 'type']
+                        attributes: ['participationID', 'participationStatus', 'trainingPoint']
                     }
                 ],
                 attributes: ['studentID', 'userID', 'sex', 'dateOfBirth', 'academicYear', 'falculty', 'point']
@@ -617,9 +646,9 @@ class ActivityController {
                         participationID: p.participationID,
                         status: p.participationStatus,
                         trainingPoint: p.trainingPoint,
-                        type: p.type
+                        //type: p.type
                     },
-                    participationStatusText: p.participationStatus === 'approved'
+                    participationStatusText: p.participationStatus === 'Đã duyệt'
                         ? 'Đã tham gia'
                         : 'Đang chờ duyệt'
                 }

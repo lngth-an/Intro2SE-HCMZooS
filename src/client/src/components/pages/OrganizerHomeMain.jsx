@@ -195,7 +195,7 @@ export default function OrganizerHomeMain({
                         <p><span className="font-medium">Điểm rèn luyện:</span> {act.trainingScore || ''} điểm</p>
                       </div>
                       <div className="mt-4 flex flex-row flex-wrap gap-2 justify-end items-center">
-                        {act.activityStatus === 'draft' && (
+                        {act.activityStatus === 'Bản nháp' && (
                           <button
                             onClick={() => handleEdit(act)}
                             className="flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
@@ -204,7 +204,7 @@ export default function OrganizerHomeMain({
                             <span>Chỉnh sửa</span>
                           </button>
                         )}
-                        {act.activityStatus === 'draft' && (
+                        {act.activityStatus === 'Bản nháp' && (
                           <button
                             onClick={() => handleDelete(act.activityID)}
                             className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
@@ -213,7 +213,7 @@ export default function OrganizerHomeMain({
                             <span>Xóa</span>
                           </button>
                         )}
-                        {act.activityStatus === 'draft' && (
+                        {act.activityStatus === 'Bản nháp' && (
                           <button
                             onClick={() => handlePublish(act.activityID)}
                             className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors"
