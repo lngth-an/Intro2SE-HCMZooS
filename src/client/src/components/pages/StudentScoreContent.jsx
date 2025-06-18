@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import TrainingPointComplaints from './TrainingPointComplaints';
-import { FaStar, FaTrophy, FaCalendarAlt, FaMapMarkerAlt, FaExclamationCircle } from "react-icons/fa";
+import { FaStar, FaTrophy, FaCalendarAlt, FaMapMarkerAlt, FaExclamationCircle, FaReply } from "react-icons/fa";
 
 export default function StudentScoreContent() {
   const [semesters, setSemesters] = useState([]);
@@ -10,6 +10,8 @@ export default function StudentScoreContent() {
   const [loading, setLoading] = useState(true);
   const [showComplaintModal, setShowComplaintModal] = useState(null);
   const [currentSemester, setCurrentSemester] = useState(null);
+  const [complaints, setComplaints] = useState({});
+  const [showResponseModal, setShowResponseModal] = useState(null);
 
   // Fetch semesters on component mount
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function StudentScoreContent() {
       });
   }, []);
 
-  // Fetch score and activities when selectedSemester changes
+  // Fetch score, activities and complaints when selectedSemester changes
   useEffect(() => {
     if (!selectedSemester || semesters.length === 0) {
       setLoading(false);
@@ -57,10 +59,17 @@ export default function StudentScoreContent() {
     Promise.all([
       fetch(`/student/score?semesterID=${selectedSemester}`).then(res => res.json()),
       fetch(`/student/activities?semesterID=${selectedSemester}`).then(res => res.json()),
+      fetch(`/student/complaints?semesterID=${selectedSemester}`).then(res => res.json())
     ])
-      .then(([scoreData, historyData]) => {
+      .then(([scoreData, historyData, complaintsData]) => {
         setScore(scoreData.score || 0);
         setHistory(historyData.activities || []);
+        // Convert complaints array to object with participationID as key
+        const complaintsMap = (complaintsData.complaints || []).reduce((acc, complaint) => {
+          acc[complaint.participationID] = complaint;
+          return acc;
+        }, {});
+        setComplaints(complaintsMap);
         setLoading(false);
       })
       .catch(err => {
@@ -68,6 +77,7 @@ export default function StudentScoreContent() {
         setLoading(false);
         setScore(0);
         setHistory([]);
+        setComplaints({});
       });
   }, [selectedSemester, semesters]);
 
@@ -78,6 +88,19 @@ export default function StudentScoreContent() {
     if (points >= 50) return "Trung bình";
     if (points >= 35) return "Yếu";
     return "Kém";
+  };
+
+  const getComplaintStatusColor = (status) => {
+    switch (status) {
+      case 'Đã duyệt':
+        return 'bg-green-100 text-green-800';
+      case 'Từ chối':
+        return 'bg-red-100 text-red-800';
+      case 'Chờ duyệt':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -124,7 +147,7 @@ export default function StudentScoreContent() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-8 mb-10">
           {/* Total Points Card */}
-          <div className="bg-white rounded-xl shadow-lg p-2 border border-gray-100 transform transition duration-300  ">
+          <div className="bg-white rounded-xl shadow-lg p-2 border border-gray-100 transform transition duration-300">
             <div className="flex items-center">
               <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl mr-4">
                 <FaStar className="w-6 h-6 text-blue-600" />
@@ -172,45 +195,58 @@ export default function StudentScoreContent() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {history.map((activity) => (
-                <div key={activity.participationID || activity.activityID} className="p-4 hover:bg-gray-50 transition duration-150">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                        {activity.name}
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center space-x-3">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {activity.type}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <FaMapMarkerAlt className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-600">{activity.location}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <FaCalendarAlt className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-600">
-                            {activity.eventStart ? new Date(activity.eventStart).toLocaleDateString() : ''} - {activity.eventEnd ? new Date(activity.eventEnd).toLocaleDateString() : ''}
-                          </span>
+              {history.map((activity) => {
+                const complaint = complaints[activity.participationID];
+                return (
+                  <div key={activity.participationID || activity.activityID} className="p-4 hover:bg-gray-50 transition duration-150">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                          {activity.name}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center space-x-3">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {activity.type}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <FaMapMarkerAlt className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-600">{activity.location}</span>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <FaCalendarAlt className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-600">
+                              {activity.eventStart ? new Date(activity.eventStart).toLocaleDateString() : ''} - {activity.eventEnd ? new Date(activity.eventEnd).toLocaleDateString() : ''}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-3">
-                      <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-green-100 text-green-800">
-                        {activity.trainingPoint} điểm
-                      </span>
-                      <button
-                        className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition duration-150"
-                        onClick={() => setShowComplaintModal(activity.participationID)}
-                      >
-                        Khiếu nại
-                      </button>
+                      <div className="flex flex-col items-end gap-3">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                          {activity.trainingPoint} điểm
+                        </span>
+                        {complaint ? (
+                          <button
+                            onClick={() => setShowResponseModal(complaint)}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition duration-150"
+                          >
+                            <FaReply className="w-4 h-4 mr-2" />
+                            Xem phản hồi
+                          </button>
+                        ) : (
+                          <button
+                            className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition duration-150"
+                            onClick={() => setShowComplaintModal(activity.participationID)}
+                          >
+                            Khiếu nại
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -232,6 +268,38 @@ export default function StudentScoreContent() {
               <button
                 className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 onClick={() => setShowComplaintModal(null)}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Response Modal */}
+      {showResponseModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-auto">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold">Phản hồi khiếu nại</h3>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getComplaintStatusColor(showResponseModal.complaintStatus)}`}>
+                {showResponseModal.complaintStatus}
+              </span>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Nội dung khiếu nại:</h4>
+                <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{showResponseModal.description}</p>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Phản hồi từ đơn vị tổ chức:</h4>
+                <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{showResponseModal.response || 'Chưa có phản hồi'}</p>
+              </div>
+            </div>
+            <div className="text-right mt-6">
+              <button
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                onClick={() => setShowResponseModal(null)}
               >
                 Đóng
               </button>

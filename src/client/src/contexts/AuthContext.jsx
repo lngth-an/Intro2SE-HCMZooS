@@ -21,15 +21,18 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Xóa thông tin đăng nhập
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('role');
-      localStorage.removeItem('userID');
-      localStorage.removeItem('user');
-      // Xóa cookie
-      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      // Chuyển hướng về trang login
-      window.location.href = '/login';
+      // Chỉ redirect nếu không phải đang ở trang login
+      if (window.location.pathname !== '/login') {
+        // Xóa thông tin đăng nhập
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userID');
+        localStorage.removeItem('user');
+        // Xóa cookie
+        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        // Chuyển hướng về trang login
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -90,9 +93,16 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
+      if (error.response?.status === 401) {
+        return { 
+          success: false, 
+          message: error.response.data.message || 'Tài khoản hoặc mật khẩu không chính xác!'
+        };
+      }
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Đăng nhập thất bại' 
+        message: 'Tài khoản hoặc mật khẩu không chính xác!'
       };
     }
   };

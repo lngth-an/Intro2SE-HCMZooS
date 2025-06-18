@@ -13,20 +13,20 @@ class ActivityModel {
 
     static async updateActivity(activityID, organizerID, data) {
         return db.Activity.update(data, {
-            where: { activityID, organizerID, activityStatus: 'draft' },
+            where: { activityID, organizerID, activityStatus: 'Bản nháp' },
         });
     }
 
     static async deleteActivity(activityID, organizerID) {
         return db.Activity.destroy({
-            where: { activityID, organizerID, activityStatus: 'draft' },
+            where: { activityID, organizerID, activityStatus: 'Bản nháp' },
         });
     }
 
     static async publishActivity(activityID, organizerID) {
         return db.Activity.update(
-            { activityStatus: 'published' },
-            { where: { activityID, organizerID, activityStatus: 'draft' } }
+            { activityStatus: 'Đã đăng tải' },
+            { where: { activityID, organizerID, activityStatus: 'Bản nháp' } }
         );
     }
 

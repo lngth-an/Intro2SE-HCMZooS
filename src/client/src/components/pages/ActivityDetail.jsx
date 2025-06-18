@@ -75,6 +75,10 @@ export default function ActivityDetail() {
   const [searchResult, setSearchResult] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [searchAttStudentCode, setSearchAttStudentCode] = useState('');
+  const [searchAttResult, setSearchAttResult] = useState(null);
+  const [searchAttLoading, setSearchAttLoading] = useState(false);
+  const [searchAttError, setSearchAttError] = useState('');
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -99,7 +103,7 @@ export default function ActivityDetail() {
         .then(data => setRegistrations(data.registrations || []));
     }
     if (tab === 'attendance') {
-      fetch(`${API_URL}/${activityId}/registrations?status=approved`)
+      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Vắng&status=Đã tham gia`)
         .then(res => res.json())
         .then(data => setAttendance(data.registrations || []));
     }
@@ -108,10 +112,10 @@ export default function ActivityDetail() {
   const handleBulkApprove = async (action) => {
     setLoading(true);
     let ids = [];
-    if (action === 'approve') {
-      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status !== 'approved').map(r => r.participationID);
-    } else if (action === 'pending') {
-      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status === 'approved').map(r => r.participationID);
+    if (action === 'Đã duyệt') {
+      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status !== 'Đã duyệt').map(r => r.participationID);
+    } else if (action === 'Chờ duyệt') {
+      ids = registrations.filter(r => selectedRegs.includes(r.participationID) && r.status === 'Đã duyệt').map(r => r.participationID);
     } else {
       ids = selectedRegs;
     }
@@ -133,15 +137,24 @@ export default function ActivityDetail() {
 
   const handleBulkConfirm = async (status) => {
     setLoading(true);
-    await fetch(`${API_URL}/${activityId}/attendance/confirm`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ participationIDs: selectedAtts, status })
-    });
-    setMessage('Xác nhận tham gia thành công!');
-    setSelectedAtts([]);
-    setLoading(false);
-    setReloadFlag(f => f + 1);
+    try {
+      const res = await fetch(`${API_URL}/${activityId}/attendance/confirm`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participationIDs: selectedAtts, status })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Lỗi khi cập nhật trạng thái');
+      }
+      setMessage('Cập nhật trạng thái thành công!');
+      setSelectedAtts([]);
+      setReloadFlag(f => f + 1);
+    } catch (error) {
+      setMessage(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSearchStudent = async (e) => {
@@ -166,6 +179,31 @@ export default function ActivityDetail() {
       setSearchResult(null);
     } finally {
       setSearchLoading(false);
+    }
+  };
+
+  const handleSearchAttStudent = async (e) => {
+    e.preventDefault();
+    if (!searchAttStudentCode.trim()) {
+      setSearchAttError('Vui lòng nhập mã số sinh viên');
+      return;
+    }
+    setSearchAttLoading(true);
+    setSearchAttError('');
+    try {
+      const res = await fetch(`${API_URL}/${activityId}/search-student?studentID=${searchAttStudentCode}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setSearchAttError(data.message || 'Không tìm thấy sinh viên');
+        setSearchAttResult(null);
+      } else {
+        setSearchAttResult(data);
+      }
+    } catch (err) {
+      setSearchAttError('Lỗi khi tìm kiếm sinh viên');
+      setSearchAttResult(null);
+    } finally {
+      setSearchAttLoading(false);
     }
   };
 
@@ -219,9 +257,9 @@ export default function ActivityDetail() {
             )}
           </div>
           <div className="mb-2 flex gap-2">
-            <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('approve')} className="bg-blue-600 text-white px-3 py-1 rounded">Duyệt</button>
-            <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('pending')} className="bg-yellow-500 text-white px-3 py-1 rounded">Chuyển về chờ duyệt</button>
-            <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('reject')} className="bg-red-600 text-white px-3 py-1 rounded">Từ chối</button>
+            <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('Đã duyệt')} className="bg-blue-600 text-white px-3 py-1 rounded">Duyệt</button>
+            <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('Chờ duyệt')} className="bg-yellow-500 text-white px-3 py-1 rounded">Chuyển về chờ duyệt</button>
+            <button disabled={selectedRegs.length===0 || loading} onClick={()=>handleBulkApprove('Từ chối')} className="bg-red-600 text-white px-3 py-1 rounded">Từ chối</button>
           </div>
           <table className="min-w-full border rounded">
             <thead className="bg-gray-100">
@@ -273,32 +311,47 @@ export default function ActivityDetail() {
       {tab === 'attendance' && (
         <div>
           <div className="mb-4">
-            <form onSubmit={handleSearchStudent} className="flex gap-2 items-center">
+            <form onSubmit={handleSearchAttStudent} className="flex gap-2 items-center">
               <input
                 type="text"
                 placeholder="Nhập mã số sinh viên..."
                 className="border rounded px-3 py-1"
-                value={searchStudentCode}
-                onChange={(e) => setSearchStudentCode(e.target.value)}
+                value={searchAttStudentCode}
+                onChange={(e) => setSearchAttStudentCode(e.target.value)}
               />
-              <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded" disabled={searchLoading}>
-                {searchLoading ? 'Đang tìm...' : 'Tìm kiếm'}
+              <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded" disabled={searchAttLoading}>
+                {searchAttLoading ? 'Đang tìm...' : 'Tìm kiếm'}
               </button>
             </form>
-            {searchError && <div className="text-red-600 mt-2">{searchError}</div>}
-            {searchResult && (
+            {searchAttError && <div className="text-red-600 mt-2">{searchAttError}</div>}
+            {searchAttResult && (
               <div className="mt-2 p-3 bg-blue-50 rounded">
                 <h4 className="font-bold">Kết quả tìm kiếm:</h4>
-                <p>MSSV: {searchResult.student.studentCode}</p>
-                <p>Họ tên: {searchResult.student.name}</p>
-                <p>Email: {searchResult.student.email}</p>
-                <p>Trạng thái: {searchResult.student.participation?.participationStatus || 'Chưa đăng ký'}</p>
+                <p>MSSV: {searchAttResult.student.studentID}</p>
+                <p>Họ tên: {searchAttResult.student.name}</p>
+                <p>Email: {searchAttResult.student.email}</p>
+                <p>Trạng thái: {searchAttResult.student.participationStatusText}</p>
+                {searchAttResult.student.participation.trainingPoint !== null && (
+                  <p>Điểm rèn luyện: {searchAttResult.student.participation.trainingPoint}</p>
+                )}
               </div>
             )}
           </div>
           <div className="mb-2 flex gap-2">
-            <button disabled={selectedAtts.length===0 || loading} onClick={()=>handleBulkConfirm('present')} className="bg-green-600 text-white px-3 py-1 rounded">Xác nhận tham gia</button>
-            <button disabled={selectedAtts.length===0 || loading} onClick={()=>handleBulkConfirm('absent')} className="bg-gray-600 text-white px-3 py-1 rounded">Đánh dấu vắng</button>
+            <button 
+              disabled={selectedAtts.length===0 || loading} 
+              onClick={()=>handleBulkConfirm('Đã tham gia')} 
+              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+            >
+              Xác nhận hoàn thành
+            </button>
+            <button 
+              disabled={selectedAtts.length===0 || loading} 
+              onClick={()=>handleBulkConfirm('Vắng')} 
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+            >
+              Đánh dấu vắng
+            </button>
           </div>
           <table className="min-w-full border rounded">
             <thead className="bg-gray-100">
@@ -310,11 +363,12 @@ export default function ActivityDetail() {
                 <th>Khoa</th>
                 <th>Trạng thái</th>
                 <th>Thời gian đăng ký</th>
+                <th>Điểm rèn luyện</th>
               </tr>
             </thead>
             <tbody>
               {attendance.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-4">Chưa có sinh viên tham gia hoạt động này.</td></tr>
+                <tr><td colSpan={8} className="text-center py-4">Chưa có sinh viên tham gia hoạt động này.</td></tr>
               ) : attendance.map(r => (
                 <tr key={r.participationID}>
                   <td><input type="checkbox" checked={selectedAtts.includes(r.participationID)} onChange={e=>setSelectedAtts(e.target.checked?[...selectedAtts, r.participationID]:selectedAtts.filter(id=>id!==r.participationID))} /></td>
@@ -322,8 +376,17 @@ export default function ActivityDetail() {
                   <td>{r.studentName}</td>
                   <td>{r.academicYear}</td>
                   <td>{r.faculty}</td>
-                  <td>{r.status}</td>
+                  <td>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      r.status === 'Đã tham gia' ? 'bg-green-100 text-green-800' :
+                      r.status === 'Vắng' ? 'bg-red-100 text-red-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
                   <td>{r.registrationTime ? new Date(r.registrationTime).toLocaleString() : ''}</td>
+                  <td>{r.trainingPoint ?? 'Chưa có'}</td>
                 </tr>
               ))}
             </tbody>

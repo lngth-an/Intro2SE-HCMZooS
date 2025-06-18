@@ -5,71 +5,11 @@ import { supabase } from "../../supabaseClient";
 
 const SEMESTER_API = "/semester/current";
 
-// Cập nhật danh sách lĩnh vực
-const DOMAINS = [
-  {
-    id: "Tình nguyện",
-    label: "Tình nguyện",
-    type: "Tình nguyện",
-    color: "bg-green-100 text-green-800",
-    selectedColor: "bg-green-600 text-white",
-  },
-  {
-    id: "Học thuật",
-    label: "Học thuật",
-    type: "Học thuật",
-    color: "bg-blue-100 text-blue-800",
-    selectedColor: "bg-blue-600 text-white",
-  },
-  {
-    id: "Thể thao",
-    label: "Thể thao",
-    type: "Thể thao",
-    color: "bg-yellow-100 text-yellow-800",
-    selectedColor: "bg-yellow-600 text-white",
-  },
-  {
-    id: "Nghệ thuật",
-    label: "Nghệ thuật",
-    type: "Nghệ thuật",
-    color: "bg-purple-100 text-purple-800",
-    selectedColor: "bg-purple-600 text-white",
-  },
-  {
-    id: "Kỹ năng",
-    label: "Kỹ năng",
-    type: "Kỹ năng",
-    color: "bg-pink-100 text-pink-800",
-    selectedColor: "bg-pink-600 text-white",
-  },
-  {
-    id: "Hội thảo",
-    label: "Hội thảo",
-    type: "Hội thảo",
-    color: "bg-indigo-100 text-indigo-800",
-    selectedColor: "bg-indigo-600 text-white",
-  },
-  {
-    id: "Workshop",
-    label: "Workshop",
-    type: "Workshop",
-    color: "bg-orange-100 text-orange-800",
-    selectedColor: "bg-orange-600 text-white",
-  },
-  {
-    id: "Khác",
-    label: "Khác",
-    type: "Khác",
-    color: "bg-gray-100 text-gray-800",
-    selectedColor: "bg-gray-600 text-white",
-  },
-];
-
 function ActivityForm({
   onSubmit,
   editingId,
   onCancel,
-  domains = DOMAINS,
+  domains,
   initialData,
 }) {
   console.log("ActivityForm received initialData:", initialData);
@@ -77,8 +17,8 @@ function ActivityForm({
   const [imageUrl, setImageUrl] = useState(initialData?.image || "");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [selectedDomain, setSelectedDomain] = useState(
-    initialData?.domains?.[0] || ""
+  const [selectedType, setSelectedType] = useState(
+    initialData?.type || ""
   );
   const [semesterID, setSemesterID] = useState(null);
   const [loadingSemester, setLoadingSemester] = useState(true);
@@ -130,8 +70,8 @@ function ActivityForm({
           setValue(key, initialData[key]);
         }
       });
-      // Đặt lại domains và image
-      setSelectedDomain(initialData.domains?.[0] || "");
+      // Đặt lại type và image
+      setSelectedType(initialData.type || "");
       setImageUrl(initialData.image || "");
     }
   }, [initialData, setValue]);
@@ -167,20 +107,21 @@ function ActivityForm({
     }
   };
 
-  const handleDomainSelect = (domainId) => {
-    setSelectedDomain(domainId);
+  const handleTypeSelect = (typeId) => {
+    setSelectedType(typeId);
   };
 
   const handleFormSubmit = async (data) => {
-    const selectedDomainType =
-      domains.find((d) => d.id === selectedDomain)?.type || selectedDomain;
+    console.log("handleFormSubmit called", data);
+    const selectedActivityType =
+      domains.find((t) => t.id === selectedType)?.type || selectedType;
 
     const submitData = {
       ...data,
       image:
         imageUrl ||
         "https://cylpzmvdcyhkvghdeelb.supabase.co/storage/v1/object/public/activities//dai-hoc-khoa-ho-ctu-nhien-tphcm.jpg", // Set default image if no image uploaded
-      domains: [selectedDomainType],
+      type: selectedActivityType,
       semesterID,
     };
     console.log("Submitting data:", submitData); // Debug log
@@ -188,7 +129,7 @@ function ActivityForm({
     if (!editingId) {
       reset();
       setSelectedImage(null);
-      setSelectedDomain("");
+      setSelectedType("");
       setImageUrl("");
     }
   };
@@ -198,259 +139,281 @@ function ActivityForm({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold uppercase">TẠO HOẠT ĐỘNG</h1>
-      </div>
-      <form
-        onSubmit={handleSubmit(handleFormSubmit)}
-        className="bg-white p-8 rounded-lg shadow-md space-y-6"
-      >
-        {/* Tải hình ảnh */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tải hình ảnh
-          </label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-            <div className="space-y-1 text-center">
-              {imageUrl ? (
-                <div className="relative">
-                  <img
-                    src={imageUrl}
-                    alt="Preview"
-                    className="mx-auto h-32 w-auto"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImageUrl("");
-                      setSelectedImage(null);
-                    }}
-                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="flex text-sm text-gray-600">
-                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                      <span>Tải ảnh lên</span>
-                      <input
-                        type="file"
-                        className="sr-only"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                      />
-                    </label>
+      <div className="bg-white shadow rounded-lg p-6">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          {/* Tải hình ảnh */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tải hình ảnh
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+              <div className="space-y-1 text-center">
+                {imageUrl ? (
+                  <div className="relative">
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
+                      className="mx-auto h-32 w-auto"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageUrl("");
+                        setSelectedImage(null);
+                      }}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                </>
-              )}
-              {uploading && (
-                <div className="text-blue-600 mt-2">Đang upload...</div>
-              )}
-              {uploadError && (
-                <div className="text-red-600 mt-2">{uploadError}</div>
-              )}
+                ) : (
+                  <>
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="flex text-sm text-gray-600">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                        <span>Tải ảnh lên</span>
+                        <input
+                          type="file"
+                          className="sr-only"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                        />
+                      </label>
+                    </div>
+                  </>
+                )}
+                {uploading && (
+                  <div className="text-blue-600 mt-2">Đang upload...</div>
+                )}
+                {uploadError && (
+                  <div className="text-red-600 mt-2">{uploadError}</div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Tên hoạt động */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tên hoạt động <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            {...register("name", { required: "Vui lòng nhập tên hoạt động" })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {errors.name && (
-            <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-          )}
-        </div>
-
-        {/* Mô tả chi tiết */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Mô tả chi tiết <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            rows={4}
-            {...register("description", {
-              required: "Vui lòng nhập mô tả chi tiết",
-            })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {errors.description && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.description.message}
-            </p>
-          )}
-        </div>
-
-        {/* Thời gian diễn ra */}
-        <div className="grid grid-cols-2 gap-4">
+          {/* Tên hoạt động */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Thời gian bắt đầu <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="datetime-local"
-              {...register("eventStart", {
-                required: "Vui lòng chọn thời gian bắt đầu",
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {errors.eventStart && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.eventStart.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Thời gian kết thúc <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="datetime-local"
-              {...register("eventEnd", {
-                required: "Vui lòng chọn thời gian kết thúc",
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {errors.eventEnd && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.eventEnd.message}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Địa điểm và số lượng */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Địa điểm <span className="text-red-500">*</span>
+              Tên hoạt động <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              {...register("location", { required: "Vui lòng nhập địa điểm" })}
+              {...register("name", { required: "Vui lòng nhập tên hoạt động" })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errors.location && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.location.message}
-              </p>
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
             )}
           </div>
+
+          {/* Mô tả chi tiết */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Số lượng tham gia <span className="text-red-500">*</span>
+              Mô tả chi tiết <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              min="1"
-              {...register("capacity", {
-                required: "Vui lòng nhập số lượng tham gia",
-                min: { value: 1, message: "Số lượng phải lớn hơn 0" },
+            <textarea
+              rows={4}
+              {...register("description", {
+                required: "Vui lòng nhập mô tả chi tiết",
               })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errors.capacity && (
+            {errors.description && (
               <p className="mt-1 text-sm text-red-600">
-                {errors.capacity.message}
+                {errors.description.message}
               </p>
             )}
           </div>
-        </div>
 
-        {/* Lĩnh vực */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Loại hoạt động <span className="text-red-500">*</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {DOMAINS.map((domain) => (
-              <button
-                key={domain.id}
-                type="button"
-                onClick={() => handleDomainSelect(domain.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                  selectedDomain === domain.id
-                    ? domain.selectedColor
-                    : domain.color
+          {/* Thời gian diễn ra */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Thời gian bắt đầu <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                {...register("eventStart", {
+                  required: "Vui lòng chọn thời gian bắt đầu",
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {errors.eventStart && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.eventStart.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Thời gian kết thúc <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                {...register("eventEnd", {
+                  required: "Vui lòng chọn thời gian kết thúc",
+                  validate: (value) => {
+                    const eventStart = document.querySelector('input[name="eventStart"]')?.value;
+                    if (eventStart && value && value <= eventStart) {
+                      return "Thời gian kết thúc phải lớn hơn thời gian bắt đầu!";
+                    }
+                    return true;
+                  }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {errors.eventEnd && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.eventEnd.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Địa điểm và số lượng */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Địa điểm <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                {...register("location", {
+                  required: "Vui lòng nhập địa điểm",
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {errors.location && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.location.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Số lượng tham gia <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                {...register("capacity", {
+                  required: "Vui lòng nhập số lượng tham gia",
+                  validate: (value) => {
+                    const numValue = parseInt(value);
+                    if (isNaN(numValue)) return "Số lượng tham gia không hợp lệ";
+                    if (numValue <= 0) return "Số lượng tham gia phải lớn hơn 0";
+                    return true;
+                  }
+                })}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  errors.capacity
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-blue-500"
                 }`}
-              >
-                {domain.label}
-              </button>
-            ))}
+              />
+              {errors.capacity && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.capacity.message}
+                </p>
+              )}
+            </div>
           </div>
-          {!selectedDomain && (
-            <p className="mt-1 text-sm text-red-600">
-              Vui lòng chọn loại hoạt động
-            </p>
-          )}
-        </div>
 
-        {/* Thời gian đăng ký */}
-        <div className="grid grid-cols-2 gap-4">
+          {/* Lĩnh vực */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Thời gian đăng ký bắt đầu <span className="text-red-500">*</span>
+              Loại hoạt động
             </label>
-            <input
-              type="datetime-local"
-              {...register("registrationStart", {
-                required: "Vui lòng chọn thời gian bắt đầu đăng ký",
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {errors.registrationStart && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.registrationStart.message}
+            <div className="flex flex-wrap gap-2">
+              {domains.map((domain) => (
+                <button
+                  key={domain.id}
+                  type="button"
+                  onClick={() => handleTypeSelect(domain.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                    selectedType === domain.id
+                      ? domain.selectedColor
+                      : domain.color
+                  }`}
+                >
+                  {domain.label}
+                </button>
+              ))}
+            </div>
+            {!selectedType && (
+              <p className="mt-2 text-sm text-red-600">
+                Vui lòng chọn loại hoạt động
               </p>
             )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Thời gian đăng ký kết thúc <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="datetime-local"
-              {...register("registrationEnd", {
-                required: "Vui lòng chọn thời gian kết thúc đăng ký",
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {errors.registrationEnd && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.registrationEnd.message}
-              </p>
-            )}
-          </div>
-        </div>
 
-        {/* Nút hành động */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {editingId ? "Cập nhật" : "Tạo hoạt động"}
-          </button>
-          {editingId && (
+          {/* Thời gian đăng ký */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Thời gian đăng ký bắt đầu{" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                {...register("registrationStart", {
+                  required: "Vui lòng chọn thời gian bắt đầu đăng ký",
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {errors.registrationStart && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.registrationStart.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Thời gian đăng ký kết thúc{" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                {...register("registrationEnd", {
+                  required: "Vui lòng chọn thời gian kết thúc đăng ký",
+                  validate: (value) => {
+                    const registrationStart = document.querySelector('input[name="registrationStart"]')?.value;
+                    if (registrationStart && value && value <= registrationStart) {
+                      return "Thời gian đăng ký kết thúc phải lớn hơn thời gian đăng ký bắt đầu!";
+                    }
+                    return true;
+                  }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {errors.registrationEnd && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.registrationEnd.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Nút hành động */}
+          <div className="flex justify-end">
             <button
-              type="button"
-              className="ml-3 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-              onClick={onCancel}
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Hủy
+              {editingId ? "Cập nhật" : "Tạo hoạt động"}
             </button>
-          )}
-        </div>
-      </form>
+            {editingId && (
+              <button
+                type="button"
+                className="ml-3 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                onClick={onCancel}
+              >
+                Hủy
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+console.log('=== APP.JS STARTED ===');
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
@@ -76,6 +77,9 @@ app.use('/notifications', authenticateToken, notificationRoutes);
 // 4. Activity Routes (Yêu cầu role organizer)
 // UC501: CRUD Activities
 // UC502: List/View Activities
+// Route dành riêng cho student (không requireRole organizer)
+app.use('/activity/available-for-student', authenticateToken, activityRoutes);
+// Các route còn lại cho organizer
 app.use('/activity', authenticateToken, requireRole(['organizer']), activityRoutes);
 
 // 5. Participation Routes (Yêu cầu role student)

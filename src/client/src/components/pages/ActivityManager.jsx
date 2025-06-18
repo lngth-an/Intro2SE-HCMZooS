@@ -14,59 +14,35 @@ import {
   Space,
   Popconfirm,
 } from "antd";
+
 import {
   SearchOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
+  ExclamationCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { FileWarning, Eye, Edit, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
+import { DOMAINS } from '../../constants/activityTypes';
 
 const API_BASE_URL = "http://localhost:3001";
 const ACTIVITIES_API_URL = `${API_BASE_URL}/activity/manage`;
 
-// Static data for domains
-const DOMAINS = [
-  { id: "Học thuật", label: "Học thuật", color: "bg-blue-100 text-blue-800" },
-  {
-    id: "Tình nguyện",
-    label: "Tình nguyện",
-    color: "bg-green-100 text-green-800",
-  },
-  {
-    id: "Văn hóa - Thể thao",
-    label: "Văn hóa - Thể thao",
-    color: "bg-yellow-100 text-yellow-800",
-  },
-  { id: "Kỹ năng", label: "Kỹ năng", color: "bg-purple-100 text-purple-800" },
-  { id: "Nghệ thuật", label: "Nghệ thuật", color: "bg-pink-100 text-pink-800" },
-  { id: "Khác", label: "Khác", color: "bg-gray-100 text-gray-800" },
-];
-
 // Map activityStatus to display colors
 const statusColors = {
-  draft: "bg-gray-200 text-gray-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-blue-100 text-blue-800",
-  rejected: "bg-red-100 text-red-800",
-  finished: "bg-green-100 text-green-800",
-  upcoming: "bg-indigo-100 text-indigo-800",
-  cancelled: "bg-red-200 text-red-900",
-  published: "bg-teal-100 text-teal-800",
+  "Bản nháp": "bg-gray-200 text-gray-800",
+  "Đã đăng tải": "bg-blue-100 text-blue-800",
+  "Đã hoàn thành": "bg-green-100 text-green-800"
 };
 
 // Map activityStatus to Vietnamese labels
 const statusLabels = {
-  draft: "Bản nháp",
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Bị từ chối",
-  finished: "Đã hoàn thành",
-  upcoming: "Sắp diễn ra",
-  cancelled: "Đã hủy",
-  published: "Đã đăng tải",
+  "Bản nháp": "Bản nháp",
+  "Đã đăng tải": "Đã đăng tải",
+  "Đã hoàn thành": "Đã hoàn thành"
 };
 
 const DEFAULT_IMAGE =
@@ -76,15 +52,20 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const ACTIVITY_TYPES = [
-  { value: "training", label: "Đào tạo" },
-  { value: "event", label: "Sự kiện" },
-  { value: "competition", label: "Cuộc thi" },
+  { value: "Học thuật", label: "Học thuật" },
+  { value: "Tình nguyện", label: "Tình nguyện" },
+  { value: "Văn hóa", label: "Văn hóa" },
+  { value: "Thể thao", label: "Thể thao" },
+  { value: "Kỹ năng", label: "Kỹ năng" },
+  { value: "Nghệ thuật", label: "Nghệ thuật" },
+  { value: "Hội thảo", label: "Hội thảo" },
+  { value: "Khác", label: "Khác" },
 ];
 
 const ACTIVITY_STATUSES = [
-  { value: "draft", label: "Bản nháp" },
-  { value: "published", label: "Đang diễn ra" },
-  { value: "completed", label: "Đã kết thúc" },
+  { value: "Bản nháp", label: "Bản nháp" },
+  { value: "Đã đăng tải", label: "Đã đăng tải" },
+  { value: "Đã hoàn thành", label: "Đã hoàn thành" }
 ];
 
 function ActivityManager() {
@@ -114,6 +95,12 @@ function ActivityManager() {
   const [form] = Form.useForm();
 
   const [totalPages, setTotalPages] = useState(0);
+
+  const statusPriority = {
+    "Bản nháp": 1,
+    "Đã đăng tải": 2,
+    "Đã hoàn thành": 3
+  };
 
   const filters = {
     q: searchTerm,
@@ -163,6 +150,11 @@ function ActivityManager() {
         );
       }
 
+      // Sort activities by status priority
+      activitiesData.sort((a, b) => {
+        return statusPriority[a.activityStatus] - statusPriority[b.activityStatus];
+      });
+
       setActivities(activitiesData);
       setTotalActivities(activitiesData.length);
       setCurrentPage(1); // Reset to first page after filtering
@@ -210,9 +202,6 @@ function ActivityManager() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa hoạt động này?")) {
-      return;
-    }
     const token = localStorage.getItem("accessToken");
     try {
       await axios.delete(`${API_BASE_URL}/activity/${id}`, {
@@ -236,12 +225,32 @@ function ActivityManager() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      toast.success("Đã xuất bản hoạt động thành công!");
+      toast.success("Đã đăng tải hoạt động thành công!");
       fetchActivities();
     } catch (error) {
       console.error("Publish error:", error);
       toast.error(
-        error.response?.data?.message || "Không thể xuất bản hoạt động"
+        error.response?.data?.message || "Không thể đăng tải hoạt động"
+      );
+    }
+  };
+
+  const handleComplete = async (id) => {
+    const token = localStorage.getItem("accessToken");
+    try {
+      await axios.patch(
+        `${API_BASE_URL}/activity/${id}/complete`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      toast.success("Hoạt động đã được đánh dấu hoàn thành!");
+      fetchActivities();
+    } catch (error) {
+      console.error("Complete error:", error);
+      toast.error(
+        error.response?.data?.message || "Không thể đánh dấu hoàn thành"
       );
     }
   };
@@ -338,87 +347,102 @@ function ActivityManager() {
       dataIndex: "name",
       key: "name",
       render: (text, record) => (
-        <div className="flex items-center space-x-2">
-          <img
-            src={record.image || DEFAULT_IMAGE}
-            alt={text}
-            className="w-10 h-10 rounded object-cover"
-          />
-          <span>{text}</span>
+        <div>
+          <div className="font-medium text-gray-900">{text}</div>
+          <div className="text-sm text-gray-500">{record.location}</div>
         </div>
       ),
+    },
+    {
+      title: "Loại hoạt động",
+      dataIndex: "type",
+      key: "type",
+      render: (type) => {
+        const domain = DOMAINS.find(d => d.id === type);
+        return (
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+            {type}
+          </span>
+        );
+      },
+    },
+    {
+      title: "Điểm rèn luyện",
+      dataIndex: "type",
+      key: "points",
+      render: (type) => {
+        const domain = DOMAINS.find(d => d.id === type);
+        return (
+          <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+            {domain?.defaultPoint || 3} điểm
+          </span>
+        );
+      },
     },
     {
       title: "Trạng thái",
       dataIndex: "activityStatus",
       key: "activityStatus",
       render: (status) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[status] || "bg-gray-200 text-gray-800"
-          }`}
-        >
+        <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
           {statusLabels[status] || status}
         </span>
       ),
     },
     {
-      title: "Thời gian",
-      dataIndex: "eventStart",
-      key: "eventStart",
-      render: (date) => (date ? new Date(date).toLocaleDateString() : "N/A"),
-    },
-    {
-      title: "Địa điểm",
-      dataIndex: "location",
-      key: "location",
-    },
-    {
       title: "Thao tác",
-      key: "actions",
+      key: "action",
       render: (_, record) => (
         <Space size="middle">
           <Button
             type="primary"
             icon={<EyeOutlined />}
-            onClick={() =>
-              navigate(`/organizer/activities/${record.activityID}`)
-            }
+            onClick={() => navigate(`/organizer/activities/${record.activityID}`)}
           >
             Xem
           </Button>
-          <Button
-            type="default"
-            icon={<EditOutlined />}
-            onClick={() => {
-              console.log(
-                "Navigating to edit page for activity:",
-                record.activityID
-              );
-              navigate(`/organizer/activities/${record.activityID}/edit`, {
-                replace: false,
-              });
-            }}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa hoạt động này?"
-            onConfirm={() => handleDelete(record.activityID)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="default" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
-          </Popconfirm>
-          {record.activityStatus === "draft" && (
-            <Button
-              type="primary"
-              onClick={() => handlePublish(record.activityID)}
+          {record.activityStatus === 'Bản nháp' && (
+            <>
+              <Button
+                type="default"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/organizer/activities/${record.activityID}/edit`)}
+              >
+                Sửa
+              </Button>
+              <Popconfirm
+                title="Bạn có chắc chắn muốn đăng tải hoạt động này?"
+                onConfirm={() => handlePublish(record.activityID)}
+                okText="Có"
+                cancelText="Không"
+              >
+                <Button type="primary">
+                  Xuất bản
+                </Button>
+              </Popconfirm>
+              <Popconfirm
+                title="Bạn có chắc chắn muốn xóa hoạt động này?"
+                onConfirm={() => handleDelete(record.activityID)}
+                okText="Có"
+                cancelText="Không"
+              >
+                <Button type="default" danger icon={<DeleteOutlined />}>
+                  Xóa
+                </Button>
+              </Popconfirm>
+            </>
+          )}
+          {record.activityStatus === 'Đã đăng tải' && (
+            <Popconfirm
+              title="Bạn có chắc chắn muốn đánh dấu hoạt động này là đã hoàn thành?"
+              onConfirm={() => handleComplete(record.activityID)}
+              okText="Có"
+              cancelText="Không"
             >
-              Xuất bản
-            </Button>
+              <Button type="default" className="bg-green-500 text-white hover:bg-green-600">
+                Hoàn thành
+              </Button>
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -428,13 +452,16 @@ function ActivityManager() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold uppercase">QUẢN LÝ HOẠT ĐỘNG</h1>
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          QUẢN LÝ HOẠT ĐỘNG
+        </h1>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => navigate("/organizer/activity-create")}
+          className="h-12 px-6 text-base font-semibold"
         >
-          Tạo hoạt động mới
+          Tạo hoạt động
         </Button>
       </div>
 
@@ -554,7 +581,22 @@ function ActivityManager() {
           <Form.Item
             name="endDate"
             label="Ngày kết thúc"
-            rules={[{ required: true, message: "Vui lòng chọn ngày kết thúc" }]}
+            dependencies={['startDate']}
+            rules={[
+              { required: true, message: "Vui lòng chọn ngày kết thúc" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || !getFieldValue('startDate')) {
+                    return Promise.resolve();
+                  }
+                  const startDate = getFieldValue('startDate');
+                  if (value && startDate && value.isSameOrBefore(startDate)) {
+                    return Promise.reject(new Error('Ngày kết thúc phải lớn hơn ngày bắt đầu!'));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
           >
             <DatePicker className="w-full" />
           </Form.Item>

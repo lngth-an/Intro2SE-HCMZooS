@@ -26,7 +26,7 @@ class ComplaintController {
         where: {
           participationID,
           description,
-          complaintStatus: 'pending',
+          complaintStatus: 'Chờ duyệt',
         }
       });
       if (existed) {
@@ -36,7 +36,7 @@ class ComplaintController {
       const complaint = await db.Complaint.create({
         participationID,
         description,
-        complaintStatus: 'pending',
+        complaintStatus: 'Chờ duyệt',
       });
       // (Tùy chọn) Thông báo cho organizer
       // TODO: Gửi notification cho organizer của activity này
@@ -89,13 +89,14 @@ class ComplaintController {
           complaintID: c.complaintID,
           description: c.description,
           complaintStatus: c.complaintStatus,
+          response: c.response,
           studentName: c.participation?.student?.user?.name,
           studentID: c.participation?.student?.studentID,
           activityName: c.participation?.activity?.name,
           activityID: c.participation?.activity?.activityID,
           participationID: c.participationID,
           currentPoint: c.participation?.trainingPoint,
-          createdAt: c.createdAt,
+          //createdAt: c.createdAt,
         }))
       });
     } catch (err) {
@@ -127,6 +128,7 @@ class ComplaintController {
           complaintID: complaint.complaintID,
           description: complaint.description,
           complaintStatus: complaint.complaintStatus,
+          response: complaint.response,
           studentName: complaint.participation?.student?.user?.name,
           studentID: complaint.participation?.student?.studentID,
           studentEmail: complaint.participation?.student?.user?.email,
@@ -134,7 +136,7 @@ class ComplaintController {
           activityID: complaint.participation?.activity?.activityID,
           participationID: complaint.participationID,
           currentPoint: complaint.participation?.trainingPoint,
-          createdAt: complaint.createdAt,
+          //createdAt: complaint.createdAt,
         }
       });
     } catch (err) {
@@ -150,19 +152,75 @@ class ComplaintController {
         return res.status(403).json({ message: 'Chỉ organizer mới được cập nhật khiếu nại.' });
       }
       const { id } = req.params;
-      const { status } = req.body;
-      if (!['approved', 'rejected', 'pending'].includes(status)) {
+      const { status, response } = req.body;
+      if (!['Đã duyệt', 'Từ chối', 'Chờ duyệt'].includes(status)) {
         return res.status(400).json({ message: 'Trạng thái không hợp lệ.' });
       }
       const complaint = await db.Complaint.findByPk(id);
       if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
+      
+      // Cập nhật cả status và response
       complaint.complaintStatus = status;
+
+      if (response) {
+        complaint.response = response;
+      }
       await complaint.save();
+      
       // TODO: Gửi notification cho student
-      res.json({ message: 'Cập nhật trạng thái khiếu nại thành công.' });
+      res.json({ message: 'Cập nhật khiếu nại thành công.' });
     } catch (err) {
       console.error('Error updateComplaintStatus:', err);
-      res.status(500).json({ message: 'Lỗi cập nhật trạng thái khiếu nại.' });
+      res.status(500).json({ message: 'Lỗi cập nhật khiếu nại.' });
+    }
+  }
+
+  // GET /complaint/student?semesterID=
+  static async getStudentComplaints(req, res) {
+    try {
+      if (!req.user || req.user.role !== 'student') {
+        return res.status(403).json({ message: 'Chỉ sinh viên mới được xem khiếu nại của mình.' });
+      }
+
+      const { semesterID } = req.query;
+      if (!semesterID) {
+        return res.status(400).json({ message: 'Vui lòng cung cấp semesterID.' });
+      }
+
+      // Lấy tất cả khiếu nại của sinh viên trong học kỳ này
+      const complaints = await db.Complaint.findAll({
+        attributes: ['complaintID', 'participationID', 'description', 'complaintStatus', 'response'],
+        include: [
+          {
+            model: db.Participation,
+            as: 'participation',
+            where: { studentID: req.user.studentID },
+            include: [
+              {
+                model: db.Activity,
+                as: 'activity',
+                where: { semesterID },
+                attributes: ['activityID', 'name']
+              }
+            ]
+          }
+        ],
+        //order: [['createdAt', 'DESC']]
+      });
+
+      res.json({
+        complaints: complaints.map(c => ({
+          complaintID: c.complaintID,
+          participationID: c.participationID,
+          description: c.description,
+          complaintStatus: c.complaintStatus,
+          response: c.response,
+          activityName: c.participation?.activity?.name
+        }))
+      });
+    } catch (err) {
+      console.error('Error getStudentComplaints:', err);
+      res.status(500).json({ message: 'Lỗi lấy danh sách khiếu nại.' });
     }
   }
 }

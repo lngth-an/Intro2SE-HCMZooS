@@ -76,7 +76,13 @@ app.use('/notifications', authenticateToken, notificationRoutes);
 // 4. Activity Routes (Yêu cầu role organizer)
 // UC501: CRUD Activities
 // UC502: List/View Activities
-app.use('/activity', authenticateToken, requireRole(['organizer']), activityRoutes);
+console.log('IMPORT activityRoutes:', typeof activityRoutes);
+app.use('/activity', (req, res, next) => {
+  if (req.path === '/available-for-student') {
+    console.log('REQUEST TO /activity/available-for-student');
+  }
+  next();
+}, authenticateToken, requireRole(['organizer']), activityRoutes);
 
 // 5. Participation Routes (Yêu cầu role student)
 // UC601: Register/Submit Activities
