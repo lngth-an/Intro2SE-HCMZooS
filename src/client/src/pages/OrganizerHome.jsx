@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
@@ -35,6 +36,7 @@ axios.interceptors.request.use(
 
 const OrganizerHome = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -46,25 +48,6 @@ const OrganizerHome = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-
-  const handleLogout = async () => {
-    try {
-      // Gọi API đăng xuất
-      await axios.post("/auth/logout");
-
-      // Xóa token và role khỏi localStorage
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("role");
-
-      // Hiển thị thông báo thành công
-      toast.success("Đăng xuất thành công");
-
-      // Chuyển hướng về trang đăng nhập
-      navigate("/login");
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi đăng xuất");
-    }
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -148,7 +131,7 @@ const OrganizerHome = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header user={user} />
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer onLogout={handleLogout} />
+        <SidebarOrganizer onLogout={logout} />
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
             <div className="container mx-auto px-4 py-8">

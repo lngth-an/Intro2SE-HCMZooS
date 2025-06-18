@@ -10,6 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { message } from "antd";
+import { useAuth } from "../../contexts/AuthContext";
 import Header from "../common/Header";
 import SidebarOrganizer from "../common/SidebarOrganizer";
 import Footer from "../common/Footer";
@@ -33,6 +34,7 @@ export default function OrganizerHomeMain({
   onReviewComplaints,
 }) {
   console.log("Component rendered");
+  const { logout } = useAuth();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -135,25 +137,11 @@ export default function OrganizerHomeMain({
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await axios.post("/auth/logout");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("role");
-      localStorage.removeItem("userID");
-      localStorage.removeItem("user");
-      message.success("Đăng xuất thành công");
-      navigate("/login");
-    } catch (error) {
-      message.error("Có lỗi xảy ra khi đăng xuất");
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header onLogout={handleLogout} />
+      <Header />
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer onLogout={handleLogout} />
+        <SidebarOrganizer onLogout={logout} />
         <main className="min-h-screen bg-gray-50 p-6">
           {/* Quản lý và khiếu nại Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

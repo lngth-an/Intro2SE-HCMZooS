@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
@@ -62,6 +63,7 @@ const DOMAINS = [
 const ActivityEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { logout } = useAuth();
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,7 +184,7 @@ const ActivityEdit = () => {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
         <div className="flex flex-1 pt-16">
-          <SidebarOrganizer />
+          <SidebarOrganizer onLogout={logout} />
           <div className="flex-1 flex flex-col ml-64">
             <main className="flex-1 p-6">
               <div className="text-center">Đang tải...</div>
@@ -198,7 +200,7 @@ const ActivityEdit = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer />
+        <SidebarOrganizer onLogout={logout} />
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
             <h1 className="text-2xl font-bold mb-6">Chỉnh sửa hoạt động</h1>
