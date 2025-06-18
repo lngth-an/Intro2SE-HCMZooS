@@ -21,6 +21,8 @@ const authenticateToken = async (req, res, next) => {
       }]
     });
     
+    console.log('DEBUG AUTH user:', user ? user.toJSON() : null);
+    
     if (!user) {
       return res.status(401).json({ message: 'Người dùng không tồn tại' });
     }
