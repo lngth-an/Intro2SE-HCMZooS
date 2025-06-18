@@ -1,26 +1,29 @@
 import React, { useState } from "react";
 import { Search, GraduationCap } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
-import { Link } from 'react-router-dom';
-const API_URL = 'http://localhost:3001';
-const Header = ({ user }) => {
-  // Set default values for user properties
-  const userName = user?.name || "Guest";
-  const userAvatar = user?.avatar || "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Default_pfp.jpg/120px-Default_pfp.jpg";
-  const navigate = useNavigate();
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { Link } from "react-router-dom";
+const API_URL = "http://localhost:3001";
+
+const Header = () => {
   const { user: authUser } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  // Set default values for user properties
+  const userName = authUser?.name || "Guest";
+  const userAvatar =
+    authUser?.avatar ||
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Default_pfp.jpg/120px-Default_pfp.jpg";
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Hàm thực hiện điều hướng tìm kiếm
   const performSearch = () => {
     if (searchQuery.trim()) {
       const query = encodeURIComponent(searchQuery.trim());
-      if (authUser?.role === 'student') {
+      if (authUser?.role === "student") {
         navigate(`/student/register?search=${query}`);
-      } else if (authUser?.role === 'organizer') {
+      } else if (authUser?.role === "organizer") {
         navigate(`/organizer/activity/manage?search=${query}`);
       }
     }
@@ -35,7 +38,7 @@ const Header = ({ user }) => {
 
   // Thêm hàm xử lý khi nhấn Enter
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch(e);
     }
   };
