@@ -11,13 +11,14 @@ class NotificationController {
     // POST /notifications/send
     static async sendNotification(req, res) {
         try {
-            const { fromUserID, toUserIDs, notificationTitle, notificationMessage } = req.body;
+            const { fromUserID, toUserIDs, notificationTitle, notificationMessage, activityID } = req.body;
             
             console.log('Sending notification with params:', {
                 fromUserID,
                 toUserIDs,
                 notificationTitle,
-                notificationMessage
+                notificationMessage,
+                activityID
             });
 
             const fromUser = await User.findByPk(fromUserID, {
@@ -39,107 +40,134 @@ class NotificationController {
 
             let targetUsers = [];
 
-            // Xử lý theo role của người gửi
-            if (fromUser.role === 'admin') {
-                // Admin có thể gửi cho tất cả
-                if (toUserIDs === 'all_students') {
-                    const students = await Student.findAll({
-                        include: [{
-                            model: User,
-                            as: 'user',
-                            attributes: ['userID']
-                        }]
+            // Nếu có activityID, gửi cho toàn bộ student tham gia activity này hoặc chỉ một số user cụ thể
+            if (activityID) {
+                let participations;
+                if (toUserIDs && Array.isArray(toUserIDs) && toUserIDs.length > 0) {
+                    // Lọc chỉ các userID thuộc activity này
+                    participations = await Participation.findAll({
+                        where: { activityID },
+                        include: [{ model: Student, as: 'student', include: [{ model: User, as: 'user', attributes: ['userID'] }] }]
                     });
-                    targetUsers = students.map(s => s.user.userID);
-                } else if (toUserIDs === 'all_organizers') {
-                    const organizers = await Organizer.findAll({
-                        include: [{
-                            model: User,
-                            as: 'user',
-                            attributes: ['userID']
-                        }]
-                    });
-                    targetUsers = organizers.map(o => o.user.userID);
-                } else {
-                    targetUsers = Array.isArray(toUserIDs) ? toUserIDs : [toUserIDs];
-                }
-            } else if (fromUser.role === 'organizer') {
-                // Organizer chỉ gửi cho sinh viên từng tham gia hoạt động của họ
-                const organizer = fromUser.organizer;
-                if (!organizer) {
-                    return res.status(403).json({ message: 'Không có quyền gửi thông báo' });
-                }
-
-                if (toUserIDs === 'all_students') {
-                    const students = await Student.findAll({
-                        include: [
-                            {
-                                model: User,
-                                as: 'user',
-                                attributes: ['userID']
-                            },
-                            {
-                                model: Participation,
-                                as: 'participations',
-                                required: true,
-                                include: [
-                                    {
-                                        model: Activity,
-                                        as: 'activity',
-                                        required: true,
-                                        where: {
-                                            organizerID: organizer.organizerID
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                        distinct: true
-                    });
-
-                    targetUsers = students.map(s => s.user.userID);
-                } else {
-                    // Gửi riêng cho từng sinh viên, chỉ nếu sinh viên từng tham gia hoạt động của họ
-                    const selectedStudents = await Student.findAll({
-                        where: {
-                            userID: {
-                                [Op.in]: Array.isArray(toUserIDs) ? toUserIDs : [toUserIDs]
-                            }
-                        },
-                        include: [
-                            {
-                                model: User,
-                                as: 'user',
-                                attributes: ['userID']
-                            },
-                            {
-                                model: Participation,
-                                as: 'participations',
-                                required: true,
-                                include: [
-                                    {
-                                        model: Activity,
-                                        as: 'activity',
-                                        required: true,
-                                        where: {
-                                            organizerID: organizer.organizerID
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    });
-
-                    targetUsers = selectedStudents.map(s => s.user.userID);
-
+                    const validUserIDs = participations.map(p => p.student?.user?.userID).filter(Boolean);
+                    targetUsers = toUserIDs.filter(uid => validUserIDs.includes(uid));
                     if (targetUsers.length === 0) {
-                        return res.status(403).json({
-                            message: 'Không có sinh viên nào trong danh sách đã từng tham gia hoạt động của bạn'
-                        });
+                        return res.status(404).json({ message: 'Không có sinh viên hợp lệ trong hoạt động này.' });
+                    }
+                } else {
+                    // Gửi cho tất cả sinh viên tham gia activity
+                    participations = await Participation.findAll({
+                        where: { activityID },
+                        include: [{ model: Student, as: 'student', include: [{ model: User, as: 'user', attributes: ['userID'] }] }]
+                    });
+                    targetUsers = participations.map(p => p.student?.user?.userID).filter(Boolean);
+                    if (targetUsers.length === 0) {
+                        return res.status(404).json({ message: 'Không có sinh viên nào tham gia hoạt động này.' });
                     }
                 }
             } else {
-                return res.status(403).json({ message: 'Không có quyền gửi thông báo' });
+                // Xử lý theo role của người gửi
+                if (fromUser.role === 'admin') {
+                    // Admin có thể gửi cho tất cả
+                    if (toUserIDs === 'all_students') {
+                        const students = await Student.findAll({
+                            include: [{
+                                model: User,
+                                as: 'user',
+                                attributes: ['userID']
+                            }]
+                        });
+                        targetUsers = students.map(s => s.user.userID);
+                    } else if (toUserIDs === 'all_organizers') {
+                        const organizers = await Organizer.findAll({
+                            include: [{
+                                model: User,
+                                as: 'user',
+                                attributes: ['userID']
+                            }]
+                        });
+                        targetUsers = organizers.map(o => o.user.userID);
+                    } else {
+                        targetUsers = Array.isArray(toUserIDs) ? toUserIDs : [toUserIDs];
+                    }
+                } else if (fromUser.role === 'organizer') {
+                    // Organizer chỉ gửi cho sinh viên từng tham gia hoạt động của họ
+                    const organizer = fromUser.organizer;
+                    if (!organizer) {
+                        return res.status(403).json({ message: 'Không có quyền gửi thông báo' });
+                    }
+
+                    if (toUserIDs === 'all_students') {
+                        const students = await Student.findAll({
+                            include: [
+                                {
+                                    model: User,
+                                    as: 'user',
+                                    attributes: ['userID']
+                                },
+                                {
+                                    model: Participation,
+                                    as: 'participations',
+                                    required: true,
+                                    include: [
+                                        {
+                                            model: Activity,
+                                            as: 'activity',
+                                            required: true,
+                                            where: {
+                                                organizerID: organizer.organizerID
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            distinct: true
+                        });
+
+                        targetUsers = students.map(s => s.user.userID);
+                    } else {
+                        // Gửi riêng cho từng sinh viên, chỉ nếu sinh viên từng tham gia hoạt động của họ
+                        const selectedStudents = await Student.findAll({
+                            where: {
+                                userID: {
+                                    [Op.in]: Array.isArray(toUserIDs) ? toUserIDs : [toUserIDs]
+                                }
+                            },
+                            include: [
+                                {
+                                    model: User,
+                                    as: 'user',
+                                    attributes: ['userID']
+                                },
+                                {
+                                    model: Participation,
+                                    as: 'participations',
+                                    required: true,
+                                    include: [
+                                        {
+                                            model: Activity,
+                                            as: 'activity',
+                                            required: true,
+                                            where: {
+                                                organizerID: organizer.organizerID
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        });
+
+                        targetUsers = selectedStudents.map(s => s.user.userID);
+
+                        if (targetUsers.length === 0) {
+                            return res.status(403).json({
+                                message: 'Không có sinh viên nào trong danh sách đã từng tham gia hoạt động của bạn'
+                            });
+                        }
+                    }
+                } else {
+                    return res.status(403).json({ message: 'Không có quyền gửi thông báo' });
+                }
             }
 
             console.log('Target users found:', targetUsers);
@@ -440,7 +468,8 @@ class NotificationController {
                         academicYear: notification.toUser.student.academicYear,
                         faculty: notification.toUser.student.falculty
                     } : null
-                }
+                },
+                sentAt: notification.createdAt
             }));
 
             res.status(200).json({

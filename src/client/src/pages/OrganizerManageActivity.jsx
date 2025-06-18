@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
@@ -9,22 +10,9 @@ import ActivityManager from "../components/pages/ActivityManager";
 
 const OrganizerManageActivity = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [user, setUser] = useState({ name: "", avatar: "", role: "organizer" });
   const [loading, setLoading] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await axios.post("/auth/logout");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("role");
-      localStorage.removeItem("userID");
-      localStorage.removeItem("user");
-      message.success("Đăng xuất thành công");
-      navigate("/login");
-    } catch (error) {
-      message.error("Có lỗi xảy ra khi đăng xuất");
-    }
-  };
 
   useEffect(() => {
     fetch("/activity/organizer/me")
@@ -43,12 +31,12 @@ const OrganizerManageActivity = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <Header onLogout={handleLogout} />
+      <Header />
 
       {/* Main content with sidebar */}
       <div className="flex flex-1 pt-16">
         {/* Sidebar */}
-        <SidebarOrganizer onLogout={handleLogout} />
+        <SidebarOrganizer onLogout={logout} />
 
         {/* Main content area + Footer */}
         <div className="flex-1 flex flex-col ml-64">

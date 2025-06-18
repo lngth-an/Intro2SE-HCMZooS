@@ -89,6 +89,7 @@ class ComplaintController {
           complaintID: c.complaintID,
           description: c.description,
           complaintStatus: c.complaintStatus,
+          response: c.response,
           studentName: c.participation?.student?.user?.name,
           studentID: c.participation?.student?.studentID,
           activityName: c.participation?.activity?.name,
@@ -127,6 +128,7 @@ class ComplaintController {
           complaintID: complaint.complaintID,
           description: complaint.description,
           complaintStatus: complaint.complaintStatus,
+          response: complaint.response,
           studentName: complaint.participation?.student?.user?.name,
           studentID: complaint.participation?.student?.studentID,
           studentEmail: complaint.participation?.student?.user?.email,
@@ -150,19 +152,26 @@ class ComplaintController {
         return res.status(403).json({ message: 'Chỉ organizer mới được cập nhật khiếu nại.' });
       }
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, response } = req.body;
       if (!['Đã duyệt', 'Từ chối', 'Chờ duyệt'].includes(status)) {
         return res.status(400).json({ message: 'Trạng thái không hợp lệ.' });
       }
       const complaint = await db.Complaint.findByPk(id);
       if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
+      
+      // Cập nhật cả status và response
       complaint.complaintStatus = status;
+
+      if (response) {
+        complaint.response = response;
+      }
       await complaint.save();
+      
       // TODO: Gửi notification cho student
-      res.json({ message: 'Cập nhật trạng thái khiếu nại thành công.' });
+      res.json({ message: 'Cập nhật khiếu nại thành công.' });
     } catch (err) {
       console.error('Error updateComplaintStatus:', err);
-      res.status(500).json({ message: 'Lỗi cập nhật trạng thái khiếu nại.' });
+      res.status(500).json({ message: 'Lỗi cập nhật khiếu nại.' });
     }
   }
 }

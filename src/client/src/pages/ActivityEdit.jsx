@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
@@ -62,6 +63,7 @@ const DOMAINS = [
 const ActivityEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { logout } = useAuth();
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,11 +81,10 @@ const ActivityEdit = () => {
 
         // Map the activity type to the corresponding domain
         const activityData = response.data;
-        const domain = DOMAINS.find(
-          (d) => d.type === activityData.domains?.[0]
-        );
+        // Map type string to id for UI selection
+        const domain = DOMAINS.find((d) => d.type === activityData.type);
         if (domain) {
-          activityData.domains = [domain.id];
+          activityData.type = domain.id;
         }
 
         setActivity(activityData);
@@ -100,6 +101,7 @@ const ActivityEdit = () => {
   }, [id, navigate]);
 
   const handleSubmit = async (formData) => {
+    console.log("handleSubmit called", formData);
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -109,10 +111,10 @@ const ActivityEdit = () => {
         throw new Error("Không tìm thấy token xác thực");
       }
 
-      // Map the domain id back to type before sending to server
-      const domain = DOMAINS.find((d) => d.id === formData.domains[0]);
+      // Map type id (from UI) to type string before sending to server
+      const domain = DOMAINS.find((d) => d.id === formData.type);
       if (domain) {
-        formData.domains = [domain.type];
+        formData.type = domain.type;
       }
 
       // Format dates if they exist
@@ -150,14 +152,11 @@ const ActivityEdit = () => {
       console.log("Server response:", response.data);
 
       if (response.data) {
-        // Update local state with new data
         setActivity(response.data);
         toast.success("Cập nhật hoạt động thành công!");
-
-        // Wait for the toast to be visible before redirecting
         setTimeout(() => {
           navigate("/organizer/activities");
-        }, 1000);
+        }, 2000);
       } else {
         throw new Error("Cập nhật không thành công");
       }
@@ -185,7 +184,7 @@ const ActivityEdit = () => {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
         <div className="flex flex-1 pt-16">
-          <SidebarOrganizer />
+          <SidebarOrganizer onLogout={logout} />
           <div className="flex-1 flex flex-col ml-64">
             <main className="flex-1 p-6">
               <div className="text-center">Đang tải...</div>
@@ -201,7 +200,7 @@ const ActivityEdit = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer />
+        <SidebarOrganizer onLogout={logout} />
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
             <h1 className="text-2xl font-bold mb-6">Chỉnh sửa hoạt động</h1>

@@ -8,18 +8,64 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    
+    // Nếu đang loading thì không làm gì cả
+    if (loading) return;
+    
     setLoading(true);
+    setError('');
+    
+    // Clear any existing toasts
+    toast.dismiss();
+    
     try {
-      await login(email, password);
-      toast.success('Đăng nhập thành công!');
-      navigate('/student/dashboard');
+      const result = await login(email, password);
+      if (result.success) {
+        toast.success('Đăng nhập thành công!', {
+          toastId: 'login-success',
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        // Chỉ navigate khi thành công
+        navigate('/student/dashboard');
+      } else {
+        const errorMessage = result.message || 'Tài khoản hoặc mật khẩu không chính xác!';
+        setError(errorMessage);
+        toast.error(errorMessage, {
+          toastId: 'login-error',
+          position: "top-right",
+          autoClose: false,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        // Không navigate, chỉ hiển thị lỗi
+      }
     } catch (error) {
-      toast.error('Sai email hoặc mật khẩu.');
+      console.error('Login error:', error);
+      const errorMessage = 'Tài khoản hoặc mật khẩu không chính xác!';
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        toastId: 'login-error',
+        position: "top-right",
+        autoClose: false,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      // Không navigate, chỉ hiển thị lỗi
     } finally {
       setLoading(false);
     }
@@ -36,6 +82,14 @@ export default function LoginPage() {
       {/* Form đăng nhập */}
       <div className="relative z-10 w-full max-w-md bg-white bg-opacity-90 p-8 shadow-2xl rounded-2xl">
         <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">Đăng nhập</h2>
+        
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+        
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-gray-700 font-medium">Email</label>

@@ -1,52 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-    Container,
-    Typography,
-    List,
-    ListItem,
-    ListItemText,
-    Paper,
-    Divider,
-    Box,
-    CircularProgress,
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Grid,
-    Chip,
-    IconButton,
-    Tooltip,
-    Badge,
-    Autocomplete,
-    Tabs,
-    Tab,
-    Pagination
-} from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
-import io from 'socket.io-client';
-import { NotificationsActive, NotificationsOff, Delete, Send } from '@mui/icons-material';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
+import {
+  Button,
+  Tabs,
+  Modal,
+  Input,
+  Select,
+  Typography,
+  Badge,
+  Spin,
+  Row,
+  Col,
+  Card,
+} from "antd";
+import { SendOutlined, PlusOutlined, BellOutlined } from "@ant-design/icons";
 
-// Cấu hình axios
-const API_URL = 'http://localhost:3001';
-axios.defaults.baseURL = API_URL;
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-
-// Cấu hình Socket.IO
-const socket = io(API_URL, {
-    withCredentials: true
-});
+const { Title, Text } = Typography;
+const { TabPane } = Tabs;
+const { Option } = Select;
 
 const OrganizerNotifications = () => {
     const [notifications, setNotifications] = useState([]);
@@ -191,7 +167,8 @@ const OrganizerNotifications = () => {
             toast.error('Lỗi khi xóa thông báo');
         }
     };
-
+    fetchData();
+  }, []);
     const handleSendNotification = async () => {
         try {
             let toUserIDs = undefined;
@@ -233,37 +210,78 @@ const OrganizerNotifications = () => {
         setActivityStudents([]);
     };
 
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setNewNotification({
-            title: '',
-            message: '',
-            targetType: 'all_students'
-        });
-        setSelectedStudents([]);
-    };
+  const handleSendNotification = async () => {
+    try {
+      await axios.post("/notifications/send", {
+        fromUserID: user.userID,
+        toUserIDs:
+          sendTarget === "specific"
+            ? selectedStudents.map((s) => s.userID)
+            : undefined,
+        notificationTitle: newNotification.title,
+        notificationMessage: newNotification.message,
+        activityID: selectedActivity || undefined,
+      });
+      toast.success("Gửi thông báo thành công");
+      setOpenDialog(false);
+      // Refresh notifications
+      const notiRes = await axios.get(`/notifications?userID=${user.userID}`);
+      setNotifications(notiRes.data.notifications || []);
+      const sentRes = await axios.get(
+        `/notifications/sent?userID=${user.userID}`
+      );
+      setSentNotifications(sentRes.data.notifications || []);
+    } catch (err) {
+      toast.error("Lỗi khi gửi thông báo");
+    }
+  };
 
-    const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
-    };
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+  };
 
-    const handleSentNotificationsPageChange = (event, value) => {
-        setSentNotificationsPage(value);
-        fetchSentNotifications(value);
-    };
+  // Search students for specific send
+  const handleSearchStudents = async (value) => {
+    if (!value) return;
+    try {
+      const res = await axios.get(`/notifications/search?query=${value}`);
+      setStudents(res.data.students || []);
+    } catch (err) {
+      toast.error("Lỗi khi tìm kiếm sinh viên");
+    }
+  };
 
-    if (loading) {
-        return (
-            <div className="flex flex-col min-h-screen">
-                <Header />
-                <div className="flex flex-1">
-                    <SidebarOrganizer />
-                    <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
-                        <CircularProgress />
-                    </Box>
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header user={user} />
+      <div className="flex flex-1 pt-16">
+        <SidebarOrganizer onLogout={logout} />
+        <div className="flex-1 flex flex-col ml-64">
+          <main className="flex-1 p-6">
+            <div className="container mx-auto px-4 py-8">
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-0">
+                    THÔNG BÁO
+                  </h1>
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={handleOpenDialog}
+                    className="h-12 px-6 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white normal-case"
+                  >
+                    Gửi thông báo mới
+                  </Button>
                 </div>
-                <div className="ml-64">
-                    <Footer />
+                <div className="mb-6">
+                  <span className="text-lg text-gray-600 font-medium">
+                    {
+                      notifications.filter(
+                        (n) => n.notificationStatus === "unread"
+                      ).length
+                    }{" "}
+                    thông báo chưa đọc
+                  </span>
                 </div>
             </div>
         );
@@ -526,8 +544,107 @@ const OrganizerNotifications = () => {
                     </div>
                 </div>
             </div>
+          </main>
+          <Footer />
         </div>
-    );
+      </div>
+      <Modal
+        title={
+          <span className="text-xl font-semibold normal-case">
+            Gửi thông báo mới
+          </span>
+        }
+        open={openDialog}
+        onCancel={handleCloseDialog}
+        onOk={handleSendNotification}
+        okText="Gửi"
+        cancelText="Hủy"
+        okButtonProps={{
+          className:
+            "bg-blue-600 hover:bg-blue-700 text-white normal-case font-semibold",
+        }}
+        cancelButtonProps={{
+          className: "normal-case font-semibold",
+        }}
+      >
+        <div className="space-y-4 mt-2">
+          <Select
+            showSearch
+            placeholder="Chọn hoạt động (không bắt buộc)"
+            value={selectedActivity}
+            onChange={setSelectedActivity}
+            className="w-full"
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+          >
+            <Option value="">-- Chọn hoạt động --</Option>
+            {activities.map((act) => (
+              <Option key={act.activityID} value={act.activityID}>
+                {act.name}
+              </Option>
+            ))}
+          </Select>
+          <Select
+            value={sendTarget}
+            onChange={setSendTarget}
+            className="w-full"
+          >
+            <Option value="all">Tất cả sinh viên tham gia hoạt động</Option>
+            <Option value="specific">Một số sinh viên cụ thể</Option>
+          </Select>
+          {sendTarget === "specific" && (
+            <Select
+              mode="multiple"
+              showSearch
+              placeholder="Tìm kiếm sinh viên..."
+              value={selectedStudents.map((s) => s.userID)}
+              onSearch={handleSearchStudents}
+              onChange={(values) => {
+                const selected = students.filter((s) =>
+                  values.includes(s.userID)
+                );
+                setSelectedStudents(selected);
+              }}
+              className="w-full"
+              optionLabelProp="label"
+            >
+              {students.map((student) => (
+                <Option
+                  key={student.userID}
+                  value={student.userID}
+                  label={student.name || student.userID}
+                >
+                  {student.name || student.userID}
+                </Option>
+              ))}
+            </Select>
+          )}
+          <Input
+            placeholder="Tiêu đề thông báo"
+            value={newNotification.title}
+            onChange={(e) =>
+              setNewNotification({ ...newNotification, title: e.target.value })
+            }
+            className="normal-case"
+          />
+          <Input.TextArea
+            placeholder="Nội dung thông báo"
+            rows={4}
+            value={newNotification.message}
+            onChange={(e) =>
+              setNewNotification({
+                ...newNotification,
+                message: e.target.value,
+              })
+            }
+            className="normal-case"
+          />
+        </div>
+      </Modal>
+    </div>
+  );
 };
 
-export default OrganizerNotifications; 
+export default OrganizerNotifications;

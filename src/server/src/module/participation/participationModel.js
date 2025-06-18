@@ -22,7 +22,6 @@ const ParticipationModel = {
       activityStatus: 'Đã đăng tải',
       registrationEnd: { [Op.gt]: now },
     };
-    if (domain) where.type = domain;
     const activities = await db.Activity.findAll({
       where,
       include: [{ model: db.Participation, as: 'participations', required: false }],
@@ -72,7 +71,6 @@ const ParticipationModel = {
     const where = {
       activityStatus: 'Đã đăng tải',
       registrationEnd: { [Op.gt]: now },
-      type: domain,
     };
     return db.Activity.findAll({ where });
   },

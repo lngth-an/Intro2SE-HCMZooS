@@ -12,7 +12,7 @@ export default function StudentActivitiesContent() {
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [selected, setSelected] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -23,6 +23,29 @@ export default function StudentActivitiesContent() {
   const [participationID, setParticipationID] = useState(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [error, setError] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [pendingCancelId, setPendingCancelId] = useState(null);
+
+  const ALL_TYPES = [
+    'Học thuật',
+    'Tình nguyện',
+    'Thể thao',
+    'Kỹ năng',
+    'Nghệ thuật',
+    'Hội thảo',
+    'Khác',
+  ];
+  const uniqueTypes = ALL_TYPES;
+
+  const TYPE_LABELS = {
+    'học thuật': 'Học thuật',
+    'tình nguyện': 'Tình nguyện',
+    'thể thao': 'Thể thao',
+    'kỹ năng': 'Kỹ năng',
+    'nghệ thuật': 'Nghệ thuật',
+    'hội thảo': 'Hội thảo',
+    'khác': 'Khác',
+  };
 
   useEffect(() => {
     fetchActivities();
@@ -49,24 +72,29 @@ export default function StudentActivitiesContent() {
   useEffect(() => {
     let filtered = [...activities];
 
+    // Loại bỏ các hoạt động đã hủy
+    filtered = filtered.filter(act => act.participationStatus !== 'Đã hủy');
+
     if (selectedType) {
       filtered = filtered.filter(act => act.type === selectedType);
     }
 
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.eventStart);
-      const dateB = new Date(b.eventStart);
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
+    // Lọc theo trạng thái nếu có chọn
+    const allowedStatuses = [
+      'Chờ duyệt',
+      'Đã duyệt',
+      'Đã tham gia',
+      'Vắng',
+      'Từ chối',
+    ];
+    if (selectedStatus && allowedStatuses.includes(selectedStatus)) {
+      filtered = filtered.filter(act => act.participationStatus === selectedStatus);
+    } else {
+      filtered = filtered.filter(act => allowedStatuses.includes(act.participationStatus));
+    }
 
     setFilteredActivities(filtered);
-  }, [selectedType, activities, sortOrder]);
-
-  const uniqueTypes = [...new Set(activities.map(act => act.type))];
-
-  const toggleSort = () => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
+  }, [selectedType, activities, selectedStatus]);
 
   const handleShowDetail = (activity) => {
     setSelected(activity);
@@ -104,12 +132,26 @@ export default function StudentActivitiesContent() {
     setIsRegistered(false);
   };
 
+  const handleCancelClick = (participationID) => {
+    setPendingCancelId(participationID);
+    setShowCancelModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (pendingCancelId) {
+      await handleCancelRegistration(pendingCancelId);
+      setPendingCancelId(null);
+      setShowCancelModal(false);
+    }
+  };
+
+  const handleCancelClose = () => {
+    setPendingCancelId(null);
+    setShowCancelModal(false);
+  };
+
   const handleCancelRegistration = async (participationID) => {
     try {
-      if (!window.confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này?')) {
-        return;
-      }
-
       const token = localStorage.getItem('accessToken');
       await axios.delete(`${API_BASE_URL}/participation/${participationID}`, {
         headers: {
@@ -226,11 +268,6 @@ export default function StudentActivitiesContent() {
 
   const handleTypeChange = (type) => {
     setSelectedType(type);
-    if (type === '') {
-      setFilteredActivities(activities);
-    } else {
-      setFilteredActivities(activities.filter(act => act.type === type));
-    }
   };
 
   if (loading) {
@@ -248,55 +285,58 @@ export default function StudentActivitiesContent() {
         <p className="text-xl text-gray-700 font-medium">Xem và quản lý các hoạt động bạn đã đăng ký tham gia.</p>
       </div>
 
-      {/* Filter and Sort Section */}
-      <div className="flex items-center justify-end gap-6 mt-6 mb-6">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Lĩnh vực:</label>
-          <div className="relative">
-            <select
-              value={selectedType}
-              onChange={(e) => handleTypeChange(e.target.value)}
-              className="appearance-none w-48 p-2 border rounded-md pr-8 pl-8"
-            >
-              <option value="">Tất cả</option>
-              {uniqueTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-2 text-gray-700">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-              </svg>
+      {/* Danh sách hoạt động đã đăng ký/tham gia */}
+      <div className="mt-12">
+        {/* Filter and Sort Section */}
+        <div className="flex items-center justify-end gap-6 mt-6 mb-6">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Lĩnh vực:</label>
+            <div className="relative">
+              <select
+                value={selectedType}
+                onChange={(e) => handleTypeChange(e.target.value)}
+                className="appearance-none w-48 p-2 border rounded-md pr-8 pl-8"
+              >
+                <option value="">Tất cả</option>
+                {uniqueTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-2 text-gray-700">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Ngày diễn ra:</label>
-          <button
-            onClick={toggleSort}
-            className="w-48 p-2 border rounded-md bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-            </svg>
-            <span>Ngày</span>
-            <svg
-              className={`w-4 h-4 transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Trạng thái:</label>
+            <div className="relative">
+              <select
+                value={selectedStatus}
+                onChange={e => setSelectedStatus(e.target.value)}
+                className="appearance-none w-48 p-2 border rounded-md pr-8 pl-8"
+              >
+                <option value="">Tất cả</option>
+                <option value="Đã tham gia">Đã tham gia</option>
+                <option value="Đã duyệt">Đã duyệt</option>
+                <option value="Chờ duyệt">Chờ duyệt</option>
+                <option value="Từ chối">Từ chối</option>
+                <option value="Vắng">Vắng</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-2 text-gray-700">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -315,20 +355,22 @@ export default function StudentActivitiesContent() {
               </div>
               <div className="p-4">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{act.name}</h3>
-                <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Loại:</span> {act.type}</p>
+                <span className="inline-block mb-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">
+                  {TYPE_LABELS[(act.type || '').trim().toLowerCase()] || act.type || 'Chưa phân loại'}
+                </span>
                 <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Thời gian:</span> {act.eventStart ? new Date(act.eventStart).toLocaleString() : ''}</p>
                 <p className="text-gray-700 text-sm mb-1"><span className="font-semibold">Địa điểm:</span> {act.location}</p>
                 <div className="mt-2">
                   <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
                     act.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
                       act.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
-                        act.participationStatus === 'Đã hoàn thành' ? 'bg-green-100 text-green-800' :
+                        act.participationStatus === 'Đã tham gia' ? 'bg-green-100 text-green-800' :
                           act.participationStatus === 'Từ chối' ? 'bg-red-100 text-red-800' :
                             'bg-gray-100 text-gray-700'
                   }`}>
                     {act.participationStatus === 'Chờ duyệt' ? 'Chờ duyệt' :
                       act.participationStatus === 'Đã duyệt' ? 'Đã duyệt' :
-                        act.participationStatus === 'Đã hoàn thành' ? 'Đã tham gia' :
+                        act.participationStatus === 'Đã tham gia' ? 'Đã tham gia' :
                           act.participationStatus === 'Từ chối' ? 'Bị từ chối' :
                             act.participationStatus}
                   </span>
@@ -340,12 +382,13 @@ export default function StudentActivitiesContent() {
                   >
                     Xem chi tiết
                   </button>
-                  {act.participationStatus !== 'Đã hoàn thành' && 
+
+                  {act.participationStatus !== 'Đã tham gia' && 
                    act.participationStatus !== 'Đã hủy' && 
                    act.participationStatus !== 'Đã duyệt' && (
                     <button 
                       className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
-                      onClick={() => handleCancelRegistration(act.participationID)}
+                      onClick={() => handleCancelClick(act.participationID)}
                     >
                       Hủy đăng ký
                     </button>
@@ -356,7 +399,6 @@ export default function StudentActivitiesContent() {
           ))}
         </div>
       )}
-
       {showDetail && selected && (
         <StudentActivityDetail
           activity={selected}
@@ -375,6 +417,28 @@ export default function StudentActivitiesContent() {
           isRegistered={isRegistered}
           isManagementView={true}
         />
+      )}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">Xác nhận hủy đăng ký</h3>
+            <p className="mb-6 text-gray-700">Bạn có chắc chắn muốn hủy đăng ký hoạt động này không?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300"
+                onClick={handleCancelClose}
+              >
+                Không
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600"
+                onClick={handleCancelConfirm}
+              >
+                Có, hủy đăng ký
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

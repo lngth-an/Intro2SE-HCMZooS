@@ -14,12 +14,15 @@ import {
   Space,
   Popconfirm,
 } from "antd";
+
 import {
   SearchOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
+  ExclamationCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { FileWarning, Eye, Edit, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
@@ -71,12 +74,6 @@ const DOMAINS = [
 // Map activityStatus to display colors
 const statusColors = {
   draft: "bg-gray-200 text-gray-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-blue-100 text-blue-800",
-  rejected: "bg-red-100 text-red-800",
-  finished: "bg-green-100 text-green-800",
-  upcoming: "bg-indigo-100 text-indigo-800",
-  cancelled: "bg-red-200 text-red-900",
   published: "bg-teal-100 text-teal-800",
   absent: "bg-red-100 text-red-800",
   completed: "bg-green-100 text-green-800"
@@ -85,12 +82,6 @@ const statusColors = {
 // Map activityStatus to Vietnamese labels
 const statusLabels = {
   draft: "Bản nháp",
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Bị từ chối",
-  finished: "Đã hoàn thành",
-  upcoming: "Sắp diễn ra",
-  cancelled: "Đã hủy",
   published: "Đã đăng tải",
   absent: "Vắng",
   completed: "Đã hoàn thành"
@@ -243,9 +234,6 @@ function ActivityManager() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa hoạt động này?")) {
-      return;
-    }
     const token = localStorage.getItem("accessToken");
     try {
       await axios.delete(`${API_BASE_URL}/activity/${id}`, {
@@ -269,12 +257,32 @@ function ActivityManager() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      toast.success("Đã xuất bản hoạt động thành công!");
+      toast.success("Đã đăng tải hoạt động thành công!");
       fetchActivities();
     } catch (error) {
       console.error("Publish error:", error);
       toast.error(
-        error.response?.data?.message || "Không thể xuất bản hoạt động"
+        error.response?.data?.message || "Không thể đăng tải hoạt động"
+      );
+    }
+  };
+
+  const handleComplete = async (id) => {
+    const token = localStorage.getItem("accessToken");
+    try {
+      await axios.patch(
+        `${API_BASE_URL}/activity/${id}/complete`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      toast.success("Hoạt động đã được đánh dấu hoàn thành!");
+      fetchActivities();
+    } catch (error) {
+      console.error("Complete error:", error);
+      toast.error(
+        error.response?.data?.message || "Không thể đánh dấu hoàn thành"
       );
     }
   };
@@ -386,13 +394,7 @@ function ActivityManager() {
       dataIndex: "activityStatus",
       key: "activityStatus",
       render: (status) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[status] || "bg-gray-200 text-gray-800"
-          }`}
-        >
-          {statusLabels[status] || status}
-        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-300 text-gray-800'}`}>{statusLabels[status] || status}</span>
       ),
     },
     {
@@ -415,7 +417,7 @@ function ActivityManager() {
             type="primary"
             icon={<EyeOutlined />}
             onClick={() =>
-              navigate(`/organizer/activities/${record.activityID}`)
+              navigate(`/organizer/activities/${record.activityID}`, { state: { from: 'manager' } })
             }
           >
             Xem
@@ -439,21 +441,56 @@ function ActivityManager() {
               </Button>
               <Popconfirm
                 title="Bạn có chắc chắn muốn xóa hoạt động này?"
+                description="Hành động này không thể hoàn tác."
+                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                 onConfirm={() => handleDelete(record.activityID)}
-                okText="Có"
-                cancelText="Không"
+                okText="Có, xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+                cancelButtonProps={{ type: 'default' }}
               >
                 <Button type="default" danger icon={<DeleteOutlined />}>
                   Xóa
                 </Button>
               </Popconfirm>
+              <Popconfirm
+                title="Xác nhận xuất bản hoạt động"
+                description="Bạn có chắc chắn muốn xuất bản hoạt động này không? Hoạt động đã xuất bản sẽ không thể chỉnh sửa!"
+                icon={<ExclamationCircleOutlined style={{ color: 'orange' }} />}
+                onConfirm={() => handlePublish(record.activityID)}
+                okText="Có, xuất bản"
+                cancelText="Hủy"
+                okButtonProps={{ type: 'primary' }}
+                cancelButtonProps={{ type: 'default' }}
+              >
+                <Button
+                  type="primary"
+                >
+                  Xuất bản
+                </Button>
+              </Popconfirm>
+            </>
+          )}
+          {record.activityStatus === "Đã đăng tải" && (
+            <Popconfirm
+              title="Xác nhận hoàn thành hoạt động"
+              description="Bạn có chắc chắn muốn đánh dấu hoạt động này đã hoàn thành? Hành động này sẽ cập nhật trạng thái hoạt động."
+              icon={<CheckCircleOutlined style={{ color: 'green' }} />}
+              onConfirm={() => handleComplete(record.activityID)}
+              okText="Có, hoàn thành"
+              cancelText="Hủy"
+              okButtonProps={{ 
+                style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+              }}
+              cancelButtonProps={{ type: 'default' }}
+            >
               <Button
                 type="primary"
-                onClick={() => handlePublish(record.activityID)}
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
               >
-                Xuất bản
+                Hoàn thành
               </Button>
-            </>
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -463,13 +500,16 @@ function ActivityManager() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold uppercase">QUẢN LÝ HOẠT ĐỘNG</h1>
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          QUẢN LÝ HOẠT ĐỘNG
+        </h1>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => navigate("/organizer/activity-create")}
+          className="h-12 px-6 text-base font-semibold"
         >
-          Tạo hoạt động mới
+          Tạo hoạt động
         </Button>
       </div>
 
@@ -589,7 +629,22 @@ function ActivityManager() {
           <Form.Item
             name="endDate"
             label="Ngày kết thúc"
-            rules={[{ required: true, message: "Vui lòng chọn ngày kết thúc" }]}
+            dependencies={['startDate']}
+            rules={[
+              { required: true, message: "Vui lòng chọn ngày kết thúc" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || !getFieldValue('startDate')) {
+                    return Promise.resolve();
+                  }
+                  const startDate = getFieldValue('startDate');
+                  if (value && startDate && value.isSameOrBefore(startDate)) {
+                    return Promise.reject(new Error('Ngày kết thúc phải lớn hơn ngày bắt đầu!'));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
           >
             <DatePicker className="w-full" />
           </Form.Item>

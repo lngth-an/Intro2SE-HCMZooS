@@ -26,9 +26,10 @@ module.exports = (sequelize, DataTypes) => {
         trainingPoint: {
             type: DataTypes.INTEGER,
         },
-        // type: {
-        //     type: DataTypes.STRING,
-        // },
+        note: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
     },{
         tableName: 'participations',
         timestamps: false, // createdAt, updatedAt
