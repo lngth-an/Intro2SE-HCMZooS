@@ -7,6 +7,7 @@ import Header from "../components/common/Header";
 import SidebarStudent from "../components/common/SidebarStudent";
 import Footer from "../components/common/Footer";
 import CloseIcon from "@mui/icons-material/Close";
+import { useNavigate } from "react-router-dom";
 
 axios.defaults.baseURL = "http://localhost:3001";
 axios.defaults.headers.common["Content-Type"] = "application/json";
@@ -19,6 +20,7 @@ const StudentNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [users, setUsers] = useState([]);
+  const navigate = useNavigate();
 
   const allSelected =
     notifications.length > 0 && selectedIds.length === notifications.length;
@@ -50,9 +52,13 @@ const StudentNotifications = () => {
   }, [user, fetchNotifications, fetchUsers]);
 
   const getSenderNameById = (fromUserID) => {
-    if (!fromUserID || users.length === 0) return "Không xác định";
-    const matchedUser = users.find((u) => u.userID === fromUserID);
-    return matchedUser?.name || matchedUser?.fullName || "Không xác định";
+    console.log("users:", users);
+    console.log("fromUserID:", fromUserID);
+    const matchedUser = users.find(
+      (u) => Number(u.userID) === Number(fromUserID)
+    );
+    console.log("matchedUser:", matchedUser);
+    return matchedUser?.name || "Không xác định";
   };
 
   const handleOpenDetail = (notification) => {
@@ -124,6 +130,20 @@ const StudentNotifications = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await axios.post("/auth/logout");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("role");
+      localStorage.removeItem("userID");
+      localStorage.removeItem("user");
+      toast.success("Đăng xuất thành công");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi đăng xuất");
+    }
+  };
+
   if (loading) {
     return (
       <Box className="flex justify-center items-center min-h-[70vh]">
@@ -134,10 +154,10 @@ const StudentNotifications = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-      <Header user={user} />
+      <Header user={user} onLogout={handleLogout} />
 
       <div className="flex flex-1 pt-16">
-        <SidebarStudent />
+        <SidebarStudent onLogout={handleLogout} />
 
         <main className="flex-1 flex flex-col ml-64 px-6 py-8 w-full">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
