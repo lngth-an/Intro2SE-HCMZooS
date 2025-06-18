@@ -103,7 +103,7 @@ export default function ActivityDetail() {
         .then(data => setRegistrations(data.registrations || []));
     }
     if (tab === 'attendance') {
-      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt`)
+      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Vắng&status=Đã hoàn thành`)
         .then(res => res.json())
         .then(data => setAttendance(data.registrations || []));
     }

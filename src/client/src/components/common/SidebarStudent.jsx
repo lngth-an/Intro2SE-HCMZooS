@@ -8,10 +8,11 @@ import {
   User,
   LogOut,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const SidebarStudent = ({ onLogout }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = [
     { icon: <Home size={20} />, label: "Trang chủ", path: "/student/home" },
@@ -38,6 +39,10 @@ const SidebarStudent = ({ onLogout }) => {
     { icon: <User size={20} />, label: "Hồ sơ", path: "/student/profile" },
   ];
 
+  const isActive = (path) => {
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gray-50 shadow-lg">
       <div className="flex flex-col h-full">
@@ -47,7 +52,11 @@ const SidebarStudent = ({ onLogout }) => {
             <button
               key={index}
               onClick={() => navigate(item.path)}
-              className="w-full px-4 py-3 flex items-center space-x-3 text-black hover:bg-gray-100 transition-colors duration-200"
+              className={`w-full px-4 py-3 flex items-center space-x-3 transition-colors duration-200 ${
+                isActive(item.path)
+                  ? "bg-gray-200 text-blue-600 font-semibold"
+                  : "text-black hover:bg-gray-100"
+              }`}
             >
               {item.icon}
               <span className="text-sm font-medium">{item.label}</span>

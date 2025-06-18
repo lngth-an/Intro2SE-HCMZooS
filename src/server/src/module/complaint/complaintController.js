@@ -158,16 +158,20 @@ class ComplaintController {
       }
       const complaint = await db.Complaint.findByPk(id);
       if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
+      
+      // Cập nhật cả status và response
       complaint.complaintStatus = status;
+
       if (response) {
         complaint.response = response;
       }
       await complaint.save();
+      
       // TODO: Gửi notification cho student
-      res.json({ message: 'Cập nhật trạng thái khiếu nại thành công.' });
+      res.json({ message: 'Cập nhật khiếu nại thành công.' });
     } catch (err) {
       console.error('Error updateComplaintStatus:', err);
-      res.status(500).json({ message: 'Lỗi cập nhật trạng thái khiếu nại.' });
+      res.status(500).json({ message: 'Lỗi cập nhật khiếu nại.' });
     }
   }
 }
