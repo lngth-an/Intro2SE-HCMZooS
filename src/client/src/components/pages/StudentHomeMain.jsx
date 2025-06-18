@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
 import { DOMAINS } from '../../constants/activityTypes';
+import StudentActivityDetail from "./StudentActivityDetail";
 
 const StudentHomeMain = () => {
   const [score, setScore] = useState(null);
@@ -10,6 +11,8 @@ const StudentHomeMain = () => {
   const [currentSemester, setCurrentSemester] = useState(null);
   const [activities, setActivities] = useState([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => {
     const fetchCurrentSemesterScore = async () => {
@@ -68,6 +71,21 @@ const StudentHomeMain = () => {
     fetchActivities();
   }, []);
 
+  const isRegistrationOpen = (activity) => {
+    const now = new Date();
+    return now >= new Date(activity.registrationStart) && now <= new Date(activity.registrationEnd);
+  };
+
+  const handleShowDetail = (activity) => {
+    setSelectedActivity(activity);
+    setShowDetail(true);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedActivity(null);
+    setShowDetail(false);
+  };
+
   const renderActivityCard = (activity) => {
     const domain = DOMAINS.find(d => d.id === activity.type);
     const points = domain ? domain.defaultPoint : 3;
@@ -101,12 +119,12 @@ const StudentHomeMain = () => {
             <p className="text-gray-600">Số lượng: {activity.maxParticipants} người</p>
           )}
           <div className="mt-4">
-            <Link
-              to={`/student/activities/${activity.activityID}`}
+            <button
               className="text-blue-600 hover:text-blue-800 font-medium"
+              onClick={() => handleShowDetail(activity)}
             >
               Xem chi tiết
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -164,18 +182,25 @@ const StudentHomeMain = () => {
       {/* Ongoing Activities Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-6 text-gray-800">
-          Các hoạt động đang diễn ra
+          Các hoạt động đang mở đăng ký
         </h2>
         {activitiesLoading ? (
           <div>Loading...</div>
-        ) : activities.length === 0 ? (
-          <div className="text-gray-600">Không có hoạt động nào đang diễn ra</div>
+        ) : activities.filter(isRegistrationOpen).length === 0 ? (
+          <div className="text-gray-600">Không có hoạt động nào đang mở đăng ký</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.map(activity => renderActivityCard(activity))}
+            {activities.filter(isRegistrationOpen).map(activity => renderActivityCard(activity))}
           </div>
         )}
       </div>
+      {showDetail && selectedActivity && (
+        <StudentActivityDetail
+          activity={selectedActivity}
+          onClose={handleCloseDetail}
+          isManagementView={false}
+        />
+      )}
     </div>
   );
 };

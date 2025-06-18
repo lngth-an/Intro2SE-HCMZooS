@@ -73,8 +73,10 @@ export default function StudentActivitiesContent() {
   useEffect(() => {
     let filtered = [...activities];
 
-    // Loại bỏ các hoạt động đã hủy
-    filtered = filtered.filter(act => act.participationStatus !== 'Đã hủy');
+    // Loại bỏ các hoạt động đã hủy và từ chối
+    filtered = filtered.filter(
+      act => act.participationStatus !== 'Đã hủy' && act.participationStatus !== 'Từ chối'
+    );
 
     if (selectedType) {
       filtered = filtered.filter(act => act.type === selectedType);
@@ -85,14 +87,24 @@ export default function StudentActivitiesContent() {
       'Chờ duyệt',
       'Đã duyệt',
       'Đã tham gia',
-      'Vắng',
-      'Từ chối',
+      'Vắng'
     ];
     if (selectedStatus && allowedStatuses.includes(selectedStatus)) {
       filtered = filtered.filter(act => act.participationStatus === selectedStatus);
     } else {
       filtered = filtered.filter(act => allowedStatuses.includes(act.participationStatus));
     }
+
+    // Sắp xếp theo ưu tiên trạng thái
+    const statusPriority = {
+      'Chờ duyệt': 1,
+      'Đã duyệt': 2,
+      'Đã tham gia': 3,
+      'Vắng': 4
+    };
+    filtered = filtered.sort((a, b) => {
+      return (statusPriority[a.participationStatus] || 99) - (statusPriority[b.participationStatus] || 99);
+    });
 
     setFilteredActivities(filtered);
   }, [selectedType, activities, selectedStatus]);
@@ -330,7 +342,9 @@ export default function StudentActivitiesContent() {
 
             {activity.participationStatus !== 'Đã tham gia' && 
              activity.participationStatus !== 'Đã hủy' && 
-             activity.participationStatus !== 'Đã duyệt' && (
+             activity.participationStatus !== 'Đã duyệt' && 
+             activity.participationStatus !== 'Vắng' &&
+              (
               <button 
                 className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-md"
                 onClick={() => handleCancelClick(activity.participationID)}
@@ -414,7 +428,9 @@ export default function StudentActivitiesContent() {
         <div>Loading...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredActivities.map(activity => renderActivityCard(activity))}
+          {filteredActivities
+            .filter(activity => activity.participationStatus !== 'Đã hủy' && activity.participationStatus !== 'Từ chối')
+            .map(activity => renderActivityCard(activity))}
         </div>
       )}
 
