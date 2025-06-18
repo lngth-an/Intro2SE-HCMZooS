@@ -78,6 +78,8 @@ const statusColors = {
   upcoming: "bg-indigo-100 text-indigo-800",
   cancelled: "bg-red-200 text-red-900",
   published: "bg-teal-100 text-teal-800",
+  absent: "bg-red-100 text-red-800",
+  completed: "bg-green-100 text-green-800"
 };
 
 // Map activityStatus to Vietnamese labels
@@ -90,6 +92,8 @@ const statusLabels = {
   upcoming: "Sắp diễn ra",
   cancelled: "Đã hủy",
   published: "Đã đăng tải",
+  absent: "Vắng",
+  completed: "Đã hoàn thành"
 };
 
 const DEFAULT_IMAGE =
@@ -113,6 +117,7 @@ const ACTIVITY_STATUSES = [
   { value: "Bản nháp", label: "Bản nháp" },
   { value: "Đã đăng tải", label: "Đang diễn ra" },
   { value: "Đã hoàn thành", label: "Đã kết thúc" },
+  { value: "Vắng", label: "Vắng" }
 ];
 
 function ActivityManager() {

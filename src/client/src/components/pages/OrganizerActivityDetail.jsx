@@ -105,7 +105,7 @@ export default function OrganizerActivityDetail() {
         .then(data => setRegistrations(data.registrations || []));
     }
     if (tab === 'attendance') {
-      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt`)
+      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Vắng&status=Đã hoàn thành`)
         .then(res => res.json())
         .then(data => setAttendance(data.registrations || []));
     }
@@ -470,14 +470,14 @@ export default function OrganizerActivityDetail() {
             <div className="flex gap-2">
               <button 
                 disabled={selectedAtts.length===0 || loading} 
-                onClick={()=>handleBulkConfirm('present')} 
+                onClick={()=>handleBulkConfirm('Đã hoàn thành')} 
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Xác nhận tham gia
               </button>
               <button 
                 disabled={selectedAtts.length===0 || loading} 
-                onClick={()=>handleBulkConfirm('absent')} 
+                onClick={()=>handleBulkConfirm('Vắng')} 
                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Đánh dấu vắng
@@ -528,11 +528,11 @@ export default function OrganizerActivityDetail() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.faculty}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${r.status === 'present' ? 'bg-green-100 text-green-800' : 
-                          r.status === 'absent' ? 'bg-red-100 text-red-800' : 
+                        ${r.status === 'Đã hoàn thành' ? 'bg-green-100 text-green-800' : 
+                          r.status === 'Vắng' ? 'bg-red-100 text-red-800' : 
                           'bg-gray-100 text-gray-800'}`}>
-                        {r.status === 'present' ? 'Có mặt' : 
-                         r.status === 'absent' ? 'Vắng mặt' : 
+                        {r.status === 'Đã hoàn thành' ? 'Đã hoàn thành' : 
+                         r.status === 'Vắng' ? 'Vắng' : 
                          'Chưa điểm danh'}
                       </span>
                     </td>

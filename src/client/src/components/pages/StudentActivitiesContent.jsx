@@ -322,13 +322,13 @@ export default function StudentActivitiesContent() {
                   <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
                     act.participationStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
                       act.participationStatus === 'Đã duyệt' ? 'bg-blue-100 text-blue-800' :
-                        act.participationStatus === 'present' ? 'bg-green-100 text-green-800' :
+                        act.participationStatus === 'Đã hoàn thành' ? 'bg-green-100 text-green-800' :
                           act.participationStatus === 'Từ chối' ? 'bg-red-100 text-red-800' :
                             'bg-gray-100 text-gray-700'
                   }`}>
                     {act.participationStatus === 'Chờ duyệt' ? 'Chờ duyệt' :
                       act.participationStatus === 'Đã duyệt' ? 'Đã duyệt' :
-                        act.participationStatus === 'present' ? 'Đã tham gia' :
+                        act.participationStatus === 'Đã hoàn thành' ? 'Đã tham gia' :
                           act.participationStatus === 'Từ chối' ? 'Bị từ chối' :
                             act.participationStatus}
                   </span>
@@ -340,7 +340,7 @@ export default function StudentActivitiesContent() {
                   >
                     Xem chi tiết
                   </button>
-                  {act.participationStatus !== 'present' && 
+                  {act.participationStatus !== 'Đã hoàn thành' && 
                    act.participationStatus !== 'Đã hủy' && 
                    act.participationStatus !== 'Đã duyệt' && (
                     <button 
