@@ -40,16 +40,52 @@ class StudentController {
     try {
       const studentID = req.user.studentID;
       const semesterID = req.query.semesterID;
-      if (!studentID || !semesterID) return res.status(400).json({ message: 'Missing studentID or semesterID' });
+      
+      if (!studentID || !semesterID) {
+        return res.status(400).json({ message: 'Missing studentID or semesterID' });
+      }
+
+      // Kiểm tra học kỳ có tồn tại không
+      const semester = await db.Semester.findByPk(semesterID);
+      if (!semester) {
+        return res.status(404).json({ message: 'Semester not found' });
+      }
+
+      // Lấy tất cả participations của sinh viên trong học kỳ đó
       const participations = await db.Participation.findAll({
-        where: { studentID, participationStatus: 'present' },
-        include: [{ model: db.Activity, as: 'activity', where: { semesterID } }]
+        where: { 
+          studentID,
+          participationStatus: 'Đã tham gia', // Chỉ tính điểm cho những hoạt động đã hoàn thành
+        },
+        include: [{ 
+          model: db.Activity, 
+          as: 'activity',
+          required: true, // INNER JOIN để chỉ lấy những participation có activity
+          where: { 
+            semesterID
+          }
+        }]
       });
-      const score = participations.reduce((sum, p) => sum + (p.trainingPoint || 0), 0);
-      res.json({ score });
+
+      // Tính tổng điểm
+      const score = participations.reduce((sum, p) => {
+        // Nếu có điểm rèn luyện thì cộng vào, nếu không thì cộng 0
+        return sum + (p.trainingPoint || 0);
+      }, 0);
+
+      res.json({ 
+        score,
+        details: participations.map(p => ({
+          activityName: p.activity.name,
+          trainingPoint: p.trainingPoint || 0,
+          activityType: p.activity.type || 'Không xác định',
+          eventStart: p.activity.eventStart,
+          eventEnd: p.activity.eventEnd
+        }))
+      });
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: 'Error fetching score' });
+      console.error('Error in getScore:', err);
+      res.status(500).json({ message: 'Error fetching score', error: err.message });
     }
   }
 
@@ -59,14 +95,18 @@ class StudentController {
       const studentID = req.user.studentID;
       const semesterID = req.query.semesterID;
       const allStatus = req.query.allStatus === 'true';
+      
       if (!studentID) return res.status(400).json({ message: 'Missing studentID' });
+      
       const where = { studentID };
       if (!allStatus) {
-        where.participationStatus = 'present';
+        where.participationStatus = 'Đã tham gia';
       }
+
       const include = [{ 
         model: db.Activity, 
         as: 'activity',
+        where: semesterID ? { semesterID } : {},
         attributes: [
           'activityID',
           'name',
@@ -78,16 +118,17 @@ class StudentController {
           'location',
           'image',
           'activityStatus',
-          'type'
+          'type',
+          'semesterID'
         ]
       }];
-      if (semesterID) {
-        include[0].where = { semesterID };
-      }
+
       const participations = await db.Participation.findAll({
         where,
-        include
+        include,
+        order: [['trainingPoint', 'DESC']] // Sắp xếp theo điểm rèn luyện giảm dần
       });
+
       const activities = participations.map(p => ({
         participationID: p.participationID,
         activityID: p.activityID,
@@ -102,12 +143,14 @@ class StudentController {
         location: p.activity?.location,
         image: p.activity?.image || null,
         activityStatus: p.activity?.activityStatus,
-        type: p.activity?.type || ''
+        type: p.activity?.type || '',
+        semesterID: p.activity?.semesterID
       }));
+
       res.json({ activities });
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: 'Error fetching activities' });
+      console.error('Error in getActivities:', err);
+      res.status(500).json({ message: 'Error fetching activities', error: err.message });
     }
   }
 
@@ -330,6 +373,8 @@ class StudentController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
+
+
 }
 
 module.exports = StudentController;

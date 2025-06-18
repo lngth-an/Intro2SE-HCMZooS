@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
+import { DOMAINS } from '../../constants/activityTypes';
 
 const API_URL = '/activity';
 
@@ -98,7 +99,7 @@ function UpdatePointModal({ open, onClose, student, activityId, reload }) {
                 <p className="text-sm text-green-600">{success}</p>
               </div>
             )}
-          </div>
+        </div>
 
           <div className="mt-6 flex justify-end space-x-3">
             <button
@@ -115,8 +116,8 @@ function UpdatePointModal({ open, onClose, student, activityId, reload }) {
             >
               {loading ? 'Đang lưu...' : 'Xác nhận'}
             </button>
-          </div>
-        </form>
+        </div>
+      </form>
       </div>
     </div>
   );
@@ -176,18 +177,36 @@ export default function OrganizerActivityDetail() {
             ['Chờ duyệt', 'Từ chối'].includes(reg.status)
           );
           setRegistrations(filteredData);
-        });
+        })
+        .catch(err => console.error('Error fetching registrations:', err));
     }
     if (tab === 'attendance') {
       fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Đã tham gia&status=Vắng`)
         .then(res => res.json())
         .then(data => {
-          const attendanceData = (data.registrations || []).map(reg => ({
-            ...reg,
-            displayStatus: reg.status === 'Đã duyệt' ? 'Chưa điểm danh' : reg.status
-          }));
+          console.log('Fetched attendance data:', data); // Debug log
+          const attendanceData = (data.registrations || [])
+            .map(reg => ({
+              ...reg,
+              displayStatus: reg.status === 'Đã duyệt' ? 'Chưa điểm danh' : reg.status,
+              trainingPoint: reg.trainingPoint || 0 // Đảm bảo luôn có giá trị điểm
+            }))
+            .sort((a, b) => {
+              // Sắp xếp theo trạng thái
+              const statusOrder = {
+                'Đã duyệt': 1,
+                'Đã tham gia': 2,
+                'Vắng': 3
+              };
+              if (statusOrder[a.status] !== statusOrder[b.status]) {
+                return statusOrder[a.status] - statusOrder[b.status];
+              }
+              // Nếu cùng trạng thái, sắp xếp theo MSSV
+              return a.studentID.localeCompare(b.studentID);
+            });
           setAttendance(attendanceData);
-        });
+        })
+        .catch(err => console.error('Error fetching attendance:', err));
     }
   }, [tab, activityId, reloadFlag]);
 
@@ -250,16 +269,16 @@ export default function OrganizerActivityDetail() {
     }
     try {
       const res = await fetch(`${API_URL}/${activityId}/attendance/confirm`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           participationIDs: selectedAtts,
           status: status
         })
-      });
+    });
       if (!res.ok) throw new Error('Lỗi cập nhật trạng thái tham gia');
       setMessage('Đã cập nhật trạng thái tham gia thành công!');
-      setSelectedAtts([]);
+    setSelectedAtts([]);
       setReloadFlag(prev => prev + 1);
     } catch (error) {
       setMessage('Lỗi khi cập nhật trạng thái tham gia');
@@ -329,39 +348,24 @@ export default function OrganizerActivityDetail() {
 
   const handleSelectAllAttendance = (checked) => {
     if (checked) {
-      // Chỉ chọn những sinh viên có thể điểm danh (status = 'Đã duyệt')
-      const validIds = filteredAttendance
+      // Chỉ chọn những participation có trạng thái "Đã duyệt"
+      const approvedParticipations = filteredAttendance
         .filter(att => att.status === 'Đã duyệt')
         .map(att => att.participationID);
-      setSelectedAtts(validIds);
+      setSelectedAtts(approvedParticipations);
     } else {
       setSelectedAtts([]);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (!activity) return <div>Activity not found.</div>;
+  const renderActivityInfo = () => {
+    if (!activity) return null;
+
+    const domain = DOMAINS.find(d => d.id === activity.type);
+    const points = domain ? domain.defaultPoint : 3;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow">
-      <button
-        className="mb-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-800 font-medium"
-        onClick={() => {
-          if (location.state?.from === 'home') navigate('/');
-          else if (location.state?.from === 'manager') navigate('/organizer/activities');
-          else navigate(-1);
-        }}
-      >
-        ← Quay lại
-      </button>
-      <div className="mb-4 flex gap-4 border-b">
-        <button className={tab==='info' ? 'font-bold border-b-2 border-blue-600 px-4 py-2' : 'px-4 py-2'} onClick={()=>setTab('info')}>Thông tin</button>
-        <button className={tab==='registrations' ? 'font-bold border-b-2 border-blue-600 px-4 py-2' : 'px-4 py-2'} onClick={()=>setTab('registrations')}>Danh sách đăng ký</button>
-        <button className={tab==='attendance' ? 'font-bold border-b-2 border-blue-600 px-4 py-2' : 'px-4 py-2'} onClick={()=>setTab('attendance')}>Danh sách tham gia</button>
-      </div>
-      {message && <div className="mb-4 p-2 bg-green-100 text-green-800 rounded">{message}</div>}
-      {/*Thông tin hoạt động*/}
-      {tab === 'info' && (
+      <div className="bg-white rounded-lg shadow-md p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Poster */}
           <div className="space-y-4">
@@ -378,30 +382,33 @@ export default function OrganizerActivityDetail() {
                 </div>
               )}
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-500">Trạng thái hoạt động</h3>
-              <p className="mt-1 text-sm font-medium">
-                <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800">
-                  {activity.activityStatus}
-                </span>
-              </p>
-            </div>
           </div>
 
-          {/* Thông tin chi tiết */}
+          {/* Nội dung bên phải */}
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{activity.name}</h1>
               <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
                   {activity.type}
+                </span>
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                  {points} điểm
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  activity.activityStatus === 'Đã đăng tải' ? 'bg-green-100 text-green-800' :
+                  activity.activityStatus === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' :
+                  activity.activityStatus === 'Đã hoàn thành' ? 'bg-blue-100 text-blue-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {activity.activityStatus}
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500">Thời gian bắt đầu</h3>
+                <h3 className="text-sm font-medium text-gray-500">Thời gian diễn ra</h3>
                 <p className="mt-1 text-sm text-gray-900">
                   {activity.eventStart ? new Date(activity.eventStart).toLocaleString() : 'Chưa cập nhật'}
                 </p>
@@ -414,7 +421,7 @@ export default function OrganizerActivityDetail() {
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-sm font-medium text-gray-500">Số lượng tham gia</h3>
-                <p className="mt-1 text-sm text-gray-900">{activity.capacity || 'Chưa cập nhật'}</p>
+                <p className="mt-1 text-sm text-gray-900">{activity.maxParticipants || 'Không giới hạn'}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-sm font-medium text-gray-500">Địa điểm</h3>
@@ -441,11 +448,78 @@ export default function OrganizerActivityDetail() {
                 </p>
               </div>
             </div>
+
+            <div className="flex justify-end space-x-4">
+              <Link
+                to={`/organizer/activities/${activityId}/edit`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Chỉnh sửa
+              </Link>
+            </div>
           </div>
         </div>
-      )}
-      {/*Danh sách đăng ký*/}
-      {tab === 'registrations' && (
+      </div>
+    );
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!activity) return <div>Activity not found.</div>;
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-blue-600 hover:text-blue-800 flex items-center"
+        >
+          ← Quay lại
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setTab('info')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                tab === 'info'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Thông tin
+            </button>
+            <button
+              onClick={() => setTab('registrations')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                tab === 'registrations'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Đăng ký
+            </button>
+            <button
+              onClick={() => setTab('attendance')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                tab === 'attendance'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Điểm danh
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <div>
+          {tab === 'info' && renderActivityInfo()}
+          {tab === 'registrations' && (
         <div>
           <div className="mb-4">
             <form onSubmit={handleSearchRegStudent} className="flex gap-2 items-center">
@@ -475,99 +549,99 @@ export default function OrganizerActivityDetail() {
             )}
           </div>
           <div className="mb-4 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Danh sách đăng ký
-                {filteredRegistrations.length > 0 && (
-                  <span className="ml-2 text-sm font-normal text-gray-500">
-                    (Đã chọn: {selectedRegs.length}/{filteredRegistrations.filter(reg => !['Đã tham gia', 'Vắng'].includes(reg.status)).length} sinh viên có thể chọn)
-                  </span>
-                )}
-              </h2>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="Chờ duyệt">Chờ duyệt</option>
-                <option value="Từ chối">Từ chối</option>
-              </select>
-            </div>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Danh sách đăng ký
+                    {filteredRegistrations.length > 0 && (
+                      <span className="ml-2 text-sm font-normal text-gray-500">
+                        (Đã chọn: {selectedRegs.length}/{filteredRegistrations.filter(reg => !['Đã tham gia', 'Vắng'].includes(reg.status)).length} sinh viên có thể chọn)
+                      </span>
+                    )}
+                  </h2>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="Chờ duyệt">Chờ duyệt</option>
+                    <option value="Từ chối">Từ chối</option>
+                  </select>
+                </div>
             <div className="flex gap-2">
               <button 
                 disabled={selectedRegs.length===0 || loading} 
                 onClick={()=>handleBulkApprove('Đã duyệt')} 
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Duyệt ({selectedRegs.length})
+                    Duyệt ({selectedRegs.length})
               </button>
               <button 
                 disabled={selectedRegs.length===0 || loading} 
                 onClick={()=>handleBulkApprove('Từ chối')} 
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Từ chối ({selectedRegs.length})
+                    Từ chối ({selectedRegs.length})
               </button>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="table-fixed w-full min-w-full divide-y divide-gray-200">
+                <table className="table-fixed w-full min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-2 py-3 text-left" style={{width: '5%'}}>
+                      <th className="px-2 py-3 text-left" style={{width: '5%'}}>
                     <input 
                       type="checkbox" 
-                      checked={
-                        selectedRegs.length > 0 && 
-                        selectedRegs.length === filteredRegistrations.filter(reg => !['Đã tham gia', 'Vắng'].includes(reg.status)).length
-                      }
-                      onChange={(e) => handleSelectAllRegistrations(e.target.checked)}
+                          checked={
+                            selectedRegs.length > 0 && 
+                            selectedRegs.length === filteredRegistrations.filter(reg => !['Đã tham gia', 'Vắng'].includes(reg.status)).length
+                          }
+                          onChange={(e) => handleSelectAllRegistrations(e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>MSSV</th>
-                  <th className="px-2 py-3 text-left" style={{width: '30%'}}>Họ tên</th>
-                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Niên khóa</th>
-                  <th className="px-2 py-3 text-left" style={{width: '20%'}}>Khoa</th>
-                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Trạng thái</th>
+                      <th className="px-2 py-3 text-left" style={{width: '15%'}}>MSSV</th>
+                      <th className="px-2 py-3 text-left" style={{width: '30%'}}>Họ tên</th>
+                      <th className="px-2 py-3 text-left" style={{width: '15%'}}>Niên khóa</th>
+                      <th className="px-2 py-3 text-left" style={{width: '20%'}}>Khoa</th>
+                      <th className="px-2 py-3 text-left" style={{width: '15%'}}>Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRegistrations.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                      {statusFilter === 'all' 
-                        ? 'Không có đăng ký nào cần xử lý.'
-                        : `Không có đăng ký nào có trạng thái "${statusFilter}".`
-                      }
+                    {filteredRegistrations.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                          {statusFilter === 'all' 
+                            ? 'Không có đăng ký nào cần xử lý.'
+                            : `Không có đăng ký nào có trạng thái "${statusFilter}".`
+                          }
                     </td>
                   </tr>
-                ) : filteredRegistrations.map(r => (
+                    ) : filteredRegistrations.map(r => (
                   <tr key={r.participationID} className="hover:bg-gray-50">
-                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '5%'}}>
+                        <td className="px-2 py-4 whitespace-nowrap" style={{width: '5%'}}>
                       <input 
                         type="checkbox" 
                         checked={selectedRegs.includes(r.participationID)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            if (!['Đã tham gia', 'Vắng'].includes(r.status)) {
-                              setSelectedRegs([...selectedRegs, r.participationID]);
-                            }
-                          } else {
-                            setSelectedRegs(selectedRegs.filter(id => id !== r.participationID));
-                          }
-                        }}
-                        disabled={['Đã tham gia', 'Vắng'].includes(r.status)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                if (!['Đã tham gia', 'Vắng'].includes(r.status)) {
+                                  setSelectedRegs([...selectedRegs, r.participationID]);
+                                }
+                              } else {
+                                setSelectedRegs(selectedRegs.filter(id => id !== r.participationID));
+                              }
+                            }}
+                            disabled={['Đã tham gia', 'Vắng'].includes(r.status)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                       />
                     </td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900" style={{width: '15%'}}>{r.studentID}</td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-900" style={{width: '30%'}}>{r.studentName}</td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '15%'}}>{r.academicYear}</td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '20%'}}>{r.faculty}</td>
-                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '15%'}}>
+                        <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900" style={{width: '15%'}}>{r.studentID}</td>
+                        <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-900" style={{width: '30%'}}>{r.studentName}</td>
+                        <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '15%'}}>{r.academicYear}</td>
+                        <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '20%'}}>{r.faculty}</td>
+                        <td className="px-2 py-4 whitespace-nowrap" style={{width: '15%'}}>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                         ${r.status === 'Đã duyệt' ? 'bg-green-100 text-green-800' : 
                           r.status === 'Chờ duyệt' ? 'bg-yellow-100 text-yellow-800' : 
@@ -584,130 +658,150 @@ export default function OrganizerActivityDetail() {
           </div>
         </div>
       )}
-      {/*Danh sách tham gia*/}
+
       {tab === 'attendance' && (
-        <div>
-          <div className="mb-4">
-            <form onSubmit={handleSearchAttStudent} className="flex gap-2 items-center">
-              <input
-                type="text"
-                placeholder="Tìm kiếm sinh viên theo MSSV..."
-                className="border rounded px-3 py-1"
-                value={searchAttStudentCode}
-                onChange={(e) => setSearchAttStudentCode(e.target.value)}
-              />
-              <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded" disabled={searchAttLoading}>
-                {searchAttLoading ? 'Đang tìm...' : 'Tìm kiếm'}
-              </button>
-            </form>
-            {searchAttError && <div className="text-red-600 mt-2">{searchAttError}</div>}
-            {searchAttResult && (
-              <div className="mt-2 p-3 bg-blue-50 rounded">
-                <h4 className="font-bold">Kết quả tìm kiếm:</h4>
-                <p>MSSV: {searchAttResult.student.studentID}</p>
-                <p>Họ tên: {searchAttResult.student.name}</p>
-                <p>Email: {searchAttResult.student.email}</p>
-                <p>Trạng thái: {searchAttResult.student.participationStatusText}</p>
-                {searchAttResult.student.participation?.trainingPoint !== null && (
-                  <p>Điểm rèn luyện: {searchAttResult.student.participation?.trainingPoint}</p>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="mb-4 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Danh sách tham gia
-                {filteredAttendance.length > 0 && (
-                  <span className="ml-2 text-sm font-normal text-gray-500">
-                    (Đã chọn: {selectedAtts.length}/{filteredAttendance.filter(att => att.status === 'Đã duyệt').length} sinh viên chưa điểm danh)
-                  </span>
-                )}
-              </h2>
-              <select
-                value={attendanceFilter}
-                onChange={(e) => setAttendanceFilter(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="Chưa điểm danh">Chưa điểm danh</option>
-                <option value="Đã tham gia">Đã tham gia</option>
-                <option value="Vắng">Vắng</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Danh sách tham gia
+                    {filteredAttendance.length > 0 && (
+                      <span className="ml-2 text-sm font-normal text-gray-500">
+                        (Đã chọn: {selectedAtts.length}/{filteredAttendance.filter(att => att.status === 'Đã duyệt').length} sinh viên chưa điểm danh)
+                      </span>
+                    )}
+                  </h2>
+                  {activity.activityStatus === 'Đã hoàn thành' && (
+                    <div className="flex space-x-2">
               <button 
-                disabled={selectedAtts.length===0} 
-                onClick={()=>handleBulkConfirm('Đã tham gia')} 
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={() => handleBulkConfirm('Đã tham gia')}
+                        disabled={selectedAtts.length === 0}
+                        className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
               >
-                Xác nhận tham gia ({selectedAtts.length})
+                Xác nhận tham gia
               </button>
               <button 
-                disabled={selectedAtts.length===0} 
-                onClick={()=>handleBulkConfirm('Vắng')} 
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={() => handleBulkConfirm('Vắng')}
+                        disabled={selectedAtts.length === 0}
+                        className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
               >
-                Đánh dấu vắng ({selectedAtts.length})
+                Đánh dấu vắng
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center space-x-4">
+                    <select
+                      value={attendanceFilter}
+                      onChange={(e) => setAttendanceFilter(e.target.value)}
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    >
+                      <option value="all">Tất cả</option>
+                      <option value="Chưa điểm danh">Chưa điểm danh</option>
+                      <option value="Đã tham gia">Đã tham gia</option>
+                      <option value="Vắng">Vắng</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={searchAttStudentCode}
+                      onChange={(e) => setSearchAttStudentCode(e.target.value)}
+                      placeholder="Nhập MSSV..."
+                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    />
+                    <button
+                      onClick={handleSearchAttStudent}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Tìm kiếm
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="table-fixed w-full min-w-full divide-y divide-gray-200">
+                {searchAttError && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{searchAttError}</p>
+                  </div>
+                )}
+
+                <div className="mt-4 flex flex-col">
+                  <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                    <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                      <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-2 py-3 text-left" style={{width: '5%'}}>
+                              {activity.activityStatus === 'Đã hoàn thành' && (
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <input 
                       type="checkbox" 
-                      checked={
-                        selectedAtts.length > 0 && 
-                        selectedAtts.length === filteredAttendance.filter(att => att.status === 'Đã duyệt').length
-                      }
-                      onChange={(e) => handleSelectAllAttendance(e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    checked={
+                                      selectedAtts.length > 0 && 
+                                      selectedAtts.length === filteredAttendance.filter(att => att.status === 'Đã duyệt').length
+                                    }
+                                    onChange={(e) => handleSelectAllAttendance(e.target.checked)}
+                                    className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
                     />
                   </th>
-                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>MSSV</th>
-                  <th className="px-2 py-3 text-left" style={{width: '30%'}}>Họ tên</th>
-                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Niên khóa</th>
-                  <th className="px-2 py-3 text-left" style={{width: '20%'}}>Khoa</th>
-                  <th className="px-2 py-3 text-left" style={{width: '15%'}}>Trạng thái</th>
+                              )}
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                MSSV
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Họ tên
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Trạng thái
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Điểm rèn luyện
+                              </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAttendance.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                      {attendanceFilter === 'all' 
-                        ? 'Chưa có sinh viên nào được duyệt tham gia.'
-                        : `Không có sinh viên nào có trạng thái "${attendanceFilter}".`
-                      }
-                    </td>
-                  </tr>
-                ) : filteredAttendance.map(att => (
-                  <tr key={att.participationID} className="hover:bg-gray-50">
-                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '5%'}}>
+                            {filteredAttendance.map((att) => (
+                              <tr key={att.participationID}>
+                                {activity.activityStatus === 'Đã hoàn thành' && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                                    {att.status === 'Đã duyệt' && (
                       <input 
                         type="checkbox" 
-                        checked={selectedAtts.includes(att.participationID)}
-                        onChange={e => setSelectedAtts(e.target.checked ? [...selectedAtts, att.participationID] : selectedAtts.filter(id => id !== att.participationID))}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        disabled={att.status !== 'Đã duyệt'}
-                      />
+                                        checked={selectedAtts.includes(att.participationID)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedAtts([...selectedAtts, att.participationID]);
+                                          } else {
+                                            setSelectedAtts(selectedAtts.filter(id => id !== att.participationID));
+                                          }
+                                        }}
+                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                      />
+                                    )}
+                                  </td>
+                                )}
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {att.studentID}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {att.studentName}
                     </td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900" style={{width: '15%'}}>{att.studentID}</td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-900" style={{width: '30%'}}>{att.studentName}</td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '15%'}}>{att.academicYear}</td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500" style={{width: '20%'}}>{att.faculty}</td>
-                    <td className="px-2 py-4 whitespace-nowrap" style={{width: '15%'}}>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${att.displayStatus === 'Đã tham gia' ? 'bg-green-100 text-green-800' : 
-                          att.displayStatus === 'Chưa điểm danh' ? 'bg-yellow-100 text-yellow-800' : 
-                          att.displayStatus === 'Vắng' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'}`}>
-                        {att.displayStatus}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                    att.status === 'Đã tham gia'
+                                      ? 'bg-green-100 text-green-800'
+                                      : att.status === 'Vắng'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {att.status === 'Đã duyệt' ? 'Chưa điểm danh' : att.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {att.trainingPoint}
                     </td>
                   </tr>
                 ))}
@@ -715,6 +809,22 @@ export default function OrganizerActivityDetail() {
             </table>
           </div>
         </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showUpdate && (
+        <UpdatePointModal
+          open={!!showUpdate}
+          onClose={() => setShowUpdate(null)}
+          student={showUpdate}
+          activityId={activityId}
+          reload={() => setReloadFlag(prev => prev + 1)}
+        />
       )}
     </div>
   );

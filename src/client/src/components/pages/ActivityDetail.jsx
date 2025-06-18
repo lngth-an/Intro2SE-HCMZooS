@@ -103,7 +103,7 @@ export default function ActivityDetail() {
         .then(data => setRegistrations(data.registrations || []));
     }
     if (tab === 'attendance') {
-      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Vắng&status=Đã hoàn thành`)
+      fetch(`${API_URL}/${activityId}/registrations?status=Đã duyệt&status=Vắng&status=Đã tham gia`)
         .then(res => res.json())
         .then(data => setAttendance(data.registrations || []));
     }
@@ -137,15 +137,24 @@ export default function ActivityDetail() {
 
   const handleBulkConfirm = async (status) => {
     setLoading(true);
-    await fetch(`${API_URL}/${activityId}/attendance/confirm`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ participationIDs: selectedAtts, status })
-    });
-    setMessage('Xác nhận tham gia thành công!');
-    setSelectedAtts([]);
-    setLoading(false);
-    setReloadFlag(f => f + 1);
+    try {
+      const res = await fetch(`${API_URL}/${activityId}/attendance/confirm`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participationIDs: selectedAtts, status })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Lỗi khi cập nhật trạng thái');
+      }
+      setMessage('Cập nhật trạng thái thành công!');
+      setSelectedAtts([]);
+      setReloadFlag(f => f + 1);
+    } catch (error) {
+      setMessage(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSearchStudent = async (e) => {
@@ -329,8 +338,20 @@ export default function ActivityDetail() {
             )}
           </div>
           <div className="mb-2 flex gap-2">
-            <button disabled={selectedAtts.length===0 || loading} onClick={()=>handleBulkConfirm('present')} className="bg-green-600 text-white px-3 py-1 rounded">Xác nhận tham gia</button>
-            <button disabled={selectedAtts.length===0 || loading} onClick={()=>handleBulkConfirm('absent')} className="bg-gray-600 text-white px-3 py-1 rounded">Đánh dấu vắng</button>
+            <button 
+              disabled={selectedAtts.length===0 || loading} 
+              onClick={()=>handleBulkConfirm('Đã tham gia')} 
+              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+            >
+              Xác nhận hoàn thành
+            </button>
+            <button 
+              disabled={selectedAtts.length===0 || loading} 
+              onClick={()=>handleBulkConfirm('Vắng')} 
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+            >
+              Đánh dấu vắng
+            </button>
           </div>
           <table className="min-w-full border rounded">
             <thead className="bg-gray-100">
@@ -342,11 +363,12 @@ export default function ActivityDetail() {
                 <th>Khoa</th>
                 <th>Trạng thái</th>
                 <th>Thời gian đăng ký</th>
+                <th>Điểm rèn luyện</th>
               </tr>
             </thead>
             <tbody>
               {attendance.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-4">Chưa có sinh viên tham gia hoạt động này.</td></tr>
+                <tr><td colSpan={8} className="text-center py-4">Chưa có sinh viên tham gia hoạt động này.</td></tr>
               ) : attendance.map(r => (
                 <tr key={r.participationID}>
                   <td><input type="checkbox" checked={selectedAtts.includes(r.participationID)} onChange={e=>setSelectedAtts(e.target.checked?[...selectedAtts, r.participationID]:selectedAtts.filter(id=>id!==r.participationID))} /></td>
@@ -354,8 +376,17 @@ export default function ActivityDetail() {
                   <td>{r.studentName}</td>
                   <td>{r.academicYear}</td>
                   <td>{r.faculty}</td>
-                  <td>{r.status}</td>
+                  <td>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      r.status === 'Đã tham gia' ? 'bg-green-100 text-green-800' :
+                      r.status === 'Vắng' ? 'bg-red-100 text-red-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
                   <td>{r.registrationTime ? new Date(r.registrationTime).toLocaleString() : ''}</td>
+                  <td>{r.trainingPoint ?? 'Chưa có'}</td>
                 </tr>
               ))}
             </tbody>

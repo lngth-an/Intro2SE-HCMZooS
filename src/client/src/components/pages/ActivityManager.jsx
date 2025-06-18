@@ -14,6 +14,7 @@ import {
   Space,
   Popconfirm,
 } from "antd";
+
 import {
   SearchOutlined,
   PlusOutlined,
@@ -25,63 +26,23 @@ import {
 } from "@ant-design/icons";
 import { FileWarning, Eye, Edit, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
+import { DOMAINS } from '../../constants/activityTypes';
 
 const API_BASE_URL = "http://localhost:3001";
 const ACTIVITIES_API_URL = `${API_BASE_URL}/activity/manage`;
 
-// Static data for domains
-const DOMAINS = [
-  { id: "Học thuật", label: "Học thuật", color: "bg-blue-100 text-blue-800" },
-  {
-    id: "Tình nguyện",
-    label: "Tình nguyện",
-    color: "bg-green-100 text-green-800",
-  },
-  {
-    id: "Văn hóa",
-    label: "Văn hóa",
-    color: "bg-orange-100 text-orange-800",
-  },
-  {
-    id: "Thể thao",
-    label: "Thể thao",
-    color: "bg-red-100 text-red-800",
-  },
-  {
-    id: "Kỹ năng",
-    label: "Kỹ năng",
-    color: "bg-purple-100 text-purple-800",
-  },
-  {
-    id: "Nghệ thuật",
-    label: "Nghệ thuật",
-    color: "bg-pink-100 text-pink-800",
-  },
-  {
-    id: "Hội thảo",
-    label: "Hội thảo",
-    color: "bg-indigo-100 text-indigo-800",
-  },
-  {
-    id: "Khác",
-    label: "Khác",
-    color: "bg-gray-100 text-gray-800",
-  },
-];
-
-
 // Map activityStatus to display colors
 const statusColors = {
-  draft: "bg-gray-200 text-gray-800",
-  published: "bg-teal-100 text-teal-800",
-  completed: "bg-green-100 text-green-800",
+  "Bản nháp": "bg-gray-200 text-gray-800",
+  "Đã đăng tải": "bg-blue-100 text-blue-800",
+  "Đã hoàn thành": "bg-green-100 text-green-800"
 };
 
 // Map activityStatus to Vietnamese labels
 const statusLabels = {
-  draft: "Bản nháp",
-  published: "Đã đăng tải",
-  completed: "Đã hoàn thành",
+  "Bản nháp": "Bản nháp",
+  "Đã đăng tải": "Đã đăng tải",
+  "Đã hoàn thành": "Đã hoàn thành"
 };
 
 const DEFAULT_IMAGE =
@@ -103,8 +64,8 @@ const ACTIVITY_TYPES = [
 
 const ACTIVITY_STATUSES = [
   { value: "Bản nháp", label: "Bản nháp" },
-  { value: "Đã đăng tải", label: "Đang diễn ra" },
-  { value: "Đã hoàn thành", label: "Đã kết thúc" },
+  { value: "Đã đăng tải", label: "Đã đăng tải" },
+  { value: "Đã hoàn thành", label: "Đã hoàn thành" }
 ];
 
 function ActivityManager() {
@@ -134,6 +95,12 @@ function ActivityManager() {
   const [form] = Form.useForm();
 
   const [totalPages, setTotalPages] = useState(0);
+
+  const statusPriority = {
+    "Bản nháp": 1,
+    "Đã đăng tải": 2,
+    "Đã hoàn thành": 3
+  };
 
   const filters = {
     q: searchTerm,
@@ -182,6 +149,11 @@ function ActivityManager() {
           (activity) => activity.type === activityTypeFilter
         );
       }
+
+      // Sort activities by status priority
+      activitiesData.sort((a, b) => {
+        return statusPriority[a.activityStatus] - statusPriority[b.activityStatus];
+      });
 
       setActivities(activitiesData);
       setTotalActivities(activitiesData.length);
@@ -375,115 +347,99 @@ function ActivityManager() {
       dataIndex: "name",
       key: "name",
       render: (text, record) => (
-        <div className="flex items-center space-x-2">
-          <img
-            src={record.image || DEFAULT_IMAGE}
-            alt={text}
-            className="w-10 h-10 rounded object-cover"
-          />
-          <span>{text}</span>
+        <div>
+          <div className="font-medium text-gray-900">{text}</div>
+          <div className="text-sm text-gray-500">{record.location}</div>
         </div>
       ),
+    },
+    {
+      title: "Loại hoạt động",
+      dataIndex: "type",
+      key: "type",
+      render: (type) => {
+        const domain = DOMAINS.find(d => d.id === type);
+        return (
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+            {type}
+          </span>
+        );
+      },
+    },
+    {
+      title: "Điểm rèn luyện",
+      dataIndex: "type",
+      key: "points",
+      render: (type) => {
+        const domain = DOMAINS.find(d => d.id === type);
+        return (
+          <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+            {domain?.defaultPoint || 3} điểm
+          </span>
+        );
+      },
     },
     {
       title: "Trạng thái",
       dataIndex: "activityStatus",
       key: "activityStatus",
       render: (status) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-300 text-gray-800'}`}>{statusLabels[status] || status}</span>
+        <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
+          {statusLabels[status] || status}
+        </span>
       ),
     },
     {
-      title: "Thời gian",
-      dataIndex: "eventStart",
-      key: "eventStart",
-      render: (date) => (date ? new Date(date).toLocaleDateString() : "N/A"),
-    },
-    {
-      title: "Địa điểm",
-      dataIndex: "location",
-      key: "location",
-    },
-    {
       title: "Thao tác",
-      key: "actions",
+      key: "action",
       render: (_, record) => (
         <Space size="middle">
           <Button
             type="primary"
             icon={<EyeOutlined />}
-            onClick={() =>
-              navigate(`/organizer/activities/${record.activityID}`, { state: { from: 'manager' } })
-            }
+            onClick={() => navigate(`/organizer/activities/${record.activityID}`)}
           >
             Xem
           </Button>
-          {record.activityStatus === "Bản nháp" && (
+          {record.activityStatus === 'Bản nháp' && (
             <>
               <Button
                 type="default"
                 icon={<EditOutlined />}
-                onClick={() => {
-                  console.log(
-                    "Navigating to edit page for activity:",
-                    record.activityID
-                  );
-                  navigate(`/organizer/activities/${record.activityID}/edit`, {
-                    replace: false,
-                  });
-                }}
+                onClick={() => navigate(`/organizer/activities/${record.activityID}/edit`)}
               >
                 Sửa
               </Button>
               <Popconfirm
+                title="Bạn có chắc chắn muốn đăng tải hoạt động này?"
+                onConfirm={() => handlePublish(record.activityID)}
+                okText="Có"
+                cancelText="Không"
+              >
+                <Button type="primary">
+                  Xuất bản
+                </Button>
+              </Popconfirm>
+              <Popconfirm
                 title="Bạn có chắc chắn muốn xóa hoạt động này?"
-                description="Hành động này không thể hoàn tác."
-                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                 onConfirm={() => handleDelete(record.activityID)}
-                okText="Có, xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-                cancelButtonProps={{ type: 'default' }}
+                okText="Có"
+                cancelText="Không"
               >
                 <Button type="default" danger icon={<DeleteOutlined />}>
                   Xóa
                 </Button>
               </Popconfirm>
-              <Popconfirm
-                title="Xác nhận xuất bản hoạt động"
-                description="Bạn có chắc chắn muốn xuất bản hoạt động này không? Hoạt động đã xuất bản sẽ không thể chỉnh sửa!"
-                icon={<ExclamationCircleOutlined style={{ color: 'orange' }} />}
-                onConfirm={() => handlePublish(record.activityID)}
-                okText="Có, xuất bản"
-                cancelText="Hủy"
-                okButtonProps={{ type: 'primary' }}
-                cancelButtonProps={{ type: 'default' }}
-              >
-                <Button
-                  type="primary"
-                >
-                  Xuất bản
-                </Button>
-              </Popconfirm>
             </>
           )}
-          {record.activityStatus === "Đã đăng tải" && (
+          {record.activityStatus === 'Đã đăng tải' && (
             <Popconfirm
-              title="Xác nhận hoàn thành hoạt động"
-              description="Bạn có chắc chắn muốn đánh dấu hoạt động này đã hoàn thành? Hành động này sẽ cập nhật trạng thái hoạt động."
-              icon={<CheckCircleOutlined style={{ color: 'green' }} />}
+              title="Bạn có chắc chắn muốn đánh dấu hoạt động này là đã hoàn thành?"
               onConfirm={() => handleComplete(record.activityID)}
-              okText="Có, hoàn thành"
-              cancelText="Hủy"
-              okButtonProps={{ 
-                style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
-              }}
-              cancelButtonProps={{ type: 'default' }}
+              okText="Có"
+              cancelText="Không"
             >
-              <Button
-                type="primary"
-                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              >
+              <Button type="default" className="bg-green-500 text-white hover:bg-green-600">
                 Hoàn thành
               </Button>
             </Popconfirm>

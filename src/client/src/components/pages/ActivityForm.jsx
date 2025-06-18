@@ -5,71 +5,11 @@ import { supabase } from "../../supabaseClient";
 
 const SEMESTER_API = "/semester/current";
 
-// Cập nhật danh sách lĩnh vực
-const ACTIVITY_TYPES = [
-  {
-    id: "Tình nguyện",
-    label: "Tình nguyện",
-    type: "Tình nguyện",
-    color: "bg-green-100 text-green-800",
-    selectedColor: "bg-green-600 text-white",
-  },
-  {
-    id: "Học thuật",
-    label: "Học thuật",
-    type: "Học thuật",
-    color: "bg-blue-100 text-blue-800",
-    selectedColor: "bg-blue-600 text-white",
-  },
-  {
-    id: "Văn hóa",
-    label: "Văn hóa",
-    type: "Văn hóa",
-    color: "bg-orange-100 text-orange-800",
-    selectedColor: "bg-orange-600 text-white",
-  },
-  {
-    id: "Thể thao",
-    label: "Thể thao",
-    type: "Thể thao",
-    color: "bg-yellow-100 text-yellow-800",
-    selectedColor: "bg-yellow-600 text-white",
-  },
-  {
-    id: "Nghệ thuật",
-    label: "Nghệ thuật",
-    type: "Nghệ thuật",
-    color: "bg-purple-100 text-purple-800",
-    selectedColor: "bg-purple-600 text-white",
-  },
-  {
-    id: "Kỹ năng",
-    label: "Kỹ năng",
-    type: "Kỹ năng",
-    color: "bg-pink-100 text-pink-800",
-    selectedColor: "bg-pink-600 text-white",
-  },
-  {
-    id: "Hội thảo",
-    label: "Hội thảo",
-    type: "Hội thảo",
-    color: "bg-indigo-100 text-indigo-800",
-    selectedColor: "bg-indigo-600 text-white",
-  },
-  {
-    id: "Khác",
-    label: "Khác",
-    type: "Khác",
-    color: "bg-gray-100 text-gray-800",
-    selectedColor: "bg-gray-600 text-white",
-  },
-];
-
 function ActivityForm({
   onSubmit,
   editingId,
   onCancel,
-  activityTypes = ACTIVITY_TYPES,
+  domains,
   initialData,
 }) {
   console.log("ActivityForm received initialData:", initialData);
@@ -174,7 +114,7 @@ function ActivityForm({
   const handleFormSubmit = async (data) => {
     console.log("handleFormSubmit called", data);
     const selectedActivityType =
-      activityTypes.find((t) => t.id === selectedType)?.type || selectedType;
+      domains.find((t) => t.id === selectedType)?.type || selectedType;
 
     const submitData = {
       ...data,
@@ -356,12 +296,20 @@ function ActivityForm({
               </label>
               <input
                 type="number"
-                min="1"
                 {...register("capacity", {
                   required: "Vui lòng nhập số lượng tham gia",
-                  min: { value: 1, message: "Số lượng phải lớn hơn 0" },
+                  validate: (value) => {
+                    const numValue = parseInt(value);
+                    if (isNaN(numValue)) return "Số lượng tham gia không hợp lệ";
+                    if (numValue <= 0) return "Số lượng tham gia phải lớn hơn 0";
+                    return true;
+                  }
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  errors.capacity
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-blue-500"
+                }`}
               />
               {errors.capacity && (
                 <p className="mt-1 text-sm text-red-600">
@@ -374,26 +322,26 @@ function ActivityForm({
           {/* Lĩnh vực */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Loại hoạt động <span className="text-red-500">*</span>
+              Loại hoạt động
             </label>
             <div className="flex flex-wrap gap-2">
-              {activityTypes.map((activityType) => (
+              {domains.map((domain) => (
                 <button
-                  key={activityType.id}
+                  key={domain.id}
                   type="button"
-                  onClick={() => handleTypeSelect(activityType.id)}
+                  onClick={() => handleTypeSelect(domain.id)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                    selectedType === activityType.id
-                      ? activityType.selectedColor
-                      : activityType.color
+                    selectedType === domain.id
+                      ? domain.selectedColor
+                      : domain.color
                   }`}
                 >
-                  {activityType.label}
+                  {domain.label}
                 </button>
               ))}
             </div>
             {!selectedType && (
-              <p className="mt-1 text-sm text-red-600">
+              <p className="mt-2 text-sm text-red-600">
                 Vui lòng chọn loại hoạt động
               </p>
             )}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/common/Header";
 import SidebarOrganizer from "../components/common/SidebarOrganizer";
 import Footer from "../components/common/Footer";
@@ -18,91 +19,197 @@ import {
   Col,
   Card,
 } from "antd";
-import { SendOutlined, PlusOutlined, BellOutlined } from "@ant-design/icons";
+import { SendOutlined, PlusOutlined, BellOutlined, DeleteOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
 const OrganizerNotifications = () => {
-  const { logout } = useAuth();
-  const [notifications, setNotifications] = useState([]);
-  const [sentNotifications, setSentNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [activities, setActivities] = useState([]);
-  const [selectedActivity, setSelectedActivity] = useState("");
-  const [sendTarget, setSendTarget] = useState("all");
-  const [selectedStudents, setSelectedStudents] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [newNotification, setNewNotification] = useState({
-    title: "",
-    message: "",
-  });
-  const [activeTab, setActiveTab] = useState("received");
-  const [user, setUser] = useState(null);
+    const [notifications, setNotifications] = useState([]);
+    const [sentNotifications, setSentNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [students, setStudents] = useState([]);
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [newNotification, setNewNotification] = useState({
+        title: '',
+        message: '',
+        targetType: 'all_students'
+    });
+    const [activeTab, setActiveTab] = useState('received');
+    const [sentNotificationsPage, setSentNotificationsPage] = useState(1);
+    const [sentNotificationsTotalPages, setSentNotificationsTotalPages] = useState(1);
+    const { user, token } = useAuth();
+    const [activities, setActivities] = useState([]);
+    const [selectedActivity, setSelectedActivity] = useState('');
+    const [activityStudents, setActivityStudents] = useState([]);
+    const [sendTarget, setSendTarget] = useState('all'); // 'all' hoặc 'specific'
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const userRes = await axios.get("/auth/me");
-        setUser(userRes.data);
-        const notiRes = await axios.get(
-          `/notifications?userID=${userRes.data.userID}`
-        );
-        setNotifications(notiRes.data.notifications || []);
-        const sentRes = await axios.get(
-          `/notifications/sent?userID=${userRes.data.userID}`
-        );
-        setSentNotifications(sentRes.data.notifications || []);
-        const actRes = await axios.get("/activity/organizer");
-        setActivities(actRes.data.activities || []);
-      } catch (err) {
-        toast.error("Không thể tải dữ liệu thông báo");
-      } finally {
-        setLoading(false);
-      }
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const response = await axios.get(`/notifications?userID=${user.userID}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setNotifications(response.data.notifications);
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            toast.error('Lỗi khi tải thông báo');
+        } finally {
+            setLoading(false);
+        }
+    }, [user, token]);
+
+    const fetchStudents = useCallback(async (query) => {
+        try {
+            const response = await axios.get(`/notifications/search?query=${query}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setStudents(response.data.students);
+        } catch (error) {
+            console.error('Error fetching students:', error);
+            toast.error('Lỗi khi tìm kiếm sinh viên');
+        }
+    }, [token]);
+
+    const fetchSentNotifications = useCallback(async (page = 1) => {
+        try {
+            const response = await axios.get(`/notifications/sent?page=${page}&limit=10`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSentNotifications(response.data.notifications);
+            setSentNotificationsTotalPages(response.data.pagination.totalPages);
+        } catch (error) {
+            console.error('Error fetching sent notifications:', error);
+            toast.error('Lỗi khi tải thông báo đã gửi');
+        }
+    }, [token]);
+
+    const fetchActivities = useCallback(async () => {
+        try {
+            const response = await axios.get('/activity/organizer', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setActivities(response.data.activities || []);
+        } catch (error) {
+            console.error('Error fetching activities:', error);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        if (user) {
+            fetchNotifications();
+            fetchStudents('');
+            fetchSentNotifications(1);
+            fetchActivities();
+        }
+    }, [user, fetchNotifications, fetchStudents, fetchSentNotifications, fetchActivities]);
+
+    useEffect(() => {
+        if (selectedActivity) {
+            axios.get(`/activity/${selectedActivity}/registrations`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(res => {
+                setActivityStudents(res.data.registrations.map(r => ({
+                    userID: r.studentID,
+                    name: r.studentName || '',
+                    academicYear: r.academicYear,
+                    faculty: r.faculty
+                })));
+            }).catch(() => setActivityStudents([]));
+            setSendTarget('all');
+            setSelectedStudents([]);
+        } else {
+            setActivityStudents([]);
+            setSendTarget('all');
+            setSelectedStudents([]);
+        }
+    }, [selectedActivity, token]);
+
+    const handleNotificationClick = async (notification) => {
+        if (notification.notificationStatus === 'unread') {
+            try {
+                await axios.patch(`/notifications/${notification.notificationID}/read`, {}, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setNotifications(notifications.map(n =>
+                    n.notificationID === notification.notificationID
+                        ? { ...n, notificationStatus: 'read' }
+                        : n
+                ));
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                toast.error('Lỗi khi đánh dấu thông báo đã đọc');
+            }
+        }
     };
-    fetchData();
-  }, []);
 
-  const handleOpenDialog = () => {
-    setOpenDialog(true);
-    setNewNotification({ title: "", message: "" });
-    setSelectedActivity("");
-    setSendTarget("all");
-    setSelectedStudents([]);
-  };
+    const handleDeleteNotification = async (notificationId) => {
+        try {
+            await axios.delete(`/notifications/${notificationId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setNotifications(notifications.filter(n => n.notificationID !== notificationId));
+            toast.success('Xóa thông báo thành công');
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            toast.error('Lỗi khi xóa thông báo');
+        }
+    };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
+    const handleSendNotification = async () => {
+        try {
+            let toUserIDs = undefined;
+            let activityID = undefined;
+            if (selectedActivity) {
+                activityID = selectedActivity;
+                if (sendTarget === 'specific') {
+                    toUserIDs = selectedStudents.map(student => student.userID);
+                }
+            }
+            await axios.post('/notifications/send', {
+                fromUserID: user.userID,
+                toUserIDs,
+                notificationTitle: newNotification.title,
+                notificationMessage: newNotification.message,
+                activityID
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setOpenDialog(false);
+            fetchNotifications();
+            toast.success('Gửi thông báo thành công');
+        } catch (error) {
+            console.error('Error sending notification:', error);
+            toast.error('Lỗi khi gửi thông báo');
+        }
+    };
 
-  const handleSendNotification = async () => {
-    try {
-      await axios.post("/notifications/send", {
-        fromUserID: user.userID,
-        toUserIDs:
-          sendTarget === "specific"
-            ? selectedStudents.map((s) => s.userID)
-            : undefined,
-        notificationTitle: newNotification.title,
-        notificationMessage: newNotification.message,
-        activityID: selectedActivity || undefined,
-      });
-      toast.success("Gửi thông báo thành công");
-      setOpenDialog(false);
-      // Refresh notifications
-      const notiRes = await axios.get(`/notifications?userID=${user.userID}`);
-      setNotifications(notiRes.data.notifications || []);
-      const sentRes = await axios.get(
-        `/notifications/sent?userID=${user.userID}`
-      );
-      setSentNotifications(sentRes.data.notifications || []);
-    } catch (err) {
-      toast.error("Lỗi khi gửi thông báo");
-    }
+    const handleOpenDialog = () => {
+        setOpenDialog(true);
+        setNewNotification({
+            title: '',
+            message: '',
+            targetType: 'all_students'
+        });
+        setSelectedStudents([]);
+        setSelectedActivity('');
+        setSendTarget('all');
+        setActivityStudents([]);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setNewNotification({
+            title: '',
+            message: '',
+            targetType: 'all_students'
+        });
+        setSelectedStudents([]);
+        setSelectedActivity('');
+        setSendTarget('all');
+        setActivityStudents([]);
   };
 
   const handleTabChange = (key) => {
@@ -120,11 +227,37 @@ const OrganizerNotifications = () => {
     }
   };
 
+    const handleLogout = async () => {
+        try {
+            await axios.post("/auth/logout");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("role");
+            toast.success("Đăng xuất thành công");
+            navigate("/login");
+        } catch (error) {
+            toast.error("Có lỗi xảy ra khi đăng xuất");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <Header user={user} />
+                <div className="flex flex-1 pt-16">
+                    <SidebarOrganizer onLogout={handleLogout} />
+                    <div className="flex-1 flex justify-center items-center">
+                        <Spin size="large" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header user={user} />
       <div className="flex flex-1 pt-16">
-        <SidebarOrganizer onLogout={logout} />
+                <SidebarOrganizer onLogout={handleLogout} />
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 p-6">
             <div className="container mx-auto px-4 py-8">
@@ -142,113 +275,84 @@ const OrganizerNotifications = () => {
                     Gửi thông báo mới
                   </Button>
                 </div>
+
                 <div className="mb-6">
                   <span className="text-lg text-gray-600 font-medium">
-                    {
-                      notifications.filter(
-                        (n) => n.notificationStatus === "unread"
-                      ).length
-                    }{" "}
+                                        {notifications.filter((n) => n.notificationStatus === "unread").length}{" "}
                     thông báo chưa đọc
                   </span>
+                                </div>
+
+                                <Tabs activeKey={activeTab} onChange={handleTabChange}>
+                                    <TabPane
+                                        tab={
+                                            <span>
+                                                <BellOutlined />
+                                                Thông báo nhận được
+                                            </span>
+                                        }
+                                        key="received"
+                                    >
+                                        <div className="space-y-4">
+                                            {notifications.length === 0 ? (
+                                                <p className="text-gray-500">Không có thông báo nào</p>
+                                            ) : (
+                                                notifications.map((notification) => (
+                                                    <Card
+                                                    key={notification.notificationID}
+                                                        className={`${
+                                                            notification.notificationStatus === "unread"
+                                                                ? "border-l-4 border-blue-500"
+                                                                : ""
+                                                    }`}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <Title level={5}>{notification.notificationTitle}</Title>
+                                                                <Text>{notification.notificationMessage}</Text>
+                                                            </div>
+                                                            {notification.notificationStatus === "unread" && (
+                                                                <Badge status="processing" text="Mới" />
+                                                            )}
+                                                        </div>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </div>
+                                    </TabPane>
+
+                                    <TabPane
+                                        tab={
+                                            <span>
+                                                <SendOutlined />
+                                                Thông báo đã gửi
+                                            </span>
+                                        }
+                                        key="sent"
+                                    >
+                                        <div className="space-y-4">
+                                            {sentNotifications.length === 0 ? (
+                                                <p className="text-gray-500">Chưa gửi thông báo nào</p>
+                                            ) : (
+                                                sentNotifications.map((notification) => (
+                                                    <Card key={notification.notificationID}>
+                                                        <div>
+                                                            <Title level={5}>{notification.notificationTitle}</Title>
+                                                            <Text>{notification.notificationMessage}</Text>
+                                                    </div>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </div>
+                                    </TabPane>
+                                </Tabs>
+                                    </div>
+                        </div>
+                    </main>
+                        <Footer />
                 </div>
-                <Tabs
-                  activeKey={activeTab}
-                  onChange={handleTabChange}
-                  className="mb-6 custom-large-tab"
-                >
-                  <TabPane
-                    tab={
-                      <span className="text-lg font-semibold">
-                        <BellOutlined /> Thông báo đã nhận
-                      </span>
-                    }
-                    key="received"
-                  >
-                    {loading ? (
-                      <div className="flex justify-center items-center py-12">
-                        <Spin size="large" />
-                      </div>
-                    ) : notifications.length === 0 ? (
-                      <div className="text-center text-gray-500 py-8">
-                        Không có thông báo nào
-                      </div>
-                    ) : (
-                      <Row gutter={[16, 16]}>
-                        {notifications.map((n) => (
-                          <Col xs={24} md={12} key={n.notificationID}>
-                            <Card className="mb-4">
-                              <div className="flex items-center mb-2">
-                                <BellOutlined className="text-blue-500 mr-2" />
-                                <Text className="font-semibold text-lg">
-                                  {n.notificationTitle}
-                                </Text>
-                                {n.notificationStatus === "unread" && (
-                                  <Badge color="blue" className="ml-2" />
-                                )}
-                              </div>
-                              <Text className="block text-gray-700 mb-2">
-                                {n.notificationMessage}
-                              </Text>
-                              <Text className="text-xs text-gray-400">
-                                {n.sentAt
-                                  ? new Date(n.sentAt).toLocaleString()
-                                  : ""}
-                              </Text>
-                            </Card>
-                          </Col>
-                        ))}
-                      </Row>
-                    )}
-                  </TabPane>
-                  <TabPane
-                    tab={
-                      <span className="text-lg font-semibold">
-                        <SendOutlined /> Thông báo đã gửi
-                      </span>
-                    }
-                    key="sent"
-                  >
-                    {loading ? (
-                      <div className="flex justify-center items-center py-12">
-                        <Spin size="large" />
-                      </div>
-                    ) : sentNotifications.length === 0 ? (
-                      <div className="text-center text-gray-500 py-8">
-                        Không có thông báo đã gửi
-                      </div>
-                    ) : (
-                      <Row gutter={[16, 16]}>
-                        {sentNotifications.map((n) => (
-                          <Col xs={24} md={12} key={n.notificationID}>
-                            <Card className="mb-4">
-                              <div className="flex items-center mb-2">
-                                <SendOutlined className="text-blue-500 mr-2" />
-                                <Text className="font-semibold text-lg">
-                                  {n.notificationTitle}
-                                </Text>
-                              </div>
-                              <Text className="block text-gray-700 mb-2">
-                                {n.notificationMessage}
-                              </Text>
-                              <Text className="text-xs text-gray-400">
-                                {n.sentAt
-                                  ? new Date(n.sentAt).toLocaleString()
-                                  : ""}
-                              </Text>
-                            </Card>
-                          </Col>
-                        ))}
-                      </Row>
-                    )}
-                  </TabPane>
-                </Tabs>
-              </div>
             </div>
-          </main>
-          <Footer />
-        </div>
-      </div>
+
       <Modal
         title={
           <span className="text-xl font-semibold normal-case">

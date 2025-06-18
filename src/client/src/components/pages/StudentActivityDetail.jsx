@@ -1,4 +1,5 @@
 import React from 'react';
+import { DOMAINS } from '../../constants/activityTypes';
 
 function StudentActivityDetail({
   activity,
@@ -18,6 +19,9 @@ function StudentActivityDetail({
   isManagementView = false
 }) {
   if (!activity) return null;
+
+  const domain = DOMAINS.find(d => d.id === activity.type);
+  const points = domain ? domain.defaultPoint : 3;
 
   return (
     <div 
@@ -60,8 +64,11 @@ function StudentActivityDetail({
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{activity.name}</h1>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    <span className="font-semibold">Lĩnh vực:</span> {activity.type || "Chưa cập nhật"}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+                    {activity.type}
+                  </span>
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                    {points} điểm
                   </span>
                   {isRegistered && !isManagementView && (
                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">

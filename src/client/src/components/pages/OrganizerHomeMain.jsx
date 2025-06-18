@@ -13,6 +13,7 @@ import {
   EnvironmentOutlined,
   RightOutlined,
 } from "@ant-design/icons";
+import { DOMAINS } from '../../constants/activityTypes';
 
 const { Title, Text } = Typography;
 
@@ -133,6 +134,73 @@ const OrganizerHome = (props) => {
     }
   };
 
+  const renderActivityCard = (activity) => {
+    const domain = DOMAINS.find(d => d.id === activity.type);
+    const points = domain ? domain.defaultPoint : 3;
+
+    return (
+      <Card
+        key={activity.activityID}
+        className="mb-4 hover:shadow-lg transition-shadow"
+        hoverable
+      >
+        <div className="flex items-start space-x-4">
+          <div className="w-24 h-24 flex-shrink-0">
+            <img
+              src={activity.image || "https://via.placeholder.com/96"}
+              alt={activity.name}
+              className="w-full h-full object-cover rounded-lg"
+            />
+          </div>
+          <div className="flex-grow">
+            <div className="flex flex-col space-y-2">
+              <div className="flex justify-between items-start">
+                <Title level={4} className="m-0 text-lg font-semibold">
+                  {activity.name}
+                </Title>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  activity.activityStatus === 'Bản nháp' ? 'bg-gray-200 text-gray-800' :
+                  activity.activityStatus === 'Đã đăng tải' ? 'bg-blue-100 text-blue-800' :
+                  activity.activityStatus === 'Đã hoàn thành' ? 'bg-green-100 text-green-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {activity.activityStatus}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${domain?.color || 'bg-gray-100 text-gray-800'}`}>
+                  {activity.type}
+                </span>
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                  {points} điểm
+                </span>
+              </div>
+              <div className="text-gray-600 text-sm space-y-1">
+                <div className="flex items-center">
+                  <CalendarOutlined className="mr-2" />
+                  <span>{new Date(activity.eventStart).toLocaleString()}</span>
+                </div>
+                <div className="flex items-center">
+                  <EnvironmentOutlined className="mr-2" />
+                  <span>{activity.location}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
+              <Link
+                to={`/organizer/activities/${activity.activityID}`}
+                className="text-blue-600 hover:text-blue-800 flex items-center"
+              >
+                Chi tiết
+                <RightOutlined className="ml-1" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   if (loading) {
     return <div>Đang tải...</div>;
   }
@@ -184,7 +252,6 @@ const OrganizerHome = (props) => {
                       <div className="bg-orange-50 p-4 rounded-lg">
                         <Text className="text-gray-600 block mb-1">
                           Xem các đơn khiếu nại...
-                          
                         </Text>
                       </div>
                     </Card>
@@ -192,73 +259,29 @@ const OrganizerHome = (props) => {
                 </Col>
               </Row>
 
-              {/* Published Activities */}
+              {/* Hoạt động đang diễn ra */}
               <div className="mb-8">
-                <div className="flex justify-between items-center mb-6">
-                  <Title level={3} className="m-0">
-                    Các hoạt động đã đăng tải
+                <div className="flex justify-between items-center mb-4">
+                  <Title level={4} className="m-0">
+                    Hoạt động đang diễn ra
                   </Title>
-                  <Button
-                    type="primary"
-                    icon={<RightOutlined />}
-                    onClick={() => navigate("/organizer/activities")}
-                    className="h-9 px-4 text-sm font-medium"
+                  <Link
+                    to="/organizer/activities"
+                    className="text-blue-600 hover:text-blue-800 flex items-center"
                   >
-                    Xem thêm
-                  </Button>
+                    Xem tất cả
+                    <RightOutlined className="ml-1" />
+                  </Link>
                 </div>
-                <Row gutter={[24, 24]}>
-                  {publishedActivities.map((activity) => (
-                    <Col xs={24} md={12} key={activity.activityID}>
-                      <Card
-                        hoverable
-                        className="h-full cursor-pointer"
-                        cover={
-                          <div className="h-48 overflow-hidden">
-                            <img
-                              alt={activity.name}
-                              src={
-                                activity.image ||
-                                "https://via.placeholder.com/400x200?text=Activity+Image"
-                              }
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        }
-                        onClick={() =>
-                          navigate(
-                            `/organizer/activities/${activity.activityID}`,
-                            { state: { from: "home" } }
-                          )
-                        }
-                      >
-                        <div className="flex items-center mb-4">
-                          <CalendarOutlined className="text-2xl text-green-500 mr-3" />
-                          <Title level={4} className="m-0">
-                            {activity.name}
-                          </Title>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center">
-                            <CalendarOutlined className="text-gray-400 mr-2" />
-                            <Text className="text-gray-600">
-                              Ngày mở đơn:{" "}
-                              {new Date(
-                                activity.registrationStart
-                              ).toLocaleDateString()}
-                            </Text>
-                          </div>
-                          <div className="flex items-center">
-                            <EnvironmentOutlined className="text-gray-400 mr-2" />
-                            <Text className="text-gray-600">
-                              Địa điểm: {activity.location}
-                            </Text>
-                          </div>
-                        </div>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
+                <div className="grid grid-cols-2 gap-4">
+                  {publishedActivities.length > 0 ? (
+                    publishedActivities.map((activity) => renderActivityCard(activity))
+                  ) : (
+                    <div className="col-span-2 text-center py-8 bg-gray-50 rounded-lg">
+                      <Text type="secondary">Không có hoạt động nào đang diễn ra</Text>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Create Activity Button */}

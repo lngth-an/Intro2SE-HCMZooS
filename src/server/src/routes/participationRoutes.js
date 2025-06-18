@@ -9,4 +9,5 @@ router.post('/register', ParticipationController.registerActivity);
 router.post('/submit', ParticipationController.submitRegistration);
 router.get('/suggest', ParticipationController.suggestActivities);
 router.delete('/:participationID', ParticipationController.cancelRegistration);
+router.post('/delete-draft', ParticipationController.deleteDraft);
 module.exports = router; 

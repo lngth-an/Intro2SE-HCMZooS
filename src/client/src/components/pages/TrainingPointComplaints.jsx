@@ -9,6 +9,7 @@ export default function TrainingPointComplaints({ participations, onClose, mode 
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [newPoint, setNewPoint] = useState(currentPoint ?? 0);
+  const token = localStorage.getItem('accessToken');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +25,7 @@ export default function TrainingPointComplaints({ participations, onClose, mode 
       }
       setLoading(true);
       try {
-        const res = await fetch(`/activity/${activityId}/training-point`, {
+        const res = await fetch(`http://localhost:3001/activity/${activityId}/training-point`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ studentID, newPoint: Number(newPoint), reason: description })
@@ -47,16 +48,22 @@ export default function TrainingPointComplaints({ participations, onClose, mode 
     }
     setLoading(true);
     try {
-      const res = await fetch('/activity/complaint', {
+      const res = await fetch('http://localhost:3001/student/complaint', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participationID: selectedParticipation, description })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          participationID: selectedParticipation,
+          description: description.trim()
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Lỗi gửi khiếu nại');
       setSuccess('Gửi khiếu nại thành công!');
       setDescription('');
-      if (single && onClose) setTimeout(onClose, 1200);
+      setTimeout(() => { if (onClose) onClose(); }, 1200);
     } catch (err) {
       setError(err.message);
     } finally {

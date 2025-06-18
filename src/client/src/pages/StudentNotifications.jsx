@@ -158,6 +158,7 @@ const StudentNotifications = () => {
 
       <div className="flex flex-1 pt-16">
         <SidebarStudent onLogout={handleLogout} />
+        <SidebarStudent onLogout={handleLogout} />
 
         <main className="flex-1 flex flex-col ml-64 px-6 py-8 w-full">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
